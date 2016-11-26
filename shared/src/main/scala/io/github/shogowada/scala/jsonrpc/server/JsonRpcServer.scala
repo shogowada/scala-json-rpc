@@ -10,8 +10,6 @@ import scala.util.{Failure, Success}
 class JsonRpcServer
 (
     jsonRpcMethodRepository: JsonRpcMethodRepository,
-    jsonRpcRequestHandler: JsonRpcRequestHandler,
-    jsonRpcNotificationHandler: JsonRpcNotificationHandler,
     jsonSender: JsonSender,
     jsonSerializer: JsonSerializer,
     jsonDeserializer: JsonDeserializer
@@ -26,12 +24,7 @@ class JsonRpcServer
   }
 
   override def receive(json: String): Unit = {
-    val requestHandled = maybeHandleRequest(json)
-    if (requestHandled) {
-      return
-    }
-    val notificationHandled = maybeHandleNotification(json)
-    if (notificationHandled) {
+    if (maybeHandleRequest(json) || maybeHandleNotification(json)) {
       return
     }
     send(JsonRpcResponse(JsonRpcErrors.invalidRequest))
@@ -49,7 +42,7 @@ class JsonRpcServer
         sendMethodNotFound(request.id, request.method)
         true
       case (Some(request), Some(method)) =>
-        jsonRpcRequestHandler.handle(request, method).onComplete {
+        method(request).onComplete {
           case Success(response) => send(response)
           case Failure(error) => send(JsonRpcResponse(request.id, JsonRpcErrors.internalError.copy(data = Some(error.toString))))
         }
@@ -69,7 +62,7 @@ class JsonRpcServer
         sendMethodNotFound(notification.method)
         true
       case (Some(notification), Some(method)) =>
-        jsonRpcNotificationHandler.handle(notification, method)
+        method(notification)
         true
     }
   }
@@ -97,8 +90,6 @@ object JsonRpcServer {
   def apply(jsonSender: JsonSender, jsonSerializer: JsonSerializer, jsonDeserializer: JsonDeserializer): JsonRpcServer = {
     new JsonRpcServer(
       new JsonRpcMethodRepository(),
-      new JsonRpcRequestHandler(),
-      new JsonRpcNotificationHandler(),
       jsonSender,
       jsonSerializer,
       jsonDeserializer

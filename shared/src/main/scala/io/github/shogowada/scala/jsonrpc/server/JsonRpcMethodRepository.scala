@@ -8,11 +8,15 @@ class JsonRpcMethodRepository {
   private var nameToNotificationMethodMap: Map[String, JsonRpcNotificationMethod] = Map()
 
   def bind(name: String, method: JsonRpcRequestMethod): Unit = {
-    nameToRequestMethodMap = nameToRequestMethodMap + (name -> method)
+    this.synchronized {
+      nameToRequestMethodMap = nameToRequestMethodMap + (name -> method)
+    }
   }
 
   def bind(name: String, method: JsonRpcNotificationMethod): Unit = {
-    nameToNotificationMethodMap = nameToNotificationMethodMap + (name -> method)
+    this.synchronized {
+      nameToNotificationMethodMap = nameToNotificationMethodMap + (name -> method)
+    }
   }
 
   def getRequestMethod(method: String): Option[JsonRpcRequestMethod] = {
