@@ -4,9 +4,9 @@ import io.github.shogowada.scala.jsonrpc.models.Models._
 
 import scala.concurrent.Promise
 
-class JsonRpcPromisedResponseRepository {
+class JsonRpcPromisedResponseRepository[ERROR, RESULT] {
 
-  private type ErrorOrResult = Either[JsonRpcErrorResponse, JsonRpcResponse]
+  private type ErrorOrResult = Either[JsonRpcErrorResponse[ERROR], JsonRpcResponse[RESULT]]
 
   private var idToPromisedResponseMap: Map[Id, Promise[ErrorOrResult]] = Map()
 

@@ -7,77 +7,27 @@ import io.github.shogowada.scala.jsonrpc.serializers.{JsonDeserializer, JsonSeri
 
 import scala.util.{Failure, Success}
 
-class JsonRpcServer
+class JsonRpcRequestServer[PARAMS, ERROR, RESULT]
 (
-    jsonRpcMethodRepository: JsonRpcMethodRepository,
     jsonSender: JsonSender,
     jsonSerializer: JsonSerializer,
-    jsonDeserializer: JsonDeserializer
+    jsonDeserializer: JsonDeserializer,
+    val methodName: String,
+    method: JsonRpcRequestMethod[PARAMS, ERROR, RESULT]
 ) extends JsonReceiver {
 
-  def bindMethod(name: String, method: JsonRpcRequestMethod): Unit = {
-    jsonRpcMethodRepository.bind(name, method)
-  }
-
-  def bindMethod(name: String, method: JsonRpcNotificationMethod): Unit = {
-    jsonRpcMethodRepository.bind(name, method)
-  }
-
   override def receive(json: String): Unit = {
-    if (maybeHandleRequest(json) || maybeHandleNotification(json)) {
-      return
+    jsonDeserializer.deserialize[JsonRpcRequest[PARAMS]](json)
+        .filter(request => request.jsonrpc == Models.jsonRpc)
+        .filter(request => request.method == methodName)
+        .foreach(handle)
+  }
+
+  private def handle(request: JsonRpcRequest[PARAMS]): Unit = {
+    method(request).onComplete {
+      case Success(result) => send(result)
+      case Failure(error) => send(JsonRpcResponse(request.id, JsonRpcErrors.internalError.copy(data = Some(error.toString))))
     }
-    send(JsonRpcResponse(JsonRpcErrors.invalidRequest))
-  }
-
-  private def maybeHandleRequest(json: String): Boolean = {
-    val maybeRequest = jsonDeserializer.deserialize[JsonRpcRequest](json)
-        .filter(response => response.jsonrpc == Models.jsonRpc)
-    val maybeMethod = maybeRequest
-        .flatMap(request => jsonRpcMethodRepository.getRequestMethod(request.method))
-
-    (maybeRequest, maybeMethod) match {
-      case (None, _) => false
-      case (Some(request), None) =>
-        sendMethodNotFound(request.id, request.method)
-        true
-      case (Some(request), Some(method)) =>
-        method(request).onComplete {
-          case Success(response) => send(response)
-          case Failure(error) => send(JsonRpcResponse(request.id, JsonRpcErrors.internalError.copy(data = Some(error.toString))))
-        }
-        true
-    }
-  }
-
-  private def maybeHandleNotification(json: String): Boolean = {
-    val maybeNotification = jsonDeserializer.deserialize[JsonRpcNotification](json)
-        .filter(response => response.jsonrpc == Models.jsonRpc)
-    val maybeMethod = maybeNotification
-        .flatMap(notification => jsonRpcMethodRepository.getNotificationMethod(notification.method))
-
-    (maybeNotification, maybeMethod) match {
-      case (None, _) => false
-      case (Some(notification), None) =>
-        sendMethodNotFound(notification.method)
-        true
-      case (Some(notification), Some(method)) =>
-        method(notification)
-        true
-    }
-  }
-
-  private def sendMethodNotFound(method: String): Unit = {
-    send(JsonRpcResponse(
-      JsonRpcErrors.methodNotFound.copy(data = Some(s"Notification method '$method' was not found."))
-    ))
-  }
-
-  private def sendMethodNotFound(id: Id, method: String): Unit = {
-    send(JsonRpcResponse(
-      id,
-      JsonRpcErrors.methodNotFound.copy(data = Some(s"Request method '$method' was not found."))
-    ))
   }
 
   private def send[T](response: T): Unit = {
@@ -86,13 +36,16 @@ class JsonRpcServer
   }
 }
 
-object JsonRpcServer {
-  def apply(jsonSender: JsonSender, jsonSerializer: JsonSerializer, jsonDeserializer: JsonDeserializer): JsonRpcServer = {
-    new JsonRpcServer(
-      new JsonRpcMethodRepository(),
-      jsonSender,
-      jsonSerializer,
-      jsonDeserializer
-    )
+class JsonRpcNotificationServer[PARAMS]
+(
+    jsonDeserializer: JsonDeserializer,
+    val methodName: String,
+    method: JsonRpcNotificationMethod[PARAMS]
+) extends JsonReceiver {
+  override def receive(json: String): Unit = {
+    jsonDeserializer.deserialize[JsonRpcNotification[PARAMS]](json)
+        .filter(notification => notification.jsonrpc == Models.jsonRpc)
+        .filter(notification => notification.method == methodName)
+        .foreach(method)
   }
 }

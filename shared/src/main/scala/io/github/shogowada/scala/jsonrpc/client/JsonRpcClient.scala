@@ -7,15 +7,16 @@ import io.github.shogowada.scala.jsonrpc.serializers.{JsonDeserializer, JsonSeri
 
 import scala.concurrent.{Future, Promise}
 
-class JsonRpcClient
+class JsonRpcClient[PARAMS, ERROR, RESULT]
 (
-    jsonRpcPromisedResponseRepository: JsonRpcPromisedResponseRepository,
+    jsonRpcPromisedResponseRepository: JsonRpcPromisedResponseRepository[ERROR, RESULT],
     jsonSender: JsonSender,
     jsonSerializer: JsonSerializer,
-    jsonDeserializer: JsonDeserializer
+    jsonDeserializer: JsonDeserializer,
+    val method: String
 ) extends JsonReceiver {
 
-  private type ErrorOrResult = Either[JsonRpcErrorResponse, JsonRpcResponse]
+  private type ErrorOrResult = Either[JsonRpcErrorResponse[ERROR], JsonRpcResponse[RESULT]]
 
   def send(request: JsonRpcRequest): Future[ErrorOrResult] = {
     jsonSerializer.serialize(request)
@@ -29,7 +30,7 @@ class JsonRpcClient
     promisedResponse.future
   }
 
-  def send(notification: JsonRpcNotification): Unit = {
+  def send(notification: JsonRpcNotification[PARAMS]): Unit = {
     jsonSerializer.serialize(notification)
         .foreach(jsonSender.send)
   }
@@ -39,22 +40,22 @@ class JsonRpcClient
         .orElse {
           maybeGetErrorAsLeft(json)
         }
-        .foreach(receive)
+        .foreach(handle)
   }
 
   private def maybeGetResultAsRight(json: String): Option[ErrorOrResult] = {
-    jsonDeserializer.deserialize[JsonRpcResponse](json)
+    jsonDeserializer.deserialize[JsonRpcResponse[RESULT]](json)
         .filter(response => response.jsonrpc == Models.jsonRpc)
         .map(response => Right(response))
   }
 
   private def maybeGetErrorAsLeft(json: String): Option[ErrorOrResult] = {
-    jsonDeserializer.deserialize[JsonRpcErrorResponse](json)
+    jsonDeserializer.deserialize[JsonRpcErrorResponse[ERROR]](json)
         .filter(response => response.jsonrpc == Models.jsonRpc)
         .map(response => Left(response))
   }
 
-  private def receive(errorOrResult: ErrorOrResult): Unit = {
+  private def handle(errorOrResult: ErrorOrResult): Unit = {
     errorOrResult
         .fold(
           error => error.id,
@@ -62,16 +63,5 @@ class JsonRpcClient
         )
         .flatMap((id: Id) => jsonRpcPromisedResponseRepository.getAndRemove(id))
         .foreach((promisedResponse: Promise[ErrorOrResult]) => promisedResponse.success(errorOrResult))
-  }
-}
-
-object JsonRpcClient {
-  def apply(jsonSender: JsonSender, jsonSerializer: JsonSerializer, jsonDeserializer: JsonDeserializer) = {
-    new JsonRpcClient(
-      new JsonRpcPromisedResponseRepository(),
-      jsonSender,
-      jsonSerializer,
-      jsonDeserializer
-    )
   }
 }

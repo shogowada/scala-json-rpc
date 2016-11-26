@@ -6,55 +6,54 @@ object Models {
   val jsonRpc = "2.0"
 
   type Id = Either[String, BigDecimal]
-  type Params = Either[Seq[Any], Map[String, Any]]
 
-  type JsonRpcRequestMethod = (JsonRpcRequest) => Future[JsonRpcResponse]
-  type JsonRpcNotificationMethod = (JsonRpcNotification) => Unit
+  type JsonRpcRequestMethod[PARAMS, ERROR, RESULT] = (JsonRpcRequest[PARAMS]) => Future[Either[JsonRpcErrorResponse[ERROR], JsonRpcResponse[RESULT]]]
+  type JsonRpcNotificationMethod[PARAMS] = (JsonRpcNotification[PARAMS]) => Unit
 
   case class JsonRpcMessage(jsonrpc: String = jsonRpc)
 
-  case class JsonRpcRequest
+  case class JsonRpcRequest[PARAMS]
   (
       id: Id,
       method: String,
-      params: Params
+      params: PARAMS
   ) extends JsonRpcMessage
 
-  case class JsonRpcNotification
+  case class JsonRpcNotification[PARAMS]
   (
       method: String,
-      params: Params
+      params: PARAMS
   ) extends JsonRpcMessage
 
-  case class JsonRpcResponse
+  case class JsonRpcResponse[RESULT]
   (
       id: Id,
-      result: Any
+      result: RESULT
   ) extends JsonRpcMessage
 
-  case class JsonRpcErrorResponse
+  case class JsonRpcErrorResponse[ERROR]
   (
       id: Option[Id],
-      error: JsonRpcError
+      error: JsonRpcError[ERROR]
   ) extends JsonRpcMessage
 
   object JsonRpcResponse {
-    def apply(error: JsonRpcError) = JsonRpcErrorResponse(id = None, error = error)
+    def apply[ERROR](error: JsonRpcError[ERROR]) = JsonRpcErrorResponse(id = None, error = error)
 
-    def apply(id: Id, error: JsonRpcError) = JsonRpcErrorResponse(id = Some(id), error = error)
+    def apply[ERROR](id: Id, error: JsonRpcError[ERROR]) = JsonRpcErrorResponse(id = Some(id), error = error)
   }
 
-  case class JsonRpcError
+  case class JsonRpcError[ERROR]
   (
       code: Int,
       message: String,
-      data: Option[Any]
+      data: Option[ERROR]
   )
 
   object JsonRpcError {
-    def apply(code: Int, message: String) = JsonRpcError(code, message, None)
+    def apply(code: Int, message: String) = JsonRpcError[String](code, message, None)
 
-    def apply(code: Int, message: String, data: Any) = JsonRpcError(code, message, Option(data))
+    def apply[T](code: Int, message: String, data: T) = JsonRpcError[T](code, message, Option(data))
   }
 
   object JsonRpcErrors {
