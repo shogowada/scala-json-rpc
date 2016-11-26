@@ -1,6 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.communicators.{JsonReceiver, JsonSender}
+import io.github.shogowada.scala.jsonrpc.models.Models
 import io.github.shogowada.scala.jsonrpc.models.Models.{Id, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse}
 import io.github.shogowada.scala.jsonrpc.serializers.{JsonDeserializer, JsonSerializer}
 
@@ -33,6 +34,7 @@ class JsonRpcClient
 
   override def receive(json: String): Unit = {
     jsonDeserializer.deserialize[JsonRpcResponse](json)
+        .filter(response => response.jsonrpc == Models.jsonRpc)
         .foreach(receive)
   }
 

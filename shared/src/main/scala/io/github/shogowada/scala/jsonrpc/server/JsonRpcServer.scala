@@ -1,6 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.communicators.{JsonReceiver, JsonSender}
+import io.github.shogowada.scala.jsonrpc.models.Models
 import io.github.shogowada.scala.jsonrpc.models.Models._
 import io.github.shogowada.scala.jsonrpc.serializers.{JsonDeserializer, JsonSerializer}
 
@@ -38,38 +39,38 @@ class JsonRpcServer
 
   private def maybeHandleRequest(json: String): Boolean = {
     val maybeRequest = jsonDeserializer.deserialize[JsonRpcRequest](json)
-    if (maybeRequest.isEmpty) {
-      false
-    } else {
-      val request = maybeRequest.get
-      val maybeMethod = jsonRpcMethodRepository.getRequestMethod(request.method)
-      if (maybeMethod.isDefined) {
-        val method = maybeMethod.get
+        .filter(response => response.jsonrpc == Models.jsonRpc)
+    val maybeMethod = maybeRequest
+        .flatMap(request => jsonRpcMethodRepository.getRequestMethod(request.method))
+
+    (maybeRequest, maybeMethod) match {
+      case (None, _) => false
+      case (Some(request), None) =>
+        sendMethodNotFound(request.id, request.method)
+        true
+      case (Some(request), Some(method)) =>
         jsonRpcRequestHandler.handle(request, method).onComplete {
           case Success(response) => send(response)
           case Failure(error) => send(JsonRpcResponse(request.id, JsonRpcErrors.internalError.copy(data = Some(error.toString))))
         }
-      } else {
-        sendMethodNotFound(request.id, request.method)
-      }
-      true
+        true
     }
   }
 
   private def maybeHandleNotification(json: String): Boolean = {
     val maybeNotification = jsonDeserializer.deserialize[JsonRpcNotification](json)
-    if (maybeNotification.isEmpty) {
-      false
-    } else {
-      val notification = maybeNotification.get
-      val maybeMethod = jsonRpcMethodRepository.getNotificationMethod(notification.method)
-      if (maybeMethod.isDefined) {
-        val method = maybeMethod.get
-        jsonRpcNotificationHandler.handle(notification, method)
-      } else {
+        .filter(response => response.jsonrpc == Models.jsonRpc)
+    val maybeMethod = maybeNotification
+        .flatMap(notification => jsonRpcMethodRepository.getNotificationMethod(notification.method))
+
+    (maybeNotification, maybeMethod) match {
+      case (None, _) => false
+      case (Some(notification), None) =>
         sendMethodNotFound(notification.method)
-      }
-      true
+        true
+      case (Some(notification), Some(method)) =>
+        jsonRpcNotificationHandler.handle(notification, method)
+        true
     }
   }
 
