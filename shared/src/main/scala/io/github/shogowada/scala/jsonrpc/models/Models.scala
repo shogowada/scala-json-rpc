@@ -28,15 +28,20 @@ object Models {
 
   case class JsonRpcResponse
   (
+      id: Id,
+      result: Any
+  ) extends JsonRpcMessage
+
+  case class JsonRpcErrorResponse
+  (
       id: Option[Id],
-      result: Option[Any],
-      error: Option[JsonRpcError]
+      error: JsonRpcError
   ) extends JsonRpcMessage
 
   object JsonRpcResponse {
-    def apply(error: JsonRpcError) = JsonRpcResponse(id = None, result = None, error = Some(error))
+    def apply(error: JsonRpcError) = JsonRpcErrorResponse(id = None, error = error)
 
-    def apply(id: Id, error: JsonRpcError) = JsonRpcResponse(id = Some(id), result = None, error = Some(error))
+    def apply(id: Id, error: JsonRpcError) = JsonRpcErrorResponse(id = Some(id), error = error)
   }
 
   case class JsonRpcError

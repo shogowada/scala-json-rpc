@@ -6,17 +6,19 @@ import scala.concurrent.Promise
 
 class JsonRpcPromisedResponseRepository {
 
-  private var idToPromisedResponseMap: Map[Id, Promise[JsonRpcResponse]] = Map()
+  private type ErrorOrResult = Either[JsonRpcErrorResponse, JsonRpcResponse]
 
-  def addAndGet(id: Id): Promise[JsonRpcResponse] = {
+  private var idToPromisedResponseMap: Map[Id, Promise[ErrorOrResult]] = Map()
+
+  def addAndGet(id: Id): Promise[ErrorOrResult] = {
     this.synchronized {
-      val promisedResponse: Promise[JsonRpcResponse] = Promise()
+      val promisedResponse: Promise[ErrorOrResult] = Promise()
       idToPromisedResponseMap = idToPromisedResponseMap + (id -> promisedResponse)
       promisedResponse
     }
   }
 
-  def getAndRemove(id: Id): Option[Promise[JsonRpcResponse]] = {
+  def getAndRemove(id: Id): Option[Promise[ErrorOrResult]] = {
     this.synchronized {
       val maybePromisedResponse = idToPromisedResponseMap.get(id)
       idToPromisedResponseMap = idToPromisedResponseMap - id

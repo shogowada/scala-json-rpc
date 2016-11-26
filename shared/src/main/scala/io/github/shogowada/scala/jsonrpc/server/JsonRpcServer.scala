@@ -80,7 +80,7 @@ class JsonRpcServer
     ))
   }
 
-  private def send(response: JsonRpcResponse): Unit = {
+  private def send[T](response: T): Unit = {
     jsonSerializer.serialize(response)
         .foreach(jsonSender.send)
   }

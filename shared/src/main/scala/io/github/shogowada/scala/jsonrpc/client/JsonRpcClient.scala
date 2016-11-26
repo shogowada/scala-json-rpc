@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.communicators.{JsonReceiver, JsonSender}
 import io.github.shogowada.scala.jsonrpc.models.Models
-import io.github.shogowada.scala.jsonrpc.models.Models.{Id, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse}
+import io.github.shogowada.scala.jsonrpc.models.Models._
 import io.github.shogowada.scala.jsonrpc.serializers.{JsonDeserializer, JsonSerializer}
 
 import scala.concurrent.{Future, Promise}
@@ -15,14 +15,16 @@ class JsonRpcClient
     jsonDeserializer: JsonDeserializer
 ) extends JsonReceiver {
 
-  def send(request: JsonRpcRequest): Future[JsonRpcResponse] = {
+  private type ErrorOrResult = Either[JsonRpcErrorResponse, JsonRpcResponse]
+
+  def send(request: JsonRpcRequest): Future[ErrorOrResult] = {
     jsonSerializer.serialize(request)
         .map(json => send(request.id, json))
         .getOrElse(Future.failed(new IllegalArgumentException(s"$request could not be serialized into JSON.")))
   }
 
-  private def send(id: Id, json: String): Future[JsonRpcResponse] = {
-    val promisedResponse: Promise[JsonRpcResponse] = jsonRpcPromisedResponseRepository.addAndGet(id)
+  private def send(id: Id, json: String): Future[ErrorOrResult] = {
+    val promisedResponse: Promise[ErrorOrResult] = jsonRpcPromisedResponseRepository.addAndGet(id)
     jsonSender.send(json)
     promisedResponse.future
   }
@@ -33,15 +35,33 @@ class JsonRpcClient
   }
 
   override def receive(json: String): Unit = {
-    jsonDeserializer.deserialize[JsonRpcResponse](json)
-        .filter(response => response.jsonrpc == Models.jsonRpc)
+    maybeGetResultAsRight(json)
+        .orElse {
+          maybeGetErrorAsLeft(json)
+        }
         .foreach(receive)
   }
 
-  private def receive(response: JsonRpcResponse): Unit = {
-    response.id
+  private def maybeGetResultAsRight(json: String): Option[ErrorOrResult] = {
+    jsonDeserializer.deserialize[JsonRpcResponse](json)
+        .filter(response => response.jsonrpc == Models.jsonRpc)
+        .map(response => Right(response))
+  }
+
+  private def maybeGetErrorAsLeft(json: String): Option[ErrorOrResult] = {
+    jsonDeserializer.deserialize[JsonRpcErrorResponse](json)
+        .filter(response => response.jsonrpc == Models.jsonRpc)
+        .map(response => Left(response))
+  }
+
+  private def receive(errorOrResult: ErrorOrResult): Unit = {
+    errorOrResult
+        .fold(
+          error => error.id,
+          result => Some(result.id)
+        )
         .flatMap((id: Id) => jsonRpcPromisedResponseRepository.getAndRemove(id))
-        .foreach((promisedResponse: Promise[JsonRpcResponse]) => promisedResponse.success(response))
+        .foreach((promisedResponse: Promise[ErrorOrResult]) => promisedResponse.success(errorOrResult))
   }
 }
 
