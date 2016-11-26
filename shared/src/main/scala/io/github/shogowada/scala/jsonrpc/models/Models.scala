@@ -1,10 +1,15 @@
 package io.github.shogowada.scala.jsonrpc.models
 
+import scala.concurrent.Future
+
 object Models {
   val jsonRpc = "2.0"
 
   type Id = Either[String, BigDecimal]
   type Params = Either[Seq[Any], Map[String, Any]]
+
+  type JsonRpcRequestMethod = (JsonRpcRequest) => Future[JsonRpcResponse]
+  type JsonRpcNotificationMethod = (JsonRpcNotification) => Unit
 
   case class JsonRpcMessage(jsonrpc: String = jsonRpc)
 
@@ -29,7 +34,9 @@ object Models {
   ) extends JsonRpcMessage
 
   object JsonRpcResponse {
-    def apply(error: JsonRpcError) = JsonRpcResponse(id = None, result = None, Some(error))
+    def apply(error: JsonRpcError) = JsonRpcResponse(id = None, result = None, error = Some(error))
+
+    def apply(id: Id, error: JsonRpcError) = JsonRpcResponse(id = Some(id), result = None, error = Some(error))
   }
 
   case class JsonRpcError

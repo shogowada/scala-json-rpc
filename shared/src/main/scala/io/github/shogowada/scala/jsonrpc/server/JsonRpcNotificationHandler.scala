@@ -1,7 +1,9 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.models.Models.JsonRpcNotification
+import io.github.shogowada.scala.jsonrpc.models.Models.{JsonRpcNotification, JsonRpcNotificationMethod}
 
-trait JsonRpcNotificationHandler {
-  def handle(notification: JsonRpcNotification)(jsonRpcMethodRepository: JsonRpcMethodRepository): Unit
+class JsonRpcNotificationHandler {
+  def handle(notification: JsonRpcNotification, method: JsonRpcNotificationMethod): Unit = {
+    method(notification)
+  }
 }

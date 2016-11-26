@@ -1,5 +1,5 @@
 package io.github.shogowada.scala.jsonrpc.communicators
 
-trait Sender {
+trait JsonSender {
   def send(json: String): Unit
 }

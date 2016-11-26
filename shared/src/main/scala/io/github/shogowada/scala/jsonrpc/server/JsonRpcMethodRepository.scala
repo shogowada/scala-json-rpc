@@ -1,7 +1,25 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-trait JsonRpcMethodRepository {
-  def bind[T](apiFactory: () => T): Unit
+import io.github.shogowada.scala.jsonrpc.models.Models.{JsonRpcNotificationMethod, JsonRpcRequestMethod}
 
-  def get(method: String)
+class JsonRpcMethodRepository {
+
+  private var nameToRequestMethodMap: Map[String, JsonRpcRequestMethod] = Map()
+  private var nameToNotificationMethodMap: Map[String, JsonRpcNotificationMethod] = Map()
+
+  def bind(name: String, method: JsonRpcRequestMethod): Unit = {
+    nameToRequestMethodMap = nameToRequestMethodMap + (name -> method)
+  }
+
+  def bind(name: String, method: JsonRpcNotificationMethod): Unit = {
+    nameToNotificationMethodMap = nameToNotificationMethodMap + (name -> method)
+  }
+
+  def getRequestMethod(method: String): Option[JsonRpcRequestMethod] = {
+    nameToRequestMethodMap.get(method)
+  }
+
+  def getNotificationMethod(method: String): Option[JsonRpcNotificationMethod] = {
+    nameToNotificationMethodMap.get(method)
+  }
 }
