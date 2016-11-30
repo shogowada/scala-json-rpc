@@ -12,6 +12,8 @@ object Models {
 
   case class JsonRpcMessage(jsonrpc: String = jsonRpc)
 
+  case class JsonRpcMethod(id: Option[Id], method: String) extends JsonRpcMessage
+
   case class JsonRpcRequest[PARAMS]
   (
       id: Id,

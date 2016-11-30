@@ -5,47 +5,52 @@ import io.github.shogowada.scala.jsonrpc.models.Models
 import io.github.shogowada.scala.jsonrpc.models.Models._
 import io.github.shogowada.scala.jsonrpc.serializers.{JsonDeserializer, JsonSerializer}
 
-import scala.util.{Failure, Success}
-
-class JsonRpcRequestServer[PARAMS, ERROR, RESULT]
+class JsonRpcServer
 (
     jsonSender: JsonSender,
     jsonSerializer: JsonSerializer,
-    jsonDeserializer: JsonDeserializer,
-    val methodName: String,
-    method: JsonRpcRequestMethod[PARAMS, ERROR, RESULT]
+    jsonDeserializer: JsonDeserializer
 ) extends JsonReceiver {
 
-  override def receive(json: String): Unit = {
-    jsonDeserializer.deserialize[JsonRpcRequest[PARAMS]](json)
-        .filter(request => request.jsonrpc == Models.jsonRpc)
-        .filter(request => request.method == methodName)
-        .foreach(handle)
+  var methodNameToJsonReceiverMap: Map[String, JsonReceiver] = Map()
+
+  def bind[PARAMS, ERROR, RESULT](methodName: String, method: JsonRpcRequestMethod[PARAMS, ERROR, RESULT]): Unit = {
+    val server = new JsonRpcRequestSingleMethodServer[PARAMS, ERROR, RESULT](jsonSender, jsonSerializer, jsonDeserializer, methodName, method)
+    bind(methodName, server)
   }
 
-  private def handle(request: JsonRpcRequest[PARAMS]): Unit = {
-    method(request).onComplete {
-      case Success(result) => send(result)
-      case Failure(error) => send(JsonRpcResponse(request.id, JsonRpcErrors.internalError.copy(data = Some(error.toString))))
+  def bind[PARAMS](methodName: String, method: JsonRpcNotificationMethod[PARAMS]): Unit = {
+    val server = new JsonRpcNotificationSingleMethodServer[PARAMS](jsonDeserializer, methodName, method)
+    bind(methodName, server)
+  }
+
+  private def bind(methodName: String, jsonReceiver: JsonReceiver): Unit = {
+    this.synchronized {
+      methodNameToJsonReceiverMap = methodNameToJsonReceiverMap + (methodName -> jsonReceiver)
     }
   }
 
-  private def send[T](response: T): Unit = {
-    jsonSerializer.serialize(response)
-        .foreach(jsonSender.send)
-  }
-}
-
-class JsonRpcNotificationServer[PARAMS]
-(
-    jsonDeserializer: JsonDeserializer,
-    val methodName: String,
-    method: JsonRpcNotificationMethod[PARAMS]
-) extends JsonReceiver {
   override def receive(json: String): Unit = {
-    jsonDeserializer.deserialize[JsonRpcNotification[PARAMS]](json)
-        .filter(notification => notification.jsonrpc == Models.jsonRpc)
-        .filter(notification => notification.method == methodName)
-        .foreach(method)
+    val errorOrJsonRpcMethod: Either[JsonRpcErrorResponse[String], JsonRpcMethod] =
+      jsonDeserializer.deserialize[JsonRpcMethod](json)
+          .filter(method => method.jsonrpc == Models.jsonRpc)
+          .toRight(JsonRpcResponse(JsonRpcErrors.invalidRequest))
+
+    val errorOrJsonReceiver: Either[JsonRpcErrorResponse[String], JsonReceiver] =
+      errorOrJsonRpcMethod.right
+          .flatMap((jsonRpcMethod: JsonRpcMethod) => {
+            methodNameToJsonReceiverMap.get(jsonRpcMethod.method)
+                .toRight(JsonRpcResponse(JsonRpcErrors.methodNotFound.copy(data = Option(s"Method with name '${jsonRpcMethod.method}' was not found."))))
+          })
+
+    errorOrJsonReceiver.fold(
+      (error: JsonRpcErrorResponse[String]) => send(error),
+      (jsonReceiver: JsonReceiver) => jsonReceiver.receive(json)
+    )
+  }
+
+  private def send[T](payload: T): Unit = {
+    jsonSerializer.serialize(payload)
+        .foreach(jsonSender.send)
   }
 }

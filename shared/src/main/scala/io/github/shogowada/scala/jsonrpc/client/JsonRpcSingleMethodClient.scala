@@ -7,18 +7,18 @@ import io.github.shogowada.scala.jsonrpc.serializers.{JsonDeserializer, JsonSeri
 
 import scala.concurrent.{Future, Promise}
 
-class JsonRpcClient[PARAMS, ERROR, RESULT]
+class JsonRpcSingleMethodClient[PARAMS, ERROR, RESULT]
 (
     jsonRpcPromisedResponseRepository: JsonRpcPromisedResponseRepository[ERROR, RESULT],
     jsonSender: JsonSender,
     jsonSerializer: JsonSerializer,
     jsonDeserializer: JsonDeserializer,
-    val method: String
+    method: String
 ) extends JsonReceiver {
 
   private type ErrorOrResult = Either[JsonRpcErrorResponse[ERROR], JsonRpcResponse[RESULT]]
 
-  def send(request: JsonRpcRequest): Future[ErrorOrResult] = {
+  def send(request: JsonRpcRequest[PARAMS]): Future[ErrorOrResult] = {
     jsonSerializer.serialize(request)
         .map(json => send(request.id, json))
         .getOrElse(Future.failed(new IllegalArgumentException(s"$request could not be serialized into JSON.")))
