@@ -69,3 +69,8 @@ class JsonRpcServer
         .foreach(jsonSender.send)
   }
 }
+
+object JsonRpcServer {
+  def apply(jsonSender: JsonSender, jsonSerializer: JsonSerializer, jsonDeserializer: JsonDeserializer) =
+    new JsonRpcServer(jsonSender, jsonSerializer, jsonDeserializer)
+}

@@ -11,6 +11,12 @@ val commonSettings = Seq(
 
 lazy val core = (crossProject in file("."))
     .settings(commonSettings: _*)
+    .settings(
+      libraryDependencies ++= Seq(
+        "com.lihaoyi" %%% "upickle" % "0.4.+" % "test",
+        "org.scalatest" %%% "scalatest" % "3.+" % "test"
+      )
+    )
 
 lazy val jvm = core.jvm
 lazy val js = core.js

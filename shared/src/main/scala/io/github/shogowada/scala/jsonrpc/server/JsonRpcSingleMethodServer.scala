@@ -16,6 +16,8 @@ class JsonRpcRequestSingleMethodServer[PARAMS, ERROR, RESULT]
     method: JsonRpcRequestMethod[PARAMS, ERROR, RESULT]
 ) extends JsonReceiver {
 
+  import scala.concurrent.ExecutionContext.Implicits.global
+
   override def receive(json: String): Unit = {
     jsonDeserializer.deserialize[JsonRpcRequest[PARAMS]](json)
         .filter(request => request.jsonrpc == Models.jsonRpc)
@@ -25,8 +27,9 @@ class JsonRpcRequestSingleMethodServer[PARAMS, ERROR, RESULT]
 
   private def handle(request: JsonRpcRequest[PARAMS]): Unit = {
     method(request).onComplete {
-      case Success(result: RESULT) => send(result)
-      case Failure(error: ERROR) => send(JsonRpcResponse(request.id, JsonRpcErrors.internalError.copy(data = Some(error.toString))))
+      case Success(Right(result: JsonRpcResponse[RESULT])) => send(result)
+      case Success(Left(error: JsonRpcErrorResponse[ERROR])) => send(error)
+      case Failure(error) => send(JsonRpcResponse(request.id, JsonRpcErrors.internalError.copy(data = Some(error.toString))))
     }
   }
 

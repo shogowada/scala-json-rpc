@@ -10,34 +10,36 @@ object Models {
   type JsonRpcRequestMethod[PARAMS, ERROR, RESULT] = (JsonRpcRequest[PARAMS]) => Future[Either[JsonRpcErrorResponse[ERROR], JsonRpcResponse[RESULT]]]
   type JsonRpcNotificationMethod[PARAMS] = (JsonRpcNotification[PARAMS]) => Unit
 
-  case class JsonRpcMessage(jsonrpc: String = jsonRpc)
-
-  case class JsonRpcMethod(id: Option[Id], method: String) extends JsonRpcMessage
+  case class JsonRpcMethod(jsonrpc: String = jsonRpc, id: Option[Id], method: String)
 
   case class JsonRpcRequest[PARAMS]
   (
+      jsonrpc: String = jsonRpc,
       id: Id,
       method: String,
       params: PARAMS
-  ) extends JsonRpcMessage
+  )
 
   case class JsonRpcNotification[PARAMS]
   (
+      jsonrpc: String = jsonRpc,
       method: String,
       params: PARAMS
-  ) extends JsonRpcMessage
+  )
 
   case class JsonRpcResponse[RESULT]
   (
+      jsonrpc: String = jsonRpc,
       id: Id,
       result: RESULT
-  ) extends JsonRpcMessage
+  )
 
   case class JsonRpcErrorResponse[ERROR]
   (
+      jsonrpc: String = jsonRpc,
       id: Option[Id],
       error: JsonRpcError[ERROR]
-  ) extends JsonRpcMessage
+  )
 
   object JsonRpcResponse {
     def apply[ERROR](error: JsonRpcError[ERROR]) = JsonRpcErrorResponse(id = None, error = error)
@@ -53,9 +55,11 @@ object Models {
   )
 
   object JsonRpcError {
-    def apply(code: Int, message: String) = JsonRpcError[String](code, message, None)
+    def apply(code: Int, message: String): JsonRpcError[String] =
+      JsonRpcError[String](code, message, None)
 
-    def apply[T](code: Int, message: String, data: T) = JsonRpcError[T](code, message, Option(data))
+    def apply[ERROR](code: Int, message: String, data: ERROR): JsonRpcError[ERROR] =
+      JsonRpcError[ERROR](code, message, Option(data))
   }
 
   object JsonRpcErrors {
