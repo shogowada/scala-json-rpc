@@ -1,20 +1,20 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import java.lang.reflect.{Method, Proxy => JavaProxy}
+import java.lang.reflect.Method
 
-import io.github.shogowada.scala.jsonrpc.communicators.{JsonReceiver, JsonSender}
-import io.github.shogowada.scala.jsonrpc.models.Models
-import io.github.shogowada.scala.jsonrpc.models.Models._
-import io.github.shogowada.scala.jsonrpc.serializers.{JsonDeserializer, JsonSerializer}
+import io.github.shogowada.scala.jsonrpc.models.Types.{JsonRpcNotificationMethod, JsonRpcRequestMethod}
+import io.github.shogowada.scala.jsonrpc.models._
+import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 
+import scala.concurrent.Future
 import scala.reflect.{ClassTag, classTag}
 
 class JsonRpcServer
 (
-    jsonSender: JsonSender,
-    jsonSerializer: JsonSerializer,
-    jsonDeserializer: JsonDeserializer
+    jsonSerializer: JsonSerializer
 ) extends JsonReceiver {
+
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   var methodNameToJsonReceiverMap: Map[String, JsonReceiver] = Map()
 
@@ -28,12 +28,12 @@ class JsonRpcServer
   }
 
   def bindRequestMethod[PARAMS, ERROR, RESULT](methodName: String, method: JsonRpcRequestMethod[PARAMS, ERROR, RESULT]): Unit = {
-    val server = new JsonRpcRequestSingleMethodServer[PARAMS, ERROR, RESULT](jsonSender, jsonSerializer, jsonDeserializer, methodName, method)
+    val server = new JsonRpcRequestSingleMethodServer[PARAMS, ERROR, RESULT](jsonSerializer, methodName, method)
     bind(methodName, server)
   }
 
   def bindNotificationMethod[PARAMS](methodName: String, method: JsonRpcNotificationMethod[PARAMS]): Unit = {
-    val server = new JsonRpcNotificationSingleMethodServer[PARAMS](jsonDeserializer, methodName, method)
+    val server = new JsonRpcNotificationSingleMethodServer[PARAMS](jsonSerializer, methodName, method)
     bind(methodName, server)
   }
 
@@ -43,34 +43,31 @@ class JsonRpcServer
     }
   }
 
-  override def receive(json: String): Unit = {
+  override def receive(json: String): Future[Option[String]] = {
     val errorOrJsonRpcMethod: Either[JsonRpcErrorResponse[String], JsonRpcMethod] =
-      jsonDeserializer.deserialize[JsonRpcMethod](json)
-          .filter(method => method.jsonrpc == Models.jsonRpc)
+      jsonSerializer.deserialize[JsonRpcMethod](json)
+          .filter(method => method.jsonrpc == Constants.JsonRpc)
           .toRight(JsonRpcResponse(JsonRpcErrors.invalidRequest))
 
     val errorOrJsonReceiver: Either[JsonRpcErrorResponse[String], JsonReceiver] =
       errorOrJsonRpcMethod.right
           .flatMap((jsonRpcMethod: JsonRpcMethod) => getErrorOrJsonReceiver(jsonRpcMethod))
 
-    errorOrJsonReceiver.fold(
-      (error: JsonRpcErrorResponse[String]) => send(error),
+    val maybeJsonFuture: Future[Option[String]] = errorOrJsonReceiver.fold(
+      (error: JsonRpcErrorResponse[String]) => Future(jsonSerializer.serialize(error)),
       (jsonReceiver: JsonReceiver) => jsonReceiver.receive(json)
     )
+
+    maybeJsonFuture
   }
 
   private def getErrorOrJsonReceiver(jsonRpcMethod: JsonRpcMethod): Either[JsonRpcErrorResponse[String], JsonReceiver] = {
     methodNameToJsonReceiverMap.get(jsonRpcMethod.method)
         .toRight(JsonRpcResponse(JsonRpcErrors.methodNotFound.copy(data = Option(s"Method with name '${jsonRpcMethod.method}' was not found."))))
   }
-
-  private def send[T](payload: T): Unit = {
-    jsonSerializer.serialize(payload)
-        .foreach(jsonSender.send)
-  }
 }
 
 object JsonRpcServer {
-  def apply(jsonSender: JsonSender, jsonSerializer: JsonSerializer, jsonDeserializer: JsonDeserializer) =
-    new JsonRpcServer(jsonSender, jsonSerializer, jsonDeserializer)
+  def apply(jsonSerializer: JsonSerializer) =
+    new JsonRpcServer(jsonSerializer)
 }

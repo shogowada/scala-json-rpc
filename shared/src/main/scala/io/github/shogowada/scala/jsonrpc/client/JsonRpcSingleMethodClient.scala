@@ -1,9 +1,8 @@
 package io.github.shogowada.scala.jsonrpc.client
 
-import io.github.shogowada.scala.jsonrpc.communicators.{JsonReceiver, JsonSender}
-import io.github.shogowada.scala.jsonrpc.models.Models
-import io.github.shogowada.scala.jsonrpc.models.Models._
-import io.github.shogowada.scala.jsonrpc.serializers.{JsonDeserializer, JsonSerializer}
+import io.github.shogowada.scala.jsonrpc.models.Types.Id
+import io.github.shogowada.scala.jsonrpc.models._
+import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 
 import scala.concurrent.{Future, Promise}
 
@@ -12,7 +11,6 @@ class JsonRpcSingleMethodClient[PARAMS, ERROR, RESULT]
     jsonRpcPromisedResponseRepository: JsonRpcPromisedResponseRepository[ERROR, RESULT],
     jsonSender: JsonSender,
     jsonSerializer: JsonSerializer,
-    jsonDeserializer: JsonDeserializer,
     method: String
 ) extends JsonReceiver {
 
@@ -44,14 +42,14 @@ class JsonRpcSingleMethodClient[PARAMS, ERROR, RESULT]
   }
 
   private def maybeGetResultAsRight(json: String): Option[ErrorOrResult] = {
-    jsonDeserializer.deserialize[JsonRpcResponse[RESULT]](json)
-        .filter(response => response.jsonrpc == Models.jsonRpc)
+    jsonSerializer.deserialize[JsonRpcResponse[RESULT]](json)
+        .filter(response => response.jsonrpc == Constants.JsonRpc)
         .map(response => Right(response))
   }
 
   private def maybeGetErrorAsLeft(json: String): Option[ErrorOrResult] = {
-    jsonDeserializer.deserialize[JsonRpcErrorResponse[ERROR]](json)
-        .filter(response => response.jsonrpc == Models.jsonRpc)
+    jsonSerializer.deserialize[JsonRpcErrorResponse[ERROR]](json)
+        .filter(response => response.jsonrpc == Constants.JsonRpc)
         .map(response => Left(response))
   }
 

@@ -1,30 +1,20 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.communicators.JsonSender
-import io.github.shogowada.scala.jsonrpc.models.Models.JsonRpcRequest
-import io.github.shogowada.scala.jsonrpc.serializers.{JsonDeserializer, JsonSerializer}
+import io.github.shogowada.scala.jsonrpc.models.JsonRpcRequest
+import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import org.scalatest.path
+import upickle.default._
 
-import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-
-class FakeJsonSender extends JsonSender {
-  val sentJsons: mutable.MutableList[String] = mutable.MutableList()
-
-  override def send(json: String): Unit = {
-    sentJsons += json
-  }
-}
 
 class FakeJsonSerializer extends JsonSerializer {
   override def serialize[T](value: T): Option[String] = {
-    Option(upickle.default.write(value))
+    Option(write[T](value))
   }
-}
 
-class FakeJsonDeserializer extends JsonDeserializer {
   override def deserialize[T](json: String): Option[T] = {
-    Option(upickle.default.read(json))
+    Option(read[T](json))
   }
 }
 
@@ -37,15 +27,9 @@ class FakeApi {
 class JsonRpcServerTest extends path.FunSpec {
   override def newInstance: path.FunSpecLike = new JsonRpcServerTest
 
-  val jsonSender = new FakeJsonSender
   val jsonSerializer = new FakeJsonSerializer
-  val jsonDeserializer = new FakeJsonDeserializer
 
-  val target = JsonRpcServer(
-    jsonSender,
-    jsonSerializer,
-    jsonDeserializer
-  )
+  val target = JsonRpcServer(jsonSerializer)
 
   describe("given I have an API bound") {
     val api = new FakeApi
@@ -55,11 +39,11 @@ class JsonRpcServerTest extends path.FunSpec {
     describe("when I received request") {
       val requestId = "request ID"
       val request = JsonRpcRequest(
-        id = Left(requestId),
+        id = requestId,
         method = "foo",
-        params = Seq()
+        params = ("bar", 1)
       )
-      val requestJson = upickle.default.write(request)
+      val requestJson: String = write(request)
 
       target.receive(requestJson)
     }

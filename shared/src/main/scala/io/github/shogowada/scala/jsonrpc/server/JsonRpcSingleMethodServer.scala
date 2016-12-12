@@ -1,54 +1,54 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.communicators.{JsonReceiver, JsonSender}
-import io.github.shogowada.scala.jsonrpc.models.Models
-import io.github.shogowada.scala.jsonrpc.models.Models._
-import io.github.shogowada.scala.jsonrpc.serializers.{JsonDeserializer, JsonSerializer}
+import io.github.shogowada.scala.jsonrpc.models.Types.{JsonRpcNotificationMethod, JsonRpcRequestMethod}
+import io.github.shogowada.scala.jsonrpc.models._
+import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 
-import scala.util.{Failure, Success}
+import scala.concurrent.Future
 
 class JsonRpcRequestSingleMethodServer[PARAMS, ERROR, RESULT]
 (
-    jsonSender: JsonSender,
     jsonSerializer: JsonSerializer,
-    jsonDeserializer: JsonDeserializer,
     methodName: String,
     method: JsonRpcRequestMethod[PARAMS, ERROR, RESULT]
 ) extends JsonReceiver {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override def receive(json: String): Unit = {
-    jsonDeserializer.deserialize[JsonRpcRequest[PARAMS]](json)
-        .filter(request => request.jsonrpc == Models.jsonRpc)
+  override def receive(json: String): Future[Option[String]] = {
+    jsonSerializer.deserialize[JsonRpcRequest[PARAMS]](json)
+        .filter(request => request.jsonrpc == Constants.JsonRpc)
         .filter(request => request.method == methodName)
-        .foreach(handle)
+        .map(handle)
+        .getOrElse(Future(None))
   }
 
-  private def handle(request: JsonRpcRequest[PARAMS]): Unit = {
-    method(request).onComplete {
-      case Success(Right(result: JsonRpcResponse[RESULT])) => send(result)
-      case Success(Left(error: JsonRpcErrorResponse[ERROR])) => send(error)
-      case Failure(error) => send(JsonRpcResponse(request.id, JsonRpcErrors.internalError.copy(data = Some(error.toString))))
+  private def handle(request: JsonRpcRequest[PARAMS]): Future[Option[String]] = {
+    method(request).map {
+      case Right(result: JsonRpcResponse[RESULT]) => jsonSerializer.serialize(result)
+      case Left(error: JsonRpcErrorResponse[ERROR]) => jsonSerializer.serialize(error)
     }
-  }
-
-  private def send[T](response: T): Unit = {
-    jsonSerializer.serialize(response)
-        .foreach(jsonSender.send)
   }
 }
 
 class JsonRpcNotificationSingleMethodServer[PARAMS]
 (
-    jsonDeserializer: JsonDeserializer,
+    jsonSerializer: JsonSerializer,
     methodName: String,
     method: JsonRpcNotificationMethod[PARAMS]
 ) extends JsonReceiver {
-  override def receive(json: String): Unit = {
-    jsonDeserializer.deserialize[JsonRpcNotification[PARAMS]](json)
-        .filter(notification => notification.jsonrpc == Models.jsonRpc)
-        .filter(notification => notification.method == methodName)
-        .foreach(method)
+
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  override def receive(json: String): Future[Option[String]] = {
+    Future(
+      jsonSerializer.deserialize[JsonRpcNotification[PARAMS]](json)
+          .filter(notification => notification.jsonrpc == Constants.JsonRpc)
+          .filter(notification => notification.method == methodName)
+          .flatMap(notification => {
+            method(notification)
+            None
+          })
+    )
   }
 }
