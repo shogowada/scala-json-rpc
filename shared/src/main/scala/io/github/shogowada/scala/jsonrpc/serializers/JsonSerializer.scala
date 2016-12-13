@@ -1,7 +1,9 @@
 package io.github.shogowada.scala.jsonrpc.serializers
 
-trait JsonSerializer {
-  def serialize[T](value: T): Option[String]
+import scala.language.higherKinds
 
-  def deserialize[T](json: String): Option[T]
+trait JsonSerializer[SERIALIZER[_], DESERIALIZER[_]] {
+  def serialize[T: SERIALIZER](value: T): Option[String]
+
+  def deserialize[T: DESERIALIZER](json: String): Option[T]
 }

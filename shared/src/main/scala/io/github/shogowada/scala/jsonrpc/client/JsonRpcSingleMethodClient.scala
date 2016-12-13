@@ -5,12 +5,13 @@ import io.github.shogowada.scala.jsonrpc.models._
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 
 import scala.concurrent.{Future, Promise}
+import scala.language.higherKinds
 
-class JsonRpcSingleMethodClient[PARAMS, ERROR, RESULT]
+class JsonRpcSingleMethodClient[SERIALIZER[_], DESERIALIZER[_], PARAMS, ERROR, RESULT]
 (
     jsonRpcPromisedResponseRepository: JsonRpcPromisedResponseRepository[ERROR, RESULT],
     jsonSender: JsonSender,
-    jsonSerializer: JsonSerializer,
+    jsonSerializer: JsonSerializer[SERIALIZER, DESERIALIZER],
     method: String
 ) extends JsonReceiver {
 

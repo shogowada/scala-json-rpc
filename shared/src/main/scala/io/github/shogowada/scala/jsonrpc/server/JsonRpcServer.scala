@@ -7,12 +7,10 @@ import io.github.shogowada.scala.jsonrpc.models._
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 
 import scala.concurrent.Future
+import scala.language.higherKinds
 import scala.reflect.{ClassTag, classTag}
 
-class JsonRpcServer
-(
-    jsonSerializer: JsonSerializer
-) extends JsonReceiver {
+class JsonRpcServer() extends JsonReceiver {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -28,12 +26,12 @@ class JsonRpcServer
   }
 
   def bindRequestMethod[PARAMS, ERROR, RESULT](methodName: String, method: JsonRpcRequestMethod[PARAMS, ERROR, RESULT]): Unit = {
-    val server = new JsonRpcRequestSingleMethodServer[PARAMS, ERROR, RESULT](jsonSerializer, methodName, method)
+    val server = new JsonRpcRequestSingleMethodServer[PARAMS, ERROR, RESULT](methodName, method)
     bind(methodName, server)
   }
 
   def bindNotificationMethod[PARAMS](methodName: String, method: JsonRpcNotificationMethod[PARAMS]): Unit = {
-    val server = new JsonRpcNotificationSingleMethodServer[PARAMS](jsonSerializer, methodName, method)
+    val server = new JsonRpcNotificationSingleMethodServer[PARAMS](methodName, method)
     bind(methodName, server)
   }
 
@@ -43,7 +41,12 @@ class JsonRpcServer
     }
   }
 
-  override def receive(json: String): Future[Option[String]] = {
+  override def receive[SERIALIZER[_], DESERIALIZER[_]]
+  (
+      json: String
+  )(
+      jsonSerializer: JsonSerializer[SERIALIZER, DESERIALIZER]
+  ): Future[Option[String]] = {
     val errorOrJsonRpcMethod: Either[JsonRpcErrorResponse[String], JsonRpcMethod] =
       jsonSerializer.deserialize[JsonRpcMethod](json)
           .filter(method => method.jsonrpc == Constants.JsonRpc)
@@ -55,7 +58,7 @@ class JsonRpcServer
 
     val maybeJsonFuture: Future[Option[String]] = errorOrJsonReceiver.fold(
       (error: JsonRpcErrorResponse[String]) => Future(jsonSerializer.serialize(error)),
-      (jsonReceiver: JsonReceiver) => jsonReceiver.receive(json)
+      (jsonReceiver: JsonReceiver) => jsonReceiver.receive(json)(jsonSerializer)
     )
 
     maybeJsonFuture
@@ -68,6 +71,5 @@ class JsonRpcServer
 }
 
 object JsonRpcServer {
-  def apply(jsonSerializer: JsonSerializer) =
-    new JsonRpcServer(jsonSerializer)
+  def apply() = new JsonRpcServer()
 }

@@ -8,12 +8,12 @@ import upickle.default._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class FakeJsonSerializer extends JsonSerializer {
-  override def serialize[T](value: T): Option[String] = {
+class FakeJsonSerializer extends JsonSerializer[Writer, Reader] {
+  override def serialize[T: Writer](value: T): Option[String] = {
     Option(write[T](value))
   }
 
-  override def deserialize[T](json: String): Option[T] = {
+  override def deserialize[T: Reader](json: String): Option[T] = {
     Option(read[T](json))
   }
 }
@@ -29,7 +29,7 @@ class JsonRpcServerTest extends path.FunSpec {
 
   val jsonSerializer = new FakeJsonSerializer
 
-  val target = JsonRpcServer(jsonSerializer)
+  val target = JsonRpcServer()
 
   describe("given I have an API bound") {
     val api = new FakeApi
@@ -45,7 +45,7 @@ class JsonRpcServerTest extends path.FunSpec {
       )
       val requestJson: String = write(request)
 
-      target.receive(requestJson)
+      target.receive(requestJson)(jsonSerializer)
     }
   }
 }
