@@ -1,14 +1,13 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import java.lang.reflect.Method
-
 import io.github.shogowada.scala.jsonrpc.models.Types.{JsonRpcNotificationMethod, JsonRpcRequestMethod}
 import io.github.shogowada.scala.jsonrpc.models._
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 
 import scala.concurrent.Future
+import scala.language.experimental.macros
 import scala.language.higherKinds
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.macros.blackbox
 
 class JsonRpcServer() extends JsonReceiver {
 
@@ -16,14 +15,7 @@ class JsonRpcServer() extends JsonReceiver {
 
   var methodNameToJsonReceiverMap: Map[String, JsonReceiver] = Map()
 
-  def bindApi[API: ClassTag](api: API): Unit = {
-    val clazz: Class[_] = classTag[API].runtimeClass
-    clazz.getMethods.foreach(method => bindApiMethod(api, method))
-  }
-
-  private def bindApiMethod[API](api: API, method: Method): Unit = {
-    JsonRpcApiMethodBinder().bind[API](this, api, method)
-  }
+  def bindApi[SERIALIZER[_], DESERIALIZER[_], API](api: API, jsonSerializer: JsonSerializer[SERIALIZER, DESERIALIZER]): Unit = macro JsonRpcServerImpl.bindApi[SERIALIZER, DESERIALIZER, API]
 
   def bindRequestMethod[PARAMS, ERROR, RESULT](methodName: String, method: JsonRpcRequestMethod[PARAMS, ERROR, RESULT]): Unit = {
     val server = new JsonRpcRequestSingleMethodServer[PARAMS, ERROR, RESULT](methodName, method)
@@ -72,4 +64,20 @@ class JsonRpcServer() extends JsonReceiver {
 
 object JsonRpcServer {
   def apply() = new JsonRpcServer()
+}
+
+object JsonRpcServerImpl {
+  def bindApi[SERIALIZER[_], DESERIALIZER[_], API: c.WeakTypeTag]
+  (c: blackbox.Context)
+  (api: c.Expr[API], jsonSerializer: c.Expr[JsonSerializer[SERIALIZER, DESERIALIZER]])
+  : c.Expr[Unit] = {
+    import c.universe._
+    val apiType: Type = weakTypeOf[API]
+    val apiMembers: MemberScope = apiType.members
+    apiMembers.foreach(apiMember => {
+      val methodName = s"${apiType.typeSymbol.fullName}.${apiMember.fullName}"
+      
+    })
+    c.Expr[Unit](q"")
+  }
 }

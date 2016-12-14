@@ -13,6 +13,8 @@ lazy val core = (crossProject in file("."))
     .settings(commonSettings: _*)
     .settings(
       libraryDependencies ++= Seq(
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+
         "com.lihaoyi" %%% "upickle" % "0.4.+" % "test",
         "org.scalatest" %%% "scalatest" % "3.+" % "test"
       )

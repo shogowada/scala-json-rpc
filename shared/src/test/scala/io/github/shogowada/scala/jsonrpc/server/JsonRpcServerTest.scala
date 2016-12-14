@@ -34,7 +34,7 @@ class JsonRpcServerTest extends path.FunSpec {
   describe("given I have an API bound") {
     val api = new FakeApi
 
-    target.bindApi(api)
+    target.bindApi(api, jsonSerializer)
 
     describe("when I received request") {
       val requestId = "request ID"

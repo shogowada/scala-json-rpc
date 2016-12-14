@@ -31,7 +31,7 @@ class JsonRpcSingleMethodClient[SERIALIZER[_], DESERIALIZER[_], PARAMS, ERROR, R
 
   def send(notification: JsonRpcNotification[PARAMS]): Unit = {
     jsonSerializer.serialize(notification)
-        .foreach(jsonSender.send)
+        .foreach(jsonSender.send(_))
   }
 
   override def receive(json: String): Unit = {
