@@ -38,14 +38,14 @@ class JsonRpcServerTest extends path.FunSpec {
 
     describe("when I received request") {
       val requestId = "request ID"
-      val request = JsonRpcRequest(
+      val request: JsonRpcRequest[(String, Int)] = JsonRpcRequest(
         id = requestId,
         method = "foo",
         params = ("bar", 1)
       )
-      val requestJson: String = write(request)
+      val requestJson: String = write[JsonRpcRequest[(String, Int)]](request)
 
-      target.receive(requestJson)(jsonSerializer)
+//      target.receive(requestJson, jsonSerializer)
     }
   }
 }

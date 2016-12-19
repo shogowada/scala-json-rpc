@@ -18,7 +18,8 @@ class JsonRpcSingleMethodClient[SERIALIZER[_], DESERIALIZER[_], PARAMS, ERROR, R
   private type ErrorOrResult = Either[JsonRpcErrorResponse[ERROR], JsonRpcResponse[RESULT]]
 
   def send(request: JsonRpcRequest[PARAMS]): Future[ErrorOrResult] = {
-    jsonSerializer.serialize(request)
+//    jsonSerializer.serialize(request)
+    None
         .map(json => send(request.id, json))
         .getOrElse(Future.failed(new IllegalArgumentException(s"$request could not be serialized into JSON.")))
   }
@@ -30,7 +31,8 @@ class JsonRpcSingleMethodClient[SERIALIZER[_], DESERIALIZER[_], PARAMS, ERROR, R
   }
 
   def send(notification: JsonRpcNotification[PARAMS]): Unit = {
-    jsonSerializer.serialize(notification)
+//    jsonSerializer.serialize(notification)
+    None
         .foreach(jsonSender.send(_))
   }
 
@@ -43,15 +45,17 @@ class JsonRpcSingleMethodClient[SERIALIZER[_], DESERIALIZER[_], PARAMS, ERROR, R
   }
 
   private def maybeGetResultAsRight(json: String): Option[ErrorOrResult] = {
-    jsonSerializer.deserialize[JsonRpcResponse[RESULT]](json)
-        .filter(response => response.jsonrpc == Constants.JsonRpc)
-        .map(response => Right(response))
+//    jsonSerializer.deserialize[JsonRpcResponse[RESULT]](json)
+//        .filter(response => response.jsonrpc == Constants.JsonRpc)
+//        .map(response => Right(response))
+    None
   }
 
   private def maybeGetErrorAsLeft(json: String): Option[ErrorOrResult] = {
-    jsonSerializer.deserialize[JsonRpcErrorResponse[ERROR]](json)
-        .filter(response => response.jsonrpc == Constants.JsonRpc)
-        .map(response => Left(response))
+//    jsonSerializer.deserialize[JsonRpcErrorResponse[ERROR]](json)
+//        .filter(response => response.jsonrpc == Constants.JsonRpc)
+//        .map(response => Left(response))
+    None
   }
 
   private def handle(errorOrResult: ErrorOrResult): Unit = {

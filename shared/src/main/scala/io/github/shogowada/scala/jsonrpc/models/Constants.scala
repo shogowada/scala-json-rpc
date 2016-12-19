@@ -13,7 +13,7 @@ object Types {
   type JsonRpcNotificationMethod[PARAMS] = (JsonRpcNotification[PARAMS]) => Unit
 }
 
-case class JsonRpcMethod(jsonrpc: String, id: Option[Either[String, BigDecimal]], method: String)
+case class JsonRpcMethod(jsonrpc: String, method: String)
 
 case class JsonRpcRequest[PARAMS]
 (

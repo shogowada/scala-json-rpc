@@ -21,11 +21,12 @@ class JsonRpcRequestSingleMethodServer[PARAMS, ERROR, RESULT]
   )(
       jsonSerializer: JsonSerializer[SERIALIZER, DESERIALIZER]
   ): Future[Option[String]] = {
-    jsonSerializer.deserialize[JsonRpcRequest[PARAMS]](json)
-        .filter(request => request.jsonrpc == Constants.JsonRpc)
-        .filter(request => request.method == methodName)
-        .map(request => handle(request)(jsonSerializer))
-        .getOrElse(Future(None))
+//    jsonSerializer.deserialize[JsonRpcRequest[PARAMS]](json)
+//        .filter(request => request.jsonrpc == Constants.JsonRpc)
+//        .filter(request => request.method == methodName)
+//        .map(request => handle(request)(jsonSerializer))
+//        .getOrElse(Future(None))
+    Future(None)
   }
 
   private def handle[SERIALIZER[_], DESERIALIZER[_]]
@@ -34,10 +35,11 @@ class JsonRpcRequestSingleMethodServer[PARAMS, ERROR, RESULT]
   )(
       jsonSerializer: JsonSerializer[SERIALIZER, DESERIALIZER]
   ): Future[Option[String]] = {
-    method(request).map {
-      case Right(result: JsonRpcResponse[RESULT]) => jsonSerializer.serialize(result)
-      case Left(error: JsonRpcErrorResponse[ERROR]) => jsonSerializer.serialize(error)
-    }
+//    method(request).map {
+//      case Right(result: JsonRpcResponse[RESULT]) => jsonSerializer.serialize(result)
+//      case Left(error: JsonRpcErrorResponse[ERROR]) => jsonSerializer.serialize(error)
+//    }
+    Future(None)
   }
 }
 
@@ -56,13 +58,14 @@ class JsonRpcNotificationSingleMethodServer[PARAMS]
       jsonSerializer: JsonSerializer[SERIALIZER, DESERIALIZER]
   ): Future[Option[String]] = {
     Future(
-      jsonSerializer.deserialize[JsonRpcNotification[PARAMS]](json)
-          .filter(notification => notification.jsonrpc == Constants.JsonRpc)
-          .filter(notification => notification.method == methodName)
-          .flatMap(notification => {
-            method(notification)
-            None
-          })
+//      jsonSerializer.deserialize[JsonRpcNotification[PARAMS]](json)
+//          .filter(notification => notification.jsonrpc == Constants.JsonRpc)
+//          .filter(notification => notification.method == methodName)
+//          .flatMap(notification => {
+//            method(notification)
+//            None
+//          })
+      None
     )
   }
 }
