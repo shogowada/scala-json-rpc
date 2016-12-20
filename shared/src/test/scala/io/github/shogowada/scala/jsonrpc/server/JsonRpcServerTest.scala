@@ -2,10 +2,9 @@ package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.models.JsonRpcRequest
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
-import org.scalatest.path
+import org.scalatest.{AsyncFunSpec, Matchers}
 import upickle.default._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class FakeJsonSerializer extends JsonSerializer[Writer, Reader] {
@@ -19,13 +18,16 @@ class FakeJsonSerializer extends JsonSerializer[Writer, Reader] {
 }
 
 class FakeApi {
+
+  import scala.concurrent.ExecutionContext.Implicits.global
+
   def foo(bar: String, baz: Int): Future[String] = {
     Future(s"$bar$baz")
   }
 }
 
-class JsonRpcServerTest extends path.FunSpec {
-  override def newInstance: path.FunSpecLike = new JsonRpcServerTest
+class JsonRpcServerTest extends AsyncFunSpec
+    with Matchers {
 
   val jsonSerializer = new FakeJsonSerializer
 
@@ -40,12 +42,17 @@ class JsonRpcServerTest extends path.FunSpec {
       val requestId = "request ID"
       val request: JsonRpcRequest[(String, Int)] = JsonRpcRequest(
         id = requestId,
-        method = "foo",
+        method = classOf[FakeApi].getName + ".foo",
         params = ("bar", 1)
       )
       val requestJson: String = write[JsonRpcRequest[(String, Int)]](request)
+      println(requestJson)
 
-//      target.receive(requestJson, jsonSerializer)
+      val futureJson = target.receive(requestJson, jsonSerializer)
+
+      it("then it should call the API method") {
+        futureJson.map(maybeJson => maybeJson should equal(Option("{}")))
+      }
     }
   }
 }
