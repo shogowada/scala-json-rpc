@@ -1,5 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.server
 
+import io.github.shogowada.scala.jsonrpc.Constants
 import io.github.shogowada.scala.jsonrpc.Models.JsonRpcRequest
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import org.scalatest.{AsyncFunSpec, Matchers}
@@ -41,12 +42,12 @@ class JsonRpcServerTest extends AsyncFunSpec
     describe("when I received request") {
       val requestId = "request ID"
       val request: JsonRpcRequest[(String, Int)] = JsonRpcRequest(
-        id = requestId,
+        jsonrpc = Constants.JsonRpc,
+        id = Left(requestId),
         method = classOf[FakeApi].getName + ".foo",
         params = ("bar", 1)
       )
       val requestJson: String = write[JsonRpcRequest[(String, Int)]](request)
-      println(requestJson)
 
       val futureJson = target.receive(requestJson, jsonSerializer)
 

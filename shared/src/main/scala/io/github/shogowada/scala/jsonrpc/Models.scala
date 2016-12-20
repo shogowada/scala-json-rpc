@@ -1,5 +1,7 @@
 package io.github.shogowada.scala.jsonrpc
 
+import scala.language.experimental.macros
+
 object Models {
 
   case class JsonRpcMethod(jsonrpc: String, method: String)
@@ -11,11 +13,6 @@ object Models {
       method: String,
       params: PARAMS
   )
-
-  object JsonRpcRequest {
-    def apply[PARAMS](id: String, method: String, params: PARAMS): JsonRpcRequest[PARAMS] =
-      JsonRpcRequest(jsonrpc = Constants.JsonRpc, Left(id), method, params)
-  }
 
   case class JsonRpcNotification[PARAMS]
   (

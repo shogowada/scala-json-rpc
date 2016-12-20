@@ -63,7 +63,11 @@ object JsonRpcServerImpl {
       q"""
           (json: String) => {
             $jsonSerializer.deserialize[JsonRpcRequest[(String, Int)]](json)
-            Future(None)
+              .map(request => {
+                println(request)
+                Future(Some("deserialized"))
+              })
+              .getOrElse(Future(None))
           }
           """
 
