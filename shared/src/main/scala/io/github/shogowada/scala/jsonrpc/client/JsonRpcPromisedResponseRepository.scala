@@ -1,7 +1,8 @@
 package io.github.shogowada.scala.jsonrpc.client
 
-import io.github.shogowada.scala.jsonrpc.models.Types.Id
-import io.github.shogowada.scala.jsonrpc.models.{JsonRpcErrorResponse, JsonRpcResponse}
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcErrorResponse, JsonRpcResponse}
+import io.github.shogowada.scala.jsonrpc.Types
+import Types.Id
 
 import scala.concurrent.Promise
 

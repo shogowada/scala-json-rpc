@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.models.JsonRpcRequest
+import io.github.shogowada.scala.jsonrpc.Models.JsonRpcRequest
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import org.scalatest.{AsyncFunSpec, Matchers}
 import upickle.default._

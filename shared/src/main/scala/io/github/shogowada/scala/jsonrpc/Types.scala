@@ -1,10 +1,8 @@
-package io.github.shogowada.scala.jsonrpc.models
+package io.github.shogowada.scala.jsonrpc
+
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcErrorResponse, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse}
 
 import scala.concurrent.Future
-
-object Constants {
-  val JsonRpc = "2.0"
-}
 
 object Types {
   type Id = Either[String, BigDecimal]

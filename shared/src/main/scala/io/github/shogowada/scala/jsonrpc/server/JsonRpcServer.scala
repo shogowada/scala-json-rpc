@@ -101,7 +101,8 @@ object JsonRpcServerImpl {
 
     c.Expr(
       q"""
-          import io.github.shogowada.scala.jsonrpc.models._
+          import io.github.shogowada.scala.jsonrpc.Constants
+          import io.github.shogowada.scala.jsonrpc.Models._
           import ${c.prefix.tree}._
           $futureMaybeJson
           """
