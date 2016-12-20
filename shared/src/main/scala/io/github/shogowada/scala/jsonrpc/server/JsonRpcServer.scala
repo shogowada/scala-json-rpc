@@ -37,11 +37,11 @@ object JsonRpcServerImpl {
   : c.Expr[Unit] = {
     import c.universe._
     val apiType: Type = weakTypeOf[API]
-    val apiMembers: Iterable[Symbol] = apiType.decls
+    val apiMembers: MemberScope = apiType.decls
     val apiMemberStatements: Iterable[Tree] = apiMembers
         .filter((apiMember: Symbol) => isJsonRpcMethod(c)(apiMember))
-        .map((method: Symbol) => {
-          val methodNameToHandler = createMethodNameToHandler(c)(method, jsonSerializer)
+        .map((apiMember: Symbol) => {
+          val methodNameToHandler = createMethodNameToHandler(c)(api, apiMember.asMethod, jsonSerializer)
           q"${c.prefix.tree}.methodNameToHandlerMap = ${c.prefix.tree}.methodNameToHandlerMap + ($methodNameToHandler)"
         })
     c.Expr[Unit](q"{ ..$apiMemberStatements }")
@@ -51,21 +51,28 @@ object JsonRpcServerImpl {
     method.isMethod && method.isPublic && !method.isConstructor
   }
 
-  private def createMethodNameToHandler[SERIALIZER[_], DESERIALIZER[_]]
+  private def createMethodNameToHandler[SERIALIZER[_], DESERIALIZER[_], API]
   (c: blackbox.Context)
-  (method: c.universe.Symbol, jsonSerializer: c.Expr[JsonSerializer[SERIALIZER, DESERIALIZER]])
+  (api: c.Expr[API], method: c.universe.MethodSymbol, jsonSerializer: c.Expr[JsonSerializer[SERIALIZER, DESERIALIZER]])
   : c.Expr[(String) => Future[Option[String]]] = {
     import c.universe._
 
     val methodName = q"""${method.fullName}"""
 
+    val parameterTypes: Iterable[c.universe.Type] = method.asMethod.paramLists
+        .flatMap((paramList: List[c.universe.Symbol]) => paramList)
+        .map((param: c.universe.Symbol) => param.typeSignature)
+
+    val parameterType: c.universe.Tree = tq"(..$parameterTypes)"
+
     val handler =
       q"""
           (json: String) => {
-            $jsonSerializer.deserialize[JsonRpcRequest[(String, Int)]](json)
+            $jsonSerializer.deserialize[JsonRpcRequest[$parameterType]](json)
               .map(request => {
                 println(request)
-                Future(Some("deserialized"))
+                $api.$method("a", 1)
+                  .map(result => $jsonSerializer.serialize(result))
               })
               .getOrElse(Future(None))
           }
