@@ -83,7 +83,8 @@ object JsonRpcServerImpl {
               .map(request => {
                 val params = request.params
                 ${methodInvocation(params = TermName("params"))}
-                  .map(result => $jsonSerializer.serialize(result))
+                  .map(result => JsonRpcResponse(jsonrpc = Constants.JsonRpc, id = request.id, result = result))
+                  .map(response => $jsonSerializer.serialize(response))
               })
               .getOrElse(Future(None))
           }
@@ -97,28 +98,24 @@ object JsonRpcServerImpl {
   (json: c.Expr[String], jsonSerializer: c.Expr[JsonSerializer[SERIALIZER, DESERIALIZER]])
   : c.Expr[Future[Option[String]]] = {
     import c.universe._
-    val errorOrJsonRpcMethod =
+    val maybeJsonRpcMethod =
       q"""
           $jsonSerializer.deserialize[JsonRpcMethod]($json)
               .filter(method => method.jsonrpc == Constants.JsonRpc)
-              .toRight(JsonRpcResponse(JsonRpcErrors.invalidRequest))
           """
 
-    val errorOrHandler =
+    val maybeHandler =
       q"""
-          $errorOrJsonRpcMethod.right
+          $maybeJsonRpcMethod
               .flatMap((jsonRpcMethod: JsonRpcMethod) => {
                 ${c.prefix.tree}.methodNameToHandlerMap.get(jsonRpcMethod.method)
-                  .toRight(JsonRpcResponse(JsonRpcErrors.methodNotFound.copy(data = Option(s"Method with name ' + jsonRpcMethod.method + ' was not found."))))
               })
           """
 
     val futureMaybeJson =
       q"""
-          $errorOrHandler.fold(
-            (error: JsonRpcErrorResponse[String]) => Future($jsonSerializer.serialize(error)),
-            (handler: Handler) => handler($json)
-          )
+          $maybeHandler.map(handler => handler($json))
+            .getOrElse(Future(None))
           """
 
     c.Expr(

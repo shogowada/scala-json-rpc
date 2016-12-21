@@ -59,12 +59,12 @@ class JsonRpcSingleMethodClient[SERIALIZER[_], DESERIALIZER[_], PARAMS, ERROR, R
   }
 
   private def handle(errorOrResult: ErrorOrResult): Unit = {
-    errorOrResult
-        .fold(
-          error => error.id,
-          result => Some(result.id)
-        )
-        .flatMap((id: Id) => jsonRpcPromisedResponseRepository.getAndRemove(id))
-        .foreach((promisedResponse: Promise[ErrorOrResult]) => promisedResponse.success(errorOrResult))
+//    errorOrResult
+//        .fold(
+//          error => error.id,
+//          result => Some(result.id)
+//        )
+//        .flatMap((id: Id) => jsonRpcPromisedResponseRepository.getAndRemove(id))
+//        .foreach((promisedResponse: Promise[ErrorOrResult]) => promisedResponse.success(errorOrResult))
   }
 }

@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.Constants
-import io.github.shogowada.scala.jsonrpc.Models.JsonRpcRequest
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcRequest, JsonRpcResponse}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import org.scalatest.{AsyncFunSpec, Matchers}
 import upickle.default._
@@ -51,10 +51,15 @@ class JsonRpcServerTest extends AsyncFunSpec
       )
       val requestJson: String = write[JsonRpcRequest[(String, Int)]](request)
 
-      val futureJson = target.receive(requestJson, jsonSerializer)
+      val futureMaybeJson: Future[Option[String]] = target.receive(requestJson, jsonSerializer)
 
       it("then it should call the API method") {
-        futureJson.map(maybeJson => maybeJson should equal(Option("{}")))
+        val expectedResponse = JsonRpcResponse(jsonrpc = Constants.JsonRpc, id = Left(requestId), result = "bar1")
+        futureMaybeJson
+            .map(maybeJson => {
+              maybeJson.flatMap(json => jsonSerializer.deserialize[JsonRpcResponse[String]](json))
+            })
+            .map(maybeActualResponse => maybeActualResponse should equal(Some(expectedResponse)))
       }
     }
   }

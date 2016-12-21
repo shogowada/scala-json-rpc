@@ -31,15 +31,9 @@ object Models {
   case class JsonRpcErrorResponse[ERROR]
   (
       jsonrpc: String,
-      id: Option[Either[String, BigDecimal]],
+      id: Either[String, BigDecimal],
       error: JsonRpcError[ERROR]
   )
-
-  object JsonRpcResponse {
-    def apply[ERROR](error: JsonRpcError[ERROR]) = JsonRpcErrorResponse(jsonrpc = Constants.JsonRpc, id = None, error = error)
-
-    def apply[ERROR](id: Either[String, BigDecimal], error: JsonRpcError[ERROR]) = JsonRpcErrorResponse(jsonrpc = Constants.JsonRpc, id = Some(id), error = error)
-  }
 
   case class JsonRpcError[ERROR]
   (
