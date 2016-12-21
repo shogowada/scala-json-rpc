@@ -64,10 +64,17 @@ object JsonRpcServerImpl {
         .map((param: Symbol) => param.typeSignature)
 
     val parameterType: Tree = tq"(..$parameterTypes)"
-    def arguments(params: TermName): Seq[Tree] = Range(0, parameterTypes.size)
-        .map(index => q"$params.${TermName(s"_${index + 1}")}")
-        .toSeq
-    def methodInvocation(params: TermName) = q"""$api.$method(..${arguments(params)})"""
+
+    def arguments(params: TermName): Seq[Tree] = {
+      Range(0, parameterTypes.size)
+          .map(index => TermName(s"_${index + 1}"))
+          .map(fieldName => q"$params.$fieldName")
+          .toSeq
+    }
+
+    def methodInvocation(params: TermName): Tree = {
+      q"""$api.$method(..${arguments(params)})"""
+    }
 
     val handler =
       q"""
