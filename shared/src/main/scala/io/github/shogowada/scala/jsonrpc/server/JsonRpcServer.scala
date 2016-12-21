@@ -1,23 +1,19 @@
 package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
+import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
 
 import scala.concurrent.Future
 import scala.language.experimental.macros
 import scala.language.higherKinds
 import scala.reflect.macros.blackbox
 
-class JsonRpcServer() {
-
-  type Handler = (String) => Future[Option[String]]
-
-  var methodNameToHandlerMap: Map[String, Handler] = Map()
-
+class JsonRpcServer(val methodNameToHandlerMap: Map[String, Handler]) {
   def bindApi[SERIALIZER[_], DESERIALIZER[_], API]
   (
       api: API,
       jsonSerializer: JsonSerializer[SERIALIZER, DESERIALIZER]
-  ): Unit = macro JsonRpcServerImpl.bindApi[SERIALIZER, DESERIALIZER, API]
+  ): JsonRpcServer = macro JsonRpcServerImpl.bindApi[SERIALIZER, DESERIALIZER, API]
 
   def receive[SERIALIZER[_], DESERIALIZER[_]]
   (
@@ -27,24 +23,28 @@ class JsonRpcServer() {
 }
 
 object JsonRpcServer {
-  def apply() = new JsonRpcServer()
+  type Handler = (String) => Future[Option[String]]
+
+  def apply(): JsonRpcServer = JsonRpcServer(Map())
+
+  def apply(methodNameToHandlerMap: Map[String, Handler]): JsonRpcServer = new JsonRpcServer(methodNameToHandlerMap)
 }
 
 object JsonRpcServerImpl {
   def bindApi[SERIALIZER[_], DESERIALIZER[_], API: c.WeakTypeTag]
   (c: blackbox.Context)
   (api: c.Expr[API], jsonSerializer: c.Expr[JsonSerializer[SERIALIZER, DESERIALIZER]])
-  : c.Expr[Unit] = {
+  : c.Expr[JsonRpcServer] = {
     import c.universe._
+
     val apiType: Type = weakTypeOf[API]
     val apiMembers: MemberScope = apiType.decls
-    val apiMemberStatements: Iterable[Tree] = apiMembers
+
+    val methodNameToHandlerList = apiMembers
         .filter((apiMember: Symbol) => isJsonRpcMethod(c)(apiMember))
-        .map((apiMember: Symbol) => {
-          val methodNameToHandler = createMethodNameToHandler(c)(api, apiMember.asMethod, jsonSerializer)
-          q"${c.prefix.tree}.methodNameToHandlerMap = ${c.prefix.tree}.methodNameToHandlerMap + ($methodNameToHandler)"
-        })
-    c.Expr[Unit](q"{ ..$apiMemberStatements }")
+        .map((apiMember: Symbol) => createMethodNameToHandler(c)(api, apiMember.asMethod, jsonSerializer))
+
+    c.Expr[JsonRpcServer](q"""JsonRpcServer(${c.prefix.tree}.methodNameToHandlerMap ++ Map(..$methodNameToHandlerList))""")
   }
 
   private def isJsonRpcMethod(c: blackbox.Context)(method: c.universe.Symbol): Boolean = {
@@ -54,7 +54,7 @@ object JsonRpcServerImpl {
   private def createMethodNameToHandler[SERIALIZER[_], DESERIALIZER[_], API]
   (c: blackbox.Context)
   (api: c.Expr[API], method: c.universe.MethodSymbol, jsonSerializer: c.Expr[JsonSerializer[SERIALIZER, DESERIALIZER]])
-  : c.Expr[(String) => Future[Option[String]]] = {
+  : c.Expr[(String, Handler)] = {
     import c.universe._
 
     val methodName = q"""${method.fullName}"""
@@ -79,6 +79,8 @@ object JsonRpcServerImpl {
     val handler =
       q"""
           (json: String) => {
+            import io.github.shogowada.scala.jsonrpc.Constants
+            import io.github.shogowada.scala.jsonrpc.Models._
             $jsonSerializer.deserialize[JsonRpcRequest[$parameterType]](json)
               .map(request => {
                 val params = request.params
@@ -90,7 +92,7 @@ object JsonRpcServerImpl {
           }
           """
 
-    c.Expr(q"""$methodName -> $handler""")
+    c.Expr[(String, Handler)](q"""$methodName -> $handler""")
   }
 
   def receive[SERIALIZER[_], DESERIALIZER[_]]
@@ -122,7 +124,7 @@ object JsonRpcServerImpl {
       q"""
           import io.github.shogowada.scala.jsonrpc.Constants
           import io.github.shogowada.scala.jsonrpc.Models._
-          import ${c.prefix.tree}._
+          import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer._
           $futureMaybeJson
           """
     )

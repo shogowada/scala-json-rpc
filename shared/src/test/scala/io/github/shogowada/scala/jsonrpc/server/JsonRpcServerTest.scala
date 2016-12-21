@@ -34,12 +34,11 @@ class JsonRpcServerTest extends AsyncFunSpec
 
   val jsonSerializer = new FakeJsonSerializer
 
-  val target = JsonRpcServer()
-
   describe("given I have an API bound") {
     val api = new FakeApi
 
-    target.bindApi(api, jsonSerializer)
+    val target = JsonRpcServer()
+        .bindApi(api, jsonSerializer)
 
     describe("when I received request") {
       val requestId = "request ID"
