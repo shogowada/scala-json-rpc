@@ -59,19 +59,23 @@ object JsonRpcServerImpl {
 
     val methodName = q"""${method.fullName}"""
 
-    val parameterTypes: Iterable[c.universe.Type] = method.asMethod.paramLists
-        .flatMap((paramList: List[c.universe.Symbol]) => paramList)
-        .map((param: c.universe.Symbol) => param.typeSignature)
+    val parameterTypes: Iterable[Type] = method.asMethod.paramLists
+        .flatMap((paramList: List[Symbol]) => paramList)
+        .map((param: Symbol) => param.typeSignature)
 
-    val parameterType: c.universe.Tree = tq"(..$parameterTypes)"
+    val parameterType: Tree = tq"(..$parameterTypes)"
+    def arguments(params: TermName): Seq[Tree] = Range(0, parameterTypes.size)
+        .map(index => q"$params.${TermName(s"_${index + 1}")}")
+        .toSeq
+    def methodInvocation(params: TermName) = q"""$api.$method(..${arguments(params)})"""
 
     val handler =
       q"""
           (json: String) => {
             $jsonSerializer.deserialize[JsonRpcRequest[$parameterType]](json)
               .map(request => {
-                println(request)
-                $api.$method("a", 1)
+                val params = request.params
+                ${methodInvocation(params = TermName("params"))}
                   .map(result => $jsonSerializer.serialize(result))
               })
               .getOrElse(Future(None))
