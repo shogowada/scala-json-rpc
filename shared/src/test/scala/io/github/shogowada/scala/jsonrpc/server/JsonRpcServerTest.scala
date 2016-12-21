@@ -6,7 +6,7 @@ import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import org.scalatest.{AsyncFunSpec, Matchers}
 import upickle.default._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class FakeJsonSerializer extends JsonSerializer[Writer, Reader] {
   override def serialize[T: Writer](value: T): Option[String] = {
@@ -29,6 +29,8 @@ class FakeApi {
 
 class JsonRpcServerTest extends AsyncFunSpec
     with Matchers {
+
+  override implicit def executionContext = ExecutionContext.Implicits.global
 
   val jsonSerializer = new FakeJsonSerializer
 
