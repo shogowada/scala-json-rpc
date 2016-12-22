@@ -2,21 +2,10 @@ package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.Constants
 import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcRequest, JsonRpcResponse}
-import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
+import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import org.scalatest.{AsyncFunSpec, Matchers}
-import upickle.default._
 
 import scala.concurrent.{ExecutionContext, Future}
-
-class FakeJsonSerializer extends JsonSerializer[Writer, Reader] {
-  override def serialize[T: Writer](value: T): Option[String] = {
-    Option(write[T](value))
-  }
-
-  override def deserialize[T: Reader](json: String): Option[T] = {
-    Option(read[T](json))
-  }
-}
 
 class FakeApi {
 
@@ -32,34 +21,35 @@ class JsonRpcServerTest extends AsyncFunSpec
 
   override implicit def executionContext = ExecutionContext.Implicits.global
 
-  val jsonSerializer = new FakeJsonSerializer
-
   describe("given I have an API bound") {
     val api = new FakeApi
 
-    val target = JsonRpcServer()
-        .bindApi(api, jsonSerializer)
+    val jsonSerializer = UpickleJsonSerializer()
+    val target = JsonRpcServer(jsonSerializer)
+        .bindApi(api)
 
-    describe("when I received request") {
-      val requestId = "request ID"
-      val request: JsonRpcRequest[(String, Int)] = JsonRpcRequest(
-        jsonrpc = Constants.JsonRpc,
-        id = Left(requestId),
-        method = classOf[FakeApi].getName + ".foo",
-        params = ("bar", 1)
-      )
-      val requestJson: String = write[JsonRpcRequest[(String, Int)]](request)
+    Seq("foo").foreach(methodName => {
+      describe(s"when I received request for method $methodName") {
+        val requestId = Left("request ID")
+        val request: JsonRpcRequest[(String, Int)] = JsonRpcRequest(
+          jsonrpc = Constants.JsonRpc,
+          id = requestId,
+          method = classOf[FakeApi].getName + s".$methodName",
+          params = ("bar", 1)
+        )
+        val requestJson: String = jsonSerializer.serialize[JsonRpcRequest[(String, Int)]](request).get
 
-      val futureMaybeJson: Future[Option[String]] = target.receive(requestJson, jsonSerializer)
+        val futureMaybeResponseJson: Future[Option[String]] = target.receive(requestJson)
 
-      it("then it should call the API method") {
-        val expectedResponse = JsonRpcResponse(jsonrpc = Constants.JsonRpc, id = Left(requestId), result = "bar1")
-        futureMaybeJson
-            .map(maybeJson => {
-              maybeJson.flatMap(json => jsonSerializer.deserialize[JsonRpcResponse[String]](json))
-            })
-            .map(maybeActualResponse => maybeActualResponse should equal(Some(expectedResponse)))
+        it("then it should return the response") {
+          val expectedResponse = JsonRpcResponse(jsonrpc = Constants.JsonRpc, id = requestId, result = "bar1")
+          futureMaybeResponseJson
+              .map(maybeJson => {
+                maybeJson.flatMap(json => jsonSerializer.deserialize[JsonRpcResponse[String]](json))
+              })
+              .map(maybeActualResponse => maybeActualResponse should equal(Some(expectedResponse)))
+        }
       }
-    }
+    })
   }
 }
