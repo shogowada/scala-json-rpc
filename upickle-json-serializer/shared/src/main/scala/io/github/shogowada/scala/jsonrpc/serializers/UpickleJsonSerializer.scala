@@ -4,9 +4,9 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 class UpickleJsonSerializer {
-  def serialize[T](value: T): Option[String] = macro UpickleJsonSerializerMacro.serializeImpl[T]
+  def serialize[T](value: T): Option[String] = macro UpickleJsonSerializerMacro.serialize[T]
 
-  def deserialize[T](json: String): Option[T] = macro UpickleJsonSerializerMacro.deserializeImpl[T]
+  def deserialize[T](json: String): Option[T] = macro UpickleJsonSerializerMacro.deserialize[T]
 }
 
 object UpickleJsonSerializer {
@@ -15,7 +15,7 @@ object UpickleJsonSerializer {
 
 
 object UpickleJsonSerializerMacro {
-  def serializeImpl[T](c: blackbox.Context)(value: c.Expr[T]): c.Expr[Option[String]] = {
+  def serialize[T](c: blackbox.Context)(value: c.Expr[T]): c.Expr[Option[String]] = {
     import c.universe._
 
     c.Expr[Option[String]](
@@ -26,7 +26,7 @@ object UpickleJsonSerializerMacro {
     )
   }
 
-  def deserializeImpl[T: c.WeakTypeTag](c: blackbox.Context)(json: c.Expr[String]): c.Expr[Option[T]] = {
+  def deserialize[T: c.WeakTypeTag](c: blackbox.Context)(json: c.Expr[String]): c.Expr[Option[T]] = {
     import c.universe._
 
     val deserializeType = weakTypeOf[T]
