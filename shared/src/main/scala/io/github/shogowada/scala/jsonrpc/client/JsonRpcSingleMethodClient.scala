@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.client
 
-import io.github.shogowada.scala.jsonrpc.models.Types.Id
-import io.github.shogowada.scala.jsonrpc.models._
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcErrorResponse, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse}
+import io.github.shogowada.scala.jsonrpc.Types.Id
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 
 import scala.concurrent.{Future, Promise}
@@ -17,7 +17,8 @@ class JsonRpcSingleMethodClient[PARAMS, ERROR, RESULT]
   private type ErrorOrResult = Either[JsonRpcErrorResponse[ERROR], JsonRpcResponse[RESULT]]
 
   def send(request: JsonRpcRequest[PARAMS]): Future[ErrorOrResult] = {
-    jsonSerializer.serialize(request)
+    //    jsonSerializer.serialize(request)
+    None
         .map(json => send(request.id, json))
         .getOrElse(Future.failed(new IllegalArgumentException(s"$request could not be serialized into JSON.")))
   }
@@ -29,8 +30,9 @@ class JsonRpcSingleMethodClient[PARAMS, ERROR, RESULT]
   }
 
   def send(notification: JsonRpcNotification[PARAMS]): Unit = {
-    jsonSerializer.serialize(notification)
-        .foreach(jsonSender.send)
+    //    jsonSerializer.serialize(notification)
+    None
+        .foreach(jsonSender.send(_))
   }
 
   override def receive(json: String): Unit = {
@@ -42,24 +44,26 @@ class JsonRpcSingleMethodClient[PARAMS, ERROR, RESULT]
   }
 
   private def maybeGetResultAsRight(json: String): Option[ErrorOrResult] = {
-    jsonSerializer.deserialize[JsonRpcResponse[RESULT]](json)
-        .filter(response => response.jsonrpc == Constants.JsonRpc)
-        .map(response => Right(response))
+    //    jsonSerializer.deserialize[JsonRpcResponse[RESULT]](json)
+    //        .filter(response => response.jsonrpc == Constants.JsonRpc)
+    //        .map(response => Right(response))
+    None
   }
 
   private def maybeGetErrorAsLeft(json: String): Option[ErrorOrResult] = {
-    jsonSerializer.deserialize[JsonRpcErrorResponse[ERROR]](json)
-        .filter(response => response.jsonrpc == Constants.JsonRpc)
-        .map(response => Left(response))
+    //    jsonSerializer.deserialize[JsonRpcErrorResponse[ERROR]](json)
+    //        .filter(response => response.jsonrpc == Constants.JsonRpc)
+    //        .map(response => Left(response))
+    None
   }
 
   private def handle(errorOrResult: ErrorOrResult): Unit = {
-    errorOrResult
-        .fold(
-          error => error.id,
-          result => Some(result.id)
-        )
-        .flatMap((id: Id) => jsonRpcPromisedResponseRepository.getAndRemove(id))
-        .foreach((promisedResponse: Promise[ErrorOrResult]) => promisedResponse.success(errorOrResult))
+    //    errorOrResult
+    //        .fold(
+    //          error => error.id,
+    //          result => Some(result.id)
+    //        )
+    //        .flatMap((id: Id) => jsonRpcPromisedResponseRepository.getAndRemove(id))
+    //        .foreach((promisedResponse: Promise[ErrorOrResult]) => promisedResponse.success(errorOrResult))
   }
 }

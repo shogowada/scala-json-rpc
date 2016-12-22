@@ -13,10 +13,37 @@ lazy val core = (crossProject in file("."))
     .settings(commonSettings: _*)
     .settings(
       libraryDependencies ++= Seq(
-        "com.lihaoyi" %%% "upickle" % "0.4.+" % "test",
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+
         "org.scalatest" %%% "scalatest" % "3.+" % "test"
       )
     )
+    .dependsOn(jsonSerializer)
+    .dependsOn(upickleJsonSerializer % "test")
 
 lazy val jvm = core.jvm
 lazy val js = core.js
+
+lazy val jsonSerializer = (crossProject in file("json-serializer"))
+    .settings(commonSettings: _*)
+    .settings(
+      name += "-json-serializer"
+    )
+
+lazy val jsonSerializerJvm = jsonSerializer.jvm
+lazy val jsonSerializerJs = jsonSerializer.js
+
+lazy val upickleJsonSerializer = (crossProject in file("upickle-json-serializer"))
+    .settings(commonSettings: _*)
+    .settings(
+      name += "-upickle-json-serializer",
+      libraryDependencies ++= Seq(
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+
+        "com.lihaoyi" %%% "upickle" % "0.4.+"
+      )
+    )
+    .dependsOn(jsonSerializer)
+
+lazy val upickleJsonSerializerJvm = upickleJsonSerializer.jvm
+lazy val upickleJsonSerializerJs = upickleJsonSerializer.js
