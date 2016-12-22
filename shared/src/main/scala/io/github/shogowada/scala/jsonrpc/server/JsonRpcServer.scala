@@ -1,6 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
+import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
 import scala.concurrent.Future
 import scala.language.experimental.macros
@@ -38,11 +39,8 @@ object JsonRpcServerMacro {
     import c.universe._
 
     val apiType: Type = weakTypeOf[API]
-    val apiMembers: MemberScope = apiType.decls
-
-    val methodNameToHandlerList = apiMembers
-        .filter((apiMember: Symbol) => isJsonRpcMethod(c)(apiMember))
-        .map((apiMember: Symbol) => createMethodNameToHandler(c)(api, apiMember.asMethod))
+    val methodNameToHandlerList = MacroUtils[c.type](c).getApiMethods(apiType)
+        .map((apiMember: MethodSymbol) => createMethodNameToHandler(c)(api, apiMember))
 
     c.Expr[JsonRpcServer[JSON_SERIALIZER]](
       q"""
