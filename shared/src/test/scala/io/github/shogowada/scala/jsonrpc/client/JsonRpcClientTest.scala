@@ -11,7 +11,7 @@ class JsonRpcClientTest extends path.FunSpec
 
   val target = JsonRpcClient(UpickleJsonSerializer())
 
-  describe("givem I have an API") {
+  describe("given I have an API") {
     trait Api {
       def foo(bar: String, baz: Int): Future[String]
     }
