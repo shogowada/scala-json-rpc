@@ -1,11 +1,12 @@
 package io.github.shogowada.scala.jsonrpc.client
 
+import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JsonRpcClient[JSON_SERIALIZER]
+class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
 (
     val jsonSerializer: JSON_SERIALIZER
 ) {
@@ -20,6 +21,10 @@ object JsonRpcClientMacro {
     import c.universe._
     val apiType: Type = weakTypeOf[API]
     val apiMethods = MacroUtils[c.type](c).getApiMethods(apiType)
+    q"""
+        new $apiType {
+        }
+        """
     c.Expr[API](q"")
   }
 }

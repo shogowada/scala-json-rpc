@@ -1,5 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.server
 
+import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
@@ -7,7 +8,7 @@ import scala.concurrent.Future
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JsonRpcServer[JSON_SERIALIZER]
+class JsonRpcServer[JSON_SERIALIZER <: JsonSerializer]
 (
     val methodNameToHandlerMap: Map[String, Handler],
     val jsonSerializer: JSON_SERIALIZER
@@ -20,10 +21,10 @@ class JsonRpcServer[JSON_SERIALIZER]
 object JsonRpcServer {
   type Handler = (String) => Future[Option[String]]
 
-  def apply[JSON_SERIALIZER](jsonSerializer: JSON_SERIALIZER): JsonRpcServer[JSON_SERIALIZER] =
+  def apply[JSON_SERIALIZER <: JsonSerializer](jsonSerializer: JSON_SERIALIZER): JsonRpcServer[JSON_SERIALIZER] =
     JsonRpcServer(Map(), jsonSerializer)
 
-  def apply[JSON_SERIALIZER]
+  def apply[JSON_SERIALIZER <: JsonSerializer]
   (
       methodNameToHandlerMap: Map[String, Handler],
       jsonSerializer: JSON_SERIALIZER
@@ -32,7 +33,7 @@ object JsonRpcServer {
 }
 
 object JsonRpcServerMacro {
-  def bindApi[JSON_SERIALIZER, API: c.WeakTypeTag]
+  def bindApi[JSON_SERIALIZER <: JsonSerializer, API: c.WeakTypeTag]
   (c: blackbox.Context)
   (api: c.Expr[API])
   : c.Expr[JsonRpcServer[JSON_SERIALIZER]] = {
