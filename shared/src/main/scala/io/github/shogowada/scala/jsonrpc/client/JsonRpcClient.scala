@@ -47,6 +47,7 @@ object JsonRpcClientMacro {
   (apiMethod: c.universe.MethodSymbol)
   : c.Tree = {
     import c.universe._
+    val name: TermName = apiMethod.name
     val parameterLists: List[List[Tree]] =
       apiMethod.paramLists.map((parameterList: List[Symbol]) => {
         parameterList.map((parameter: Symbol) => {
@@ -55,7 +56,7 @@ object JsonRpcClientMacro {
       })
     val returnType: Type = apiMethod.returnType
     q"""
-        override def ${apiMethod.name}(...$parameterLists): $returnType = {
+        override def $name(...$parameterLists): $returnType = {
           throw new UnsupportedOperationException()
         }
         """
