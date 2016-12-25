@@ -90,7 +90,7 @@ object JsonRpcServerMacro {
               .map(request => {
                 val $params = request.params
                 $api.$method(..${arguments(params)})
-                  .map((result) => JsonRpcResponse(jsonrpc = Constants.JsonRpc, id = request.id, result = result))
+                  .map((result) => JsonRpcResultResponse(jsonrpc = Constants.JsonRpc, id = request.id, result = result))
                   .map((response) => $jsonSerializer.serialize(response))
               })
               .getOrElse(Future(None))

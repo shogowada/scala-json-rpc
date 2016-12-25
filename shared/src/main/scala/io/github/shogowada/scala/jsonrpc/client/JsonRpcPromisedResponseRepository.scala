@@ -1,26 +1,22 @@
 package io.github.shogowada.scala.jsonrpc.client
 
-import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcErrorResponse, JsonRpcResponse}
-import io.github.shogowada.scala.jsonrpc.Types
-import Types.Id
+import io.github.shogowada.scala.jsonrpc.Types.Id
 
 import scala.concurrent.Promise
 
-class JsonRpcPromisedResponseRepository[ERROR, RESULT] {
+class JsonRpcPromisedResponseRepository {
 
-  private type ErrorOrResult = Either[JsonRpcErrorResponse[ERROR], JsonRpcResponse[RESULT]]
+  private var idToPromisedResponseMap: Map[Id, Promise[String]] = Map()
 
-  private var idToPromisedResponseMap: Map[Id, Promise[ErrorOrResult]] = Map()
-
-  def addAndGet(id: Id): Promise[ErrorOrResult] = {
+  def addAndGet(id: Id): Promise[String] = {
     this.synchronized {
-      val promisedResponse: Promise[ErrorOrResult] = Promise()
+      val promisedResponse: Promise[String] = Promise()
       idToPromisedResponseMap = idToPromisedResponseMap + (id -> promisedResponse)
       promisedResponse
     }
   }
 
-  def getAndRemove(id: Id): Option[Promise[ErrorOrResult]] = {
+  def getAndRemove(id: Id): Option[Promise[String]] = {
     this.synchronized {
       val maybePromisedResponse = idToPromisedResponseMap.get(id)
       idToPromisedResponseMap = idToPromisedResponseMap - id

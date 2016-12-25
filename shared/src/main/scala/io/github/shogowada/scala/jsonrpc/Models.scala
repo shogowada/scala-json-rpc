@@ -21,7 +21,13 @@ object Models {
       params: PARAMS
   )
 
-  case class JsonRpcResponse[RESULT]
+  case class JsonRpcResponse
+  (
+      jsonrpc: String,
+      id: Either[String, BigDecimal]
+  )
+
+  case class JsonRpcResultResponse[RESULT]
   (
       jsonrpc: String,
       id: Either[String, BigDecimal],

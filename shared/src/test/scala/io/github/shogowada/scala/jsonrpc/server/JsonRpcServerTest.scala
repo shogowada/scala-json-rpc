@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.Constants
-import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcRequest, JsonRpcResponse}
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcRequest, JsonRpcResultResponse}
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import org.scalatest.{AsyncFunSpec, Matchers}
 
@@ -42,10 +42,10 @@ class JsonRpcServerTest extends AsyncFunSpec
         val futureMaybeResponseJson: Future[Option[String]] = target.receive(requestJson)
 
         it("then it should return the response") {
-          val expectedResponse = JsonRpcResponse(jsonrpc = Constants.JsonRpc, id = requestId, result = "bar1")
+          val expectedResponse = JsonRpcResultResponse(jsonrpc = Constants.JsonRpc, id = requestId, result = "bar1")
           futureMaybeResponseJson
               .map(maybeJson => {
-                maybeJson.flatMap(json => jsonSerializer.deserialize[JsonRpcResponse[String]](json))
+                maybeJson.flatMap(json => jsonSerializer.deserialize[JsonRpcResultResponse[String]](json))
               })
               .map(maybeActualResponse => maybeActualResponse should equal(Some(expectedResponse)))
         }
