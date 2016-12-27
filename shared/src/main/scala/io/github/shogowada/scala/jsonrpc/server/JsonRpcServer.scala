@@ -1,12 +1,14 @@
 package io.github.shogowada.scala.jsonrpc.server
 
+import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
+import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
 import scala.concurrent.Future
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JsonRpcServer[JSON_SERIALIZER]
+class JsonRpcServer[JSON_SERIALIZER <: JsonSerializer]
 (
     val methodNameToHandlerMap: Map[String, Handler],
     val jsonSerializer: JSON_SERIALIZER
@@ -19,10 +21,10 @@ class JsonRpcServer[JSON_SERIALIZER]
 object JsonRpcServer {
   type Handler = (String) => Future[Option[String]]
 
-  def apply[JSON_SERIALIZER](jsonSerializer: JSON_SERIALIZER): JsonRpcServer[JSON_SERIALIZER] =
+  def apply[JSON_SERIALIZER <: JsonSerializer](jsonSerializer: JSON_SERIALIZER): JsonRpcServer[JSON_SERIALIZER] =
     JsonRpcServer(Map(), jsonSerializer)
 
-  def apply[JSON_SERIALIZER]
+  def apply[JSON_SERIALIZER <: JsonSerializer]
   (
       methodNameToHandlerMap: Map[String, Handler],
       jsonSerializer: JSON_SERIALIZER
@@ -31,18 +33,15 @@ object JsonRpcServer {
 }
 
 object JsonRpcServerMacro {
-  def bindApi[JSON_SERIALIZER, API: c.WeakTypeTag]
+  def bindApi[JSON_SERIALIZER <: JsonSerializer, API: c.WeakTypeTag]
   (c: blackbox.Context)
   (api: c.Expr[API])
   : c.Expr[JsonRpcServer[JSON_SERIALIZER]] = {
     import c.universe._
 
     val apiType: Type = weakTypeOf[API]
-    val apiMembers: MemberScope = apiType.decls
-
-    val methodNameToHandlerList = apiMembers
-        .filter((apiMember: Symbol) => isJsonRpcMethod(c)(apiMember))
-        .map((apiMember: Symbol) => createMethodNameToHandler(c)(api, apiMember.asMethod))
+    val methodNameToHandlerList = MacroUtils[c.type](c).getApiMethods(apiType)
+        .map((apiMember: MethodSymbol) => createMethodNameToHandler(c)(api, apiMember))
 
     c.Expr[JsonRpcServer[JSON_SERIALIZER]](
       q"""
@@ -65,13 +64,13 @@ object JsonRpcServerMacro {
     import c.universe._
 
     val jsonSerializer = q"${c.prefix.tree}.jsonSerializer"
-    val methodName = q"""${method.fullName}"""
+    val methodName = q"""${MacroUtils[c.type](c).getMethodName(method)}"""
 
     val parameterTypes: Iterable[Type] = method.asMethod.paramLists
         .flatMap((paramList: List[Symbol]) => paramList)
         .map((param: Symbol) => param.typeSignature)
 
-    val parameterType: Tree = tq"(..$parameterTypes)"
+    val parameterType: Tree = MacroUtils[c.type](c).getParameterType(method)
 
     def arguments(params: TermName): Seq[Tree] = {
       Range(0, parameterTypes.size)
@@ -91,7 +90,7 @@ object JsonRpcServerMacro {
               .map(request => {
                 val $params = request.params
                 $api.$method(..${arguments(params)})
-                  .map((result) => JsonRpcResponse(jsonrpc = Constants.JsonRpc, id = request.id, result = result))
+                  .map((result) => JsonRpcResultResponse(jsonrpc = Constants.JsonRpc, id = request.id, result = result))
                   .map((response) => $jsonSerializer.serialize(response))
               })
               .getOrElse(Future(None))
@@ -108,9 +107,12 @@ object JsonRpcServerMacro {
   : c.Expr[Future[Option[String]]] = {
     import c.universe._
 
+    val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
+    val methodNameToHandlerMap: Tree = q"${c.prefix.tree}.methodNameToHandlerMap"
+
     val maybeJsonRpcMethod =
       q"""
-          ${c.prefix.tree}.jsonSerializer.deserialize[JsonRpcMethod]($json)
+          $jsonSerializer.deserialize[JsonRpcMethod]($json)
               .filter(method => method.jsonrpc == Constants.JsonRpc)
           """
 
@@ -118,7 +120,7 @@ object JsonRpcServerMacro {
       q"""
           $maybeJsonRpcMethod
               .flatMap((jsonRpcMethod: JsonRpcMethod) => {
-                ${c.prefix.tree}.methodNameToHandlerMap.get(jsonRpcMethod.method)
+                $methodNameToHandlerMap.get(jsonRpcMethod.method)
               })
           """
 

@@ -3,10 +3,10 @@ package io.github.shogowada.scala.jsonrpc.serializers
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class UpickleJsonSerializer {
-  def serialize[T](value: T): Option[String] = macro UpickleJsonSerializerMacro.serialize[T]
+class UpickleJsonSerializer extends JsonSerializer {
+  override def serialize[T](value: T): Option[String] = macro UpickleJsonSerializerMacro.serialize[T]
 
-  def deserialize[T](json: String): Option[T] = macro UpickleJsonSerializerMacro.deserialize[T]
+  override def deserialize[T](json: String): Option[T] = macro UpickleJsonSerializerMacro.deserialize[T]
 }
 
 object UpickleJsonSerializer {
