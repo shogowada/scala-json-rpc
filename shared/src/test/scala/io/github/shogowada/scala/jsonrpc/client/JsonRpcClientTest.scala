@@ -3,14 +3,14 @@ package io.github.shogowada.scala.jsonrpc.client
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import org.scalatest.{Matchers, path}
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
 
 class JsonRpcClientTest extends path.FunSpec
     with Matchers {
   override def newInstance: path.FunSpecLike = new JsonRpcClientTest
 
-  val target = JsonRpcClient(UpickleJsonSerializer(), (json) => {})
+  implicit val executionContext = ExecutionContext.Implicits.global
+  val target = JsonRpcClient(UpickleJsonSerializer(), (json: String) => {})
 
   describe("given I have an API") {
     trait Api {

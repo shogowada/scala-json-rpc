@@ -14,49 +14,47 @@ class ClientAndServerTest extends AsyncFunSpec
 
   val jsonSerializer = UpickleJsonSerializer()
 
-  var server = JsonRpcServer(jsonSerializer)
-  val client: JsonRpcClient[UpickleJsonSerializer] = JsonRpcClient(
-    jsonSerializer,
-    (json: String) => {
-      server.receive(json)
-          .filter((maybeResponseJson: Option[String]) => maybeResponseJson.isDefined)
-          .map((maybeResponseJson: Option[String]) => maybeResponseJson.get)
-          .foreach((responseJson: String) => client.receive(responseJson))
-    }
-  )
+  describe("given I have a calculator API") {
 
-  trait FakeApi {
-    def add(lhs: Int, rhs: Int): Future[Int]
+    trait CalculatorApi {
+      def add(lhs: Int, rhs: Int): Future[Int]
 
-    def subtract(lhs: Int, rhs: Int): Future[Int]
-  }
-
-  class FakeApiImpl extends FakeApi {
-    override def add(lhs: Int, rhs: Int): Future[Int] = {
-      Future(lhs + rhs)
+      def subtract(lhs: Int, rhs: Int): Future[Int]
     }
 
-    override def subtract(lhs: Int, rhs: Int): Future[Int] = {
-      Future(lhs - rhs)
+    class CalculatorApiImpl extends CalculatorApi {
+      override def add(lhs: Int, rhs: Int): Future[Int] = {
+        Future(lhs + rhs)
+      }
+
+      override def subtract(lhs: Int, rhs: Int): Future[Int] = {
+        Future(lhs - rhs)
+      }
     }
-  }
 
-  server = server.bindApi[FakeApi](new FakeApiImpl)
-  val clientApi = client.createApi[FakeApi]
+    val server = JsonRpcServer(jsonSerializer)
+        .bindApi[CalculatorApi](new CalculatorApiImpl)
+    val client: JsonRpcClient[UpickleJsonSerializer] = JsonRpcClient(
+      jsonSerializer,
+      (json: String) => server.receive(json)
+    )
 
-  describe("when I add 2 values") {
-    val futureResult = clientApi.add(1, 2)
+    val clientApi = client.createApi[CalculatorApi]
 
-    it("then it should add the 2 values") {
-      futureResult.map(result => result should equal(3))
+    describe("when I add 2 values") {
+      val futureResult = clientApi.add(1, 2)
+
+      it("then it should add the 2 values") {
+        futureResult.map(result => result should equal(3))
+      }
     }
-  }
 
-  describe("when I subtract one value from the other") {
-    val futureResult = clientApi.subtract(1, 2)
+    describe("when I subtract one value from the other") {
+      val futureResult = clientApi.subtract(1, 2)
 
-    it("then it should subtract the value") {
-      futureResult.map(result => result should equal(-1))
+      it("then it should subtract the value") {
+        futureResult.map(result => result should equal(-1))
+      }
     }
   }
 }

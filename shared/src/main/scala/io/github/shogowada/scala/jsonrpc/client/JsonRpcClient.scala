@@ -4,6 +4,7 @@ import io.github.shogowada.scala.jsonrpc.Types.JsonSender
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
@@ -20,6 +21,17 @@ class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
 }
 
 object JsonRpcClient {
+  def apply[JSON_SERIALIZER <: JsonSerializer]
+  (
+      jsonSerializer: JSON_SERIALIZER,
+      jsonSender: (String) => Unit
+  )(
+      implicit executionContext: ExecutionContext
+  ) = new JsonRpcClient(jsonSerializer, (json: String) => {
+    jsonSender(json)
+    Future(None)
+  })
+
   def apply[JSON_SERIALIZER <: JsonSerializer]
   (
       jsonSerializer: JSON_SERIALIZER,
@@ -98,12 +110,16 @@ object JsonRpcClientMacro {
 
     q"""
         override def $name(...$parameterLists): $returnType = {
+          import scala.util._
           import io.github.shogowada.scala.jsonrpc.Constants
           import io.github.shogowada.scala.jsonrpc.Models._
           val $requestId = Left(java.util.UUID.randomUUID.toString)
           val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
 
-          $jsonSender(${createRequestJson(requestId)})
+          $jsonSender(${createRequestJson(requestId)}).onComplete {
+            case Success(Some(responseJson: String)) => ${c.prefix.tree}.receive(responseJson)
+            case _ => {}
+          }
 
           $promisedResponse.future
               .map((json: String) => {
