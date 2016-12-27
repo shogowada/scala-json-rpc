@@ -4,6 +4,7 @@ import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import org.scalatest.{Matchers, path}
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class FakeJsonSender extends JsonSender {
   override def send(json: String): Unit = {

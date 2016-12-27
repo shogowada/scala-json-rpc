@@ -58,28 +58,58 @@ object JsonRpcClientMacro {
     import c.universe._
 
     val name: TermName = apiMethod.name
+    val methodName: String = MacroUtils[c.type](c).getMethodName(apiMethod)
     val parameterLists: List[List[Tree]] =
       apiMethod.paramLists.map((parameterList: List[Symbol]) => {
         parameterList.map((parameter: Symbol) => {
           q"${parameter.name.toTermName}: ${parameter.typeSignature}"
         })
       })
+    val parameterType: Tree = MacroUtils[c.type](c).getParameterType(apiMethod)
+    val parameters: Seq[TermName] = apiMethod.paramLists.flatMap(parameterList => {
+      parameterList.map(parameter => {
+        parameter.asTerm.name
+      })
+    })
     val returnType: Type = apiMethod.returnType
-    val tq"Future[$resultType]" = returnType
+    val resultType: Type = returnType.typeArgs.head
 
     val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
     val jsonSender: Tree = q"${c.prefix.tree}.jsonSender"
     val promisedResponseRepository: Tree = q"${c.prefix.tree}.promisedResponseRepository"
 
+    def createRequest(requestId: TermName): Tree =
+      q"""
+          JsonRpcRequest(
+            jsonrpc = Constants.JsonRpc,
+            id = $requestId,
+            method = $methodName,
+            params = (..$parameters)
+          )
+          """
+    def createRequestJson(requestId: TermName): Tree =
+      q"""
+          $jsonSerializer.serialize(${createRequest(requestId)}).get
+          """
+
+    val requestId = TermName("requestId")
+    val promisedResponse = TermName("promisedResponse")
+
     q"""
         override def $name(...$parameterLists): $returnType = {
-          val requestId = Left(java.util.UUID.randomUUID.toString)
-          val promisedResponse = $promisedResponseRepository.addAndGet(requestId)
-          // Send request as JSON
-          promisedResponse.future
-              .map(json => {
+          import io.github.shogowada.scala.jsonrpc.Constants
+          import io.github.shogowada.scala.jsonrpc.Models._
+          val $requestId = Left(java.util.UUID.randomUUID.toString)
+          val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
+
+          $jsonSender.send(${createRequestJson(requestId)})
+
+          $promisedResponse.future
+              .map((json: String) => {
+                println("Received response " + json)
                 $jsonSerializer.deserialize[JsonRpcResultResponse[$resultType]](json)
                     .map(resultResponse => resultResponse.result)
+                    .get
               })
         }
         """

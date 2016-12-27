@@ -64,13 +64,13 @@ object JsonRpcServerMacro {
     import c.universe._
 
     val jsonSerializer = q"${c.prefix.tree}.jsonSerializer"
-    val methodName = q"""${method.fullName}"""
+    val methodName = q"""${MacroUtils[c.type](c).getMethodName(method)}"""
 
     val parameterTypes: Iterable[Type] = method.asMethod.paramLists
         .flatMap((paramList: List[Symbol]) => paramList)
         .map((param: Symbol) => param.typeSignature)
 
-    val parameterType: Tree = tq"(..$parameterTypes)"
+    val parameterType: Tree = MacroUtils[c.type](c).getParameterType(method)
 
     def arguments(params: TermName): Seq[Tree] = {
       Range(0, parameterTypes.size)
@@ -107,9 +107,12 @@ object JsonRpcServerMacro {
   : c.Expr[Future[Option[String]]] = {
     import c.universe._
 
+    val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
+    val methodNameToHandlerMap: Tree = q"${c.prefix.tree}.methodNameToHandlerMap"
+
     val maybeJsonRpcMethod =
       q"""
-          ${c.prefix.tree}.jsonSerializer.deserialize[JsonRpcMethod]($json)
+          $jsonSerializer.deserialize[JsonRpcMethod]($json)
               .filter(method => method.jsonrpc == Constants.JsonRpc)
           """
 
@@ -117,7 +120,7 @@ object JsonRpcServerMacro {
       q"""
           $maybeJsonRpcMethod
               .flatMap((jsonRpcMethod: JsonRpcMethod) => {
-                ${c.prefix.tree}.methodNameToHandlerMap.get(jsonRpcMethod.method)
+                $methodNameToHandlerMap.get(jsonRpcMethod.method)
               })
           """
 
