@@ -9,4 +9,6 @@ object Types {
 
   type JsonRpcRequestMethod[PARAMS, ERROR, RESULT] = (JsonRpcRequest[PARAMS]) => Future[Either[JsonRpcErrorResponse[ERROR], JsonRpcResultResponse[RESULT]]]
   type JsonRpcNotificationMethod[PARAMS] = (JsonRpcNotification[PARAMS]) => Unit
+
+  type JsonSender = (String) => Unit
 }

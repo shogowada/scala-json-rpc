@@ -17,7 +17,7 @@ class ClientAndServerTest extends AsyncFunSpec
   var server = JsonRpcServer(jsonSerializer)
   val client: JsonRpcClient[UpickleJsonSerializer] = JsonRpcClient(
     jsonSerializer,
-    (json) => {
+    (json: String) => {
       server.receive(json)
           .filter((maybeResponseJson: Option[String]) => maybeResponseJson.isDefined)
           .map((maybeResponseJson: Option[String]) => maybeResponseJson.get)

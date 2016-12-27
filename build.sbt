@@ -1,12 +1,41 @@
 crossScalaVersions := Seq("2.11.8", "2.12.0")
 
+publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  isSnapshot.value match {
+    case true => Some("snapshots" at nexus + "content/repositories/snapshots")
+    case false => Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  }
+}
+publishArtifact := false
+
 val commonSettings = Seq(
   organization := "io.github.shogowada",
   name := "scala-json-rpc",
   version := "0.1.0-SNAPSHOT",
   scalaVersion := "2.12.0",
   licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
-  homepage := Some(url("https://github.com/shogowada/scala-json-rpc"))
+  homepage := Some(url("https://github.com/shogowada/scala-json-rpc")),
+  publishMavenStyle := true,
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    isSnapshot.value match {
+      case true => Some("snapshots" at nexus + "content/repositories/snapshots")
+      case false => Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    }
+  },
+  publishArtifact := false,
+  pomExtra := <scm>
+    <url>git@github.com:shogowada/scala-json-rpc.git</url>
+    <connection>scm:git:git@github.com:shogowada/scala-json-rpc.git</connection>
+  </scm>
+      <developers>
+        <developer>
+          <id>shogowada</id>
+          <name>Shogo Wada</name>
+          <url>https://github.com/shogowada</url>
+        </developer>
+      </developers>
 )
 
 lazy val core = (crossProject in file("."))
@@ -16,7 +45,8 @@ lazy val core = (crossProject in file("."))
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 
         "org.scalatest" %%% "scalatest" % "3.+" % "test"
-      )
+      ),
+      publishArtifact := true
     )
     .dependsOn(jsonSerializer)
     .dependsOn(upickleJsonSerializer % "test")
@@ -27,7 +57,8 @@ lazy val js = core.js
 lazy val jsonSerializer = (crossProject in file("json-serializer"))
     .settings(commonSettings: _*)
     .settings(
-      name += "-json-serializer"
+      name += "-json-serializer",
+      publishArtifact := true
     )
 
 lazy val jsonSerializerJvm = jsonSerializer.jvm
@@ -41,7 +72,8 @@ lazy val upickleJsonSerializer = (crossProject in file("upickle-json-serializer"
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 
         "com.lihaoyi" %%% "upickle" % "0.4.+"
-      )
+      ),
+      publishArtifact := true
     )
     .dependsOn(jsonSerializer)
 

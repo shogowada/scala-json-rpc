@@ -6,18 +6,11 @@ import org.scalatest.{Matchers, path}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class FakeJsonSender extends JsonSender {
-  override def send(json: String): Unit = {
-    throw new UnsupportedOperationException
-  }
-}
-
 class JsonRpcClientTest extends path.FunSpec
     with Matchers {
   override def newInstance: path.FunSpecLike = new JsonRpcClientTest
 
-  val jsonSender = new FakeJsonSender
-  val target = JsonRpcClient(UpickleJsonSerializer(), jsonSender)
+  val target = JsonRpcClient(UpickleJsonSerializer(), (json) => {})
 
   describe("given I have an API") {
     trait Api {

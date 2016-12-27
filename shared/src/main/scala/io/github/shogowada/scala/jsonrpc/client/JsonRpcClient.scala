@@ -1,5 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.client
 
+import io.github.shogowada.scala.jsonrpc.Types.JsonSender
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
@@ -102,7 +103,7 @@ object JsonRpcClientMacro {
           val $requestId = Left(java.util.UUID.randomUUID.toString)
           val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
 
-          $jsonSender.send(${createRequestJson(requestId)})
+          $jsonSender(${createRequestJson(requestId)})
 
           $promisedResponse.future
               .map((json: String) => {
