@@ -55,7 +55,7 @@ class CalculatorApiImpl extends CalculatorApi {
 val server: JsonRpcServer[MyJsonSerializer] = JsonRpcServer(new MyJsonSerializer())
     .bindApi[CalculatorApi](new CalculatorApiImpl)
 
-// Feed JSON-RPC request into server and send response to client.
+// Feed JSON-RPC request into server and send its response to client.
 val futureMaybeResponse: Future[Option[String]] = server.receive(json)
 futureMaybeResponse.onComplete {
   case Success(Some(json)) => // Send the response to client
@@ -68,7 +68,8 @@ futureMaybeResponse.onComplete {
 ```scala
 // Create JSON-RPC client.
 val jsonSender: (String) => Future[Option[String]] = (json) => {
-  // Send JSON to server and return its response as future
+  // Send JSON to server and return its response as future.
+  // By returning the future here, it will automatically take care of the responses for you.
 }
 val client: JsonRpcClient[MyJsonSerializer] = JsonRpcClient(
   new MyJsonSerializer(),
@@ -91,8 +92,9 @@ Alternatively, you can feed JSON-RPC responses explicitly like below. You can us
 
 ```scala
 val jsonSender: (String) => Unit = (json) => {
-  // Send JSON to server without returning its response as future
+  // Send JSON to server without returning its response as future.
+  // Because client doesn't have access to the response, you need to explicitly feed the response like below.
 }
 // ...
-client.receive(json) // Explicitly feed JSON-RPC responses
+client.receive(json) // Explicitly feed JSON-RPC responses.
 ```
