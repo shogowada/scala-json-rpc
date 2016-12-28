@@ -1,12 +1,12 @@
 # scala-json-rpc
 
-scala-json-rpc is JSON-RPC 2.0 server and client for Scala JVM/JS. It has no dependency and should fit into any of your Scala JVM/JS application.
+scala-json-rpc is JSON-RPC 2.0 server and client for Scala JVM/JS. **It has no dependency** and should fit into any of your Scala JVM/JS application.
 
 |Component|SBT|Scala Version|Scala JS Version|
 |---|---|---|---|
 |scala-json-rpc|```"io.github.shogowada" %%% "scala-json-rpc" % "0.1.0"```|2.11, 2.12|0.6|
 
-*It is still in early development* and does not fully support JSON-RPC spec. Here are list of known features that's not supported yet.
+**It is still in early development** and does not fully support JSON-RPC spec. Here are list of known features that's not supported yet.
 
 - Custom method name
 - Named parameter
