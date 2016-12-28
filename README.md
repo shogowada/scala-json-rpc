@@ -6,6 +6,15 @@ scala-json-rpc is JSON-RPC 2.0 server and client for Scala JVM/JS. It has no dep
 |---|---|---|---|
 |scala-json-rpc|```"io.github.shogowada" %%% "scala-json-rpc" % "0.1.0"```|2.11, 2.12|0.6|
 
+*It is still in early development* and does not fully support JSON-RPC spec. Here are list of known features that's not supported yet.
+
+- Custom method name
+- Named parameter
+    - Custom parameter name
+- JSON-RPC notification
+- Custom JSON-RPC error
+- Custom JSON-RPC request ID
+
 # Example
 
 In this example, we will implement calculator on server side and call the calculator methods from client side.
@@ -27,6 +36,9 @@ class MyJsonSerializer extends JsonSerializer {
 }
 ```
 
+- For now, JSON-RPC method names are full name for the API method. For example, if the above ```CalculatorApi``` is defined at package ```io.github.shogowada```, then JSON-RPC method name for the ```add``` method will be ```io.github.shogowada.CalculatorApi.add```.
+    - This is convenient if your are using this library only to achieve RMI between your Scala components. In the future, you will be able to name your methods.
+
 ## Server side
 
 ```scala
@@ -39,6 +51,7 @@ class CalculatorApiImpl extends CalculatorApi {
 // Create JSON-RPC server.
 // JsonRpcServer is immutable, meaning everytime it binds a new API, it returns a new instance of JsonRpcServer.
 // JsonSerializer type parameter is required to support JsonSerializer who's implementation is macro.
+// You can bind as many APIs as you want.
 val server: JsonRpcServer[MyJsonSerializer] = JsonRpcServer(new MyJsonSerializer())
     .bindApi[CalculatorApi](new CalculatorApiImpl)
 
@@ -63,6 +76,7 @@ val client: JsonRpcClient[MyJsonSerializer] = JsonRpcClient(
 )
 
 // Create an API.
+// You can create as many APIs as you wait.
 val calculatorApi: CalculatorApi = client.createApi[CalculatorApi]
 
 // Use the API.
