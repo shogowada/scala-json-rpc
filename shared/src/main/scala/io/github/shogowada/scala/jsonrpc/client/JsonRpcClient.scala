@@ -123,7 +123,6 @@ object JsonRpcClientMacro {
 
           $promisedResponse.future
               .map((json: String) => {
-                println("Received response " + json)
                 $jsonSerializer.deserialize[JsonRpcResultResponse[$resultType]](json)
                     .map(resultResponse => resultResponse.result)
                     .get
