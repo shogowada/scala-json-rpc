@@ -72,16 +72,13 @@ futureResult.onComplete {
   case _ =>
 }
 ```
-    
+
 Alternatively, you can feed JSON-RPC responses explicitly like below. You can use whichever flow makes more sense for your application.
 
 ```scala
 val jsonSender: (String) => Unit = (json) => {
   // Send JSON to server without returning its response as future
 }
-val client: JsonRpcClient[MyJsonSerializer] = JsonRpcClient(
-  new MyJsonSerializer(),
-  jsonSender // Create a client with JSON sender returning Unit
-)
+// ...
 client.receive(json) // Explicitly feed JSON-RPC responses
 ```
