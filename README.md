@@ -31,8 +31,8 @@ trait CalculatorApi {
 
 // Define how to serialize/deserialize JSON.
 class MyJsonSerializer extends JsonSerializer {
-  override def serialize[T](value: T): Option[String] = // Serialize model into JSON
-  override def deserialize[T](json: String): Option[T] = // Deserialize JSON into model
+  override def serialize[T](value: T): Option[String] = // ... Serialize model into JSON.
+  override def deserialize[T](json: String): Option[T] = // ... Deserialize JSON into model.
 }
 ```
 
@@ -56,9 +56,13 @@ val server: JsonRpcServer[MyJsonSerializer] = JsonRpcServer(new MyJsonSerializer
     .bindApi[CalculatorApi](new CalculatorApiImpl)
 
 // Feed JSON-RPC request into server and send its response to client.
-val futureMaybeResponse: Future[Option[String]] = server.receive(json)
+// Server's receive method returns Future[Option[String]], where the String is JSON-RPC response.
+// If the response is present, you are supposed to send it back to client.
+val requestJson: String = // ... JSON-RPC request as JSON
+val futureMaybeResponse: Future[Option[String]] = server.receive(requestJson)
 futureMaybeResponse.onComplete {
-  case Success(Some(json)) => // Send the response to client
+  case Success(Some(responseJson)) => // Send the response to client.
+  case Success(None) => // Response is absent if the received JSON was JSON-RPC notification.
   case _ =>
 }
 ```
@@ -67,9 +71,10 @@ futureMaybeResponse.onComplete {
 
 ```scala
 // Create JSON-RPC client.
-val jsonSender: (String) => Future[Option[String]] = (json) => {
+val jsonSender: (String) => Future[Option[String]] = (requestJson) => {
   // Send JSON to server and return its response as future.
   // By returning the future here, it will automatically take care of the responses for you.
+  // ...
 }
 val client: JsonRpcClient[MyJsonSerializer] = JsonRpcClient(
   new MyJsonSerializer(),
@@ -77,23 +82,24 @@ val client: JsonRpcClient[MyJsonSerializer] = JsonRpcClient(
 )
 
 // Create an API.
-// You can create as many APIs as you wait.
+// You can create as many APIs as you want.
 val calculatorApi: CalculatorApi = client.createApi[CalculatorApi]
 
 // Use the API.
 val futureResult: Future[Int] = calculatorApi.add(1, 2)
 futureResult.onComplete {
-  case Success(result) => println(result)
+  case Success(result) => // ... Do something with the result.
   case _ =>
 }
 ```
 
-Alternatively, you can feed JSON-RPC responses explicitly like below. You can use whichever flow makes more sense for your application.
+Alternatively, you can feed JSON-RPC responses explicitly like below. You can use whichever flow makes more sense for your application. For example, if you are using web socket to connect client and server, this flow might make more sense than to return Future[Option[String]] from the JSON sender.
 
 ```scala
-val jsonSender: (String) => Unit = (json) => {
+val jsonSender: (String) => Unit = (requestJson) => {
   // Send JSON to server without returning its response as future.
   // Because client doesn't have access to the response, you need to explicitly feed the response like below.
+  // ...
 }
 // ...
 client.receive(json) // Explicitly feed JSON-RPC responses.
