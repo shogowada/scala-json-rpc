@@ -86,6 +86,13 @@ val client: JsonRpcClient[MyJsonSerializer] = JsonRpcClient(
 val calculatorApi: CalculatorApi = client.createApi[CalculatorApi]
 
 // Use the API.
+// When you invoke an API method,
+//     1. It will create a JSON-RPC request.
+//     2. It will serialize the request into JSON using JsonSerializer.
+//     3. It will send the JSON to server using JsonSender.
+//     4. It will receive the response JSON via Future[Option[String]] returned from the JsonSender.
+//     5. It will deserialize the response JSON into JSON-RPC response.
+//     6. It will complete the Future returned by the API method with result of the JSON-RPC response.
 val futureResult: Future[Int] = calculatorApi.add(1, 2)
 futureResult.onComplete {
   case Success(result) => // ... Do something with the result.
