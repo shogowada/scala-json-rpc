@@ -53,24 +53,22 @@ object JsonRpcServerMacro {
     )
   }
 
-  private def isJsonRpcMethod(c: blackbox.Context)(method: c.universe.Symbol): Boolean = {
-    method.isMethod && method.isPublic && !method.isConstructor
-  }
-
   private def createMethodNameToHandler[API]
   (c: blackbox.Context)
   (api: c.Expr[API], method: c.universe.MethodSymbol)
   : c.Expr[(String, Handler)] = {
     import c.universe._
 
+    val macroUtils = MacroUtils[c.type](c)
+
     val jsonSerializer = q"${c.prefix.tree}.jsonSerializer"
-    val methodName = q"""${MacroUtils[c.type](c).getMethodName(method)}"""
+    val methodName = q"""${macroUtils.getMethodName(method)}"""
 
     val parameterTypes: Iterable[Type] = method.asMethod.paramLists
         .flatMap((paramList: List[Symbol]) => paramList)
         .map((param: Symbol) => param.typeSignature)
 
-    val parameterType: Tree = MacroUtils[c.type](c).getParameterType(method)
+    val parameterType: Tree = macroUtils.getParameterType(method)
 
     def arguments(params: TermName): Seq[Tree] = {
       Range(0, parameterTypes.size)
@@ -81,22 +79,40 @@ object JsonRpcServerMacro {
 
     val params = TermName("params")
 
-    val handler = c.Expr[Handler](
-      q"""
-          (json: String) => {
-            import io.github.shogowada.scala.jsonrpc.Constants
-            import io.github.shogowada.scala.jsonrpc.Models._
-            $jsonSerializer.deserialize[JsonRpcRequest[$parameterType]](json)
-              .map(request => {
-                val $params = request.params
-                $api.$method(..${arguments(params)})
-                  .map((result) => JsonRpcResultResponse(jsonrpc = Constants.JsonRpc, id = request.id, result = result))
-                  .map((response) => $jsonSerializer.serialize(response))
-              })
-              .getOrElse(Future(None))
-          }
-          """
-    )
+    val handler: c.Expr[Handler] = if (macroUtils.isNotificationMethod(method)) {
+      c.Expr[Handler](
+        q"""
+            (json: String) => {
+              import io.github.shogowada.scala.jsonrpc.Constants
+              import io.github.shogowada.scala.jsonrpc.Models._
+              $jsonSerializer.deserialize[JsonRpcNotification[$parameterType]](json)
+                .map(notification => {
+                  val $params = notification.params
+                  $api.$method(..${arguments(params)})
+                  Future(None)
+                })
+                .getOrElse(Future(None))
+            }
+            """
+      )
+    } else {
+      c.Expr[Handler](
+        q"""
+            (json: String) => {
+              import io.github.shogowada.scala.jsonrpc.Constants
+              import io.github.shogowada.scala.jsonrpc.Models._
+              $jsonSerializer.deserialize[JsonRpcRequest[$parameterType]](json)
+                .map(request => {
+                  val $params = request.params
+                  $api.$method(..${arguments(params)})
+                    .map((result) => JsonRpcResultResponse(jsonrpc = Constants.JsonRpc, id = request.id, result = result))
+                    .map((response) => $jsonSerializer.serialize(response))
+                })
+                .getOrElse(Future(None))
+            }
+            """
+      )
+    }
 
     c.Expr[(String, Handler)](q"""$methodName -> $handler""")
   }

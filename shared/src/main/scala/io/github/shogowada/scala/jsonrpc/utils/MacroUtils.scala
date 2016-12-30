@@ -10,11 +10,11 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
   (apiType: Type)
   : Iterable[MethodSymbol] = {
     apiType.decls
-        .filter((apiMember: Symbol) => isJsonRpcMethod(c)(apiMember))
+        .filter((apiMember: Symbol) => isJsonRpcMethod(apiMember))
         .map((apiMember: Symbol) => apiMember.asMethod)
   }
 
-  private def isJsonRpcMethod(c: blackbox.Context)(method: Symbol): Boolean = {
+  private def isJsonRpcMethod(method: Symbol): Boolean = {
     method.isMethod && method.isPublic && !method.isConstructor
   }
 
@@ -27,7 +27,21 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
         .flatMap((paramList: List[Symbol]) => paramList)
         .map((param: Symbol) => param.typeSignature)
 
-    tq"(..$parameterTypes)"
+    if (parameterTypes.size == 1) {
+      val parameterType = parameterTypes.head
+      tq"Tuple1[$parameterType]"
+    } else {
+      tq"(..$parameterTypes)"
+    }
+  }
+
+  def isNotificationMethod(method: MethodSymbol): Boolean = {
+    val returnType: Type = method.returnType
+    returnType =:= getType[Unit]
+  }
+
+  def getType[T: c.TypeTag]: Type = {
+    typeOf[T]
   }
 }
 

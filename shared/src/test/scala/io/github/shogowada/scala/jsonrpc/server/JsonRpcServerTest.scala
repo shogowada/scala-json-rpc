@@ -1,18 +1,31 @@
 package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.Constants
-import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcRequest, JsonRpcResultResponse}
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcNotification, JsonRpcRequest, JsonRpcResultResponse}
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import org.scalatest.{AsyncFunSpec, Matchers}
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
-class FakeApi {
+trait FakeApi {
+  def foo(bar: String, baz: Int): Future[String]
+
+  def notify(message: String): Unit
+}
+
+class FakeApiImpl extends FakeApi {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def foo(bar: String, baz: Int): Future[String] = {
+  val notifiedMessages = ListBuffer.empty[String]
+
+  override def foo(bar: String, baz: Int): Future[String] = {
     Future(s"$bar$baz")
+  }
+
+  override def notify(message: String): Unit = {
+    notifiedMessages += message
   }
 }
 
@@ -22,11 +35,11 @@ class JsonRpcServerTest extends AsyncFunSpec
   override implicit def executionContext = ExecutionContext.Implicits.global
 
   describe("given I have an API bound") {
-    val api = new FakeApi
+    val api = new FakeApiImpl
 
     val jsonSerializer = UpickleJsonSerializer()
     val target = JsonRpcServer(jsonSerializer)
-        .bindApi(api)
+        .bindApi[FakeApi](api)
 
     Seq("foo").foreach(methodName => {
       describe(s"when I received request for method $methodName") {
@@ -37,7 +50,7 @@ class JsonRpcServerTest extends AsyncFunSpec
           method = classOf[FakeApi].getName + s".$methodName",
           params = ("bar", 1)
         )
-        val requestJson: String = jsonSerializer.serialize[JsonRpcRequest[(String, Int)]](request).get
+        val requestJson: String = jsonSerializer.serialize(request).get
 
         val futureMaybeResponseJson: Future[Option[String]] = target.receive(requestJson)
 
@@ -51,5 +64,27 @@ class JsonRpcServerTest extends AsyncFunSpec
         }
       }
     })
+
+    describe("when I received notification method") {
+      val message = "Hello, World!"
+      val notification = JsonRpcNotification[Tuple1[String]](
+        jsonrpc = Constants.JsonRpc,
+        method = classOf[FakeApi].getName + ".notify",
+        params = Tuple1(message)
+      )
+      val notificationJson = jsonSerializer.serialize(notification).get
+
+      val futureMaybeResponseJson = target.receive(notificationJson)
+
+      it("then it should notify the server") {
+        futureMaybeResponseJson
+            .map(maybeResponse => api.notifiedMessages should equal(List(message)))
+      }
+
+      it("then it should not return the response") {
+        futureMaybeResponseJson
+            .map(maybeResponse => maybeResponse should equal(None))
+      }
+    }
   }
 }
