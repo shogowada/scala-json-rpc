@@ -1,5 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.client
 
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcNotification, JsonRpcRequest}
 import io.github.shogowada.scala.jsonrpc.Types.JsonSender
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
@@ -86,47 +87,98 @@ object JsonRpcClientMacro {
         parameter.asTerm.name
       })
     })
+    val parametersAsTuple = if (parameters.size == 1) {
+      val parameter = parameters.head
+      q"Tuple1($parameter)"
+    } else {
+      q"(..$parameters)"
+    }
     val returnType: Type = apiMethod.returnType
-    val resultType: Type = returnType.typeArgs.head
 
     val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
     val jsonSender: Tree = q"${c.prefix.tree}.jsonSender"
     val promisedResponseRepository: Tree = q"${c.prefix.tree}.promisedResponseRepository"
 
-    def createRequest(requestId: TermName): Tree =
-      q"""
-          JsonRpcRequest(
-            jsonrpc = Constants.JsonRpc,
-            id = $requestId,
-            method = $methodName,
-            params = (..$parameters)
-          )
-          """
-    def createRequestJson(requestId: TermName): Tree =
-      q"""
-          $jsonSerializer.serialize(${createRequest(requestId)}).get
-          """
+    def createNotificationMethodBody: c.Expr[returnType.type] = {
+      val notification = c.Expr[JsonRpcNotification[parameterType.type]](
+        q"""
+            JsonRpcNotification[$parameterType](
+              jsonrpc = Constants.JsonRpc,
+              method = $methodName,
+              params = $parametersAsTuple
+            )
+            """
+      )
 
-    val requestId = TermName("requestId")
-    val promisedResponse = TermName("promisedResponse")
+      val notificationJson = c.Expr[String](
+        q"""
+            $jsonSerializer.serialize($notification).get
+            """
+      )
+
+      c.Expr[returnType.type](
+        q"""
+            $jsonSender($notificationJson)
+            """
+      )
+    }
+
+    def createRequestMethodBody: c.Expr[returnType.type] = {
+      val resultType: Type = returnType.typeArgs.head
+
+      val requestId = TermName("requestId")
+
+      val request = c.Expr[JsonRpcRequest[parameterType.type]](
+        q"""
+            JsonRpcRequest[$parameterType](
+              jsonrpc = Constants.JsonRpc,
+              id = $requestId,
+              method = $methodName,
+              params = $parametersAsTuple
+            )
+            """
+      )
+
+      val requestJson = c.Expr[String](
+        q"""
+            $jsonSerializer.serialize($request).get
+            """
+      )
+
+      val promisedResponse = TermName("promisedResponse")
+
+      c.Expr[returnType.type](
+        q"""
+            val $requestId = Left(java.util.UUID.randomUUID.toString)
+            val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
+
+            $jsonSender($requestJson).onComplete {
+              case Success(Some(responseJson: String)) => ${c.prefix.tree}.receive(responseJson)
+              case _ =>
+            }
+
+            $promisedResponse.future
+                .map((json: String) => {
+                  $jsonSerializer.deserialize[JsonRpcResultResponse[$resultType]](json)
+                      .map(resultResponse => resultResponse.result)
+                      .get
+                })
+            """
+      )
+    }
+
+    def createMethodBody: c.Expr[returnType.type] = {
+      if (macroUtils.isNotificationMethod(apiMethod)) {
+        createNotificationMethodBody
+      } else {
+        createRequestMethodBody
+      }
+    }
 
     q"""
         override def $name(...$parameterLists): $returnType = {
           ..${macroUtils.imports}
-          val $requestId = Left(java.util.UUID.randomUUID.toString)
-          val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
-
-          $jsonSender(${createRequestJson(requestId)}).onComplete {
-            case Success(Some(responseJson: String)) => ${c.prefix.tree}.receive(responseJson)
-            case _ => {}
-          }
-
-          $promisedResponse.future
-              .map((json: String) => {
-                $jsonSerializer.deserialize[JsonRpcResultResponse[$resultType]](json)
-                    .map(resultResponse => resultResponse.result)
-                    .get
-              })
+          $createMethodBody
         }
         """
   }

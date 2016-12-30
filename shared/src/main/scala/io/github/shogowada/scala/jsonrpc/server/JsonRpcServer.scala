@@ -1,5 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.server
 
+import io.github.shogowada.scala.jsonrpc.Models.JsonRpcRequest
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
@@ -41,7 +42,7 @@ object JsonRpcServerMacro {
 
     val apiType: Type = weakTypeOf[API]
     val methodNameToHandlerList = MacroUtils[c.type](c).getApiMethods(apiType)
-        .map((apiMember: MethodSymbol) => createMethodNameToHandler(c)(api, apiMember))
+        .map((apiMember: MethodSymbol) => createMethodNameToHandler[c.type, API](c)(api, apiMember))
 
     c.Expr[JsonRpcServer[JSON_SERIALIZER]](
       q"""
@@ -53,7 +54,7 @@ object JsonRpcServerMacro {
     )
   }
 
-  private def createMethodNameToHandler[API]
+  private def createMethodNameToHandler[CONTEXT <: blackbox.Context, API]
   (c: blackbox.Context)
   (api: c.Expr[API], method: c.universe.MethodSymbol)
   : c.Expr[(String, Handler)] = {
@@ -62,7 +63,7 @@ object JsonRpcServerMacro {
     val macroUtils = MacroUtils[c.type](c)
 
     val jsonSerializer = q"${c.prefix.tree}.jsonSerializer"
-    val methodName = q"""${macroUtils.getMethodName(method)}"""
+    val methodName = macroUtils.getMethodName(method)
 
     val parameterTypes: Iterable[Type] = method.asMethod.paramLists
         .flatMap((paramList: List[Symbol]) => paramList)
@@ -77,40 +78,57 @@ object JsonRpcServerMacro {
           .toSeq
     }
 
+    val json = TermName("json")
     val params = TermName("params")
     def methodInvocation(params: TermName) = q"$api.$method(..${arguments(params)})"
 
-    val handler: c.Expr[Handler] = if (macroUtils.isNotificationMethod(method)) {
-      c.Expr[Handler](
-        q"""
-            (json: String) => {
-              ..${macroUtils.imports}
-              $jsonSerializer.deserialize[JsonRpcNotification[$parameterType]](json)
-                .map(notification => {
-                  val $params = notification.params
-                  ${methodInvocation(params)}
-                  Future(None)
-                })
-                .getOrElse(Future(None))
-            }
-            """
+    def notificationHandler = c.Expr[Handler](
+      q"""
+          ($json: String) => {
+            ..${macroUtils.imports}
+            $jsonSerializer.deserialize[JsonRpcNotification[$parameterType]]($json)
+              .map(notification => {
+                val $params = notification.params
+                ${methodInvocation(params)}
+                Future(None)
+              })
+              .getOrElse(Future(None))
+          }
+          """
+    )
+
+    def requestHandler = {
+      val request = TermName("request")
+
+      def maybeJsonRpcRequest(json: TermName) = c.Expr[JsonRpcRequest[parameterType.type]](
+        q"""$jsonSerializer.deserialize[JsonRpcRequest[$parameterType]]($json)"""
       )
-    } else {
+
       c.Expr[Handler](
         q"""
-            (json: String) => {
+            ($json: String) => {
               ..${macroUtils.imports}
-              $jsonSerializer.deserialize[JsonRpcRequest[$parameterType]](json)
-                .map(request => {
-                  val $params = request.params
+              ${maybeJsonRpcRequest(json)}
+                .map(($request: JsonRpcRequest[$parameterType]) => {
+                  val $params = $request.params
                   ${methodInvocation(params)}
-                    .map((result) => JsonRpcResultResponse(jsonrpc = Constants.JsonRpc, id = request.id, result = result))
+                    .map((result) => JsonRpcResultResponse(
+                      jsonrpc = Constants.JsonRpc,
+                      id = $request.id,
+                      result = result
+                    ))
                     .map((response) => $jsonSerializer.serialize(response))
                 })
                 .getOrElse(Future(None))
             }
             """
       )
+    }
+
+    def handler: c.Expr[Handler] = if (macroUtils.isNotificationMethod(method)) {
+      notificationHandler
+    } else {
+      requestHandler
     }
 
     c.Expr[(String, Handler)](q"""$methodName -> $handler""")
