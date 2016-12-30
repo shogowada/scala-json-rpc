@@ -4,7 +4,7 @@ scala-json-rpc is JSON-RPC 2.0 server and client for Scala JVM/JS. **It has no d
 
 |Component|SBT|Scala Version|Scala JS Version|
 |---|---|---|---|
-|scala-json-rpc|```"io.github.shogowada" %%% "scala-json-rpc" % "0.1.0"```|2.11, 2.12|0.6|
+|scala-json-rpc|```"io.github.shogowada" %%% "scala-json-rpc" % "0.2.0"```|2.11, 2.12|0.6|
 
 It should already serve you well as RMI library, but it is still in early development and does not fully support JSON-RPC spec yet. Here are list of known features that's not supported yet.
 
