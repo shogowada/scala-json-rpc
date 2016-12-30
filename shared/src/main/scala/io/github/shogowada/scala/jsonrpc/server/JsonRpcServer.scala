@@ -83,8 +83,7 @@ object JsonRpcServerMacro {
       c.Expr[Handler](
         q"""
             (json: String) => {
-              import io.github.shogowada.scala.jsonrpc.Constants
-              import io.github.shogowada.scala.jsonrpc.Models._
+              ..${macroUtils.imports}
               $jsonSerializer.deserialize[JsonRpcNotification[$parameterType]](json)
                 .map(notification => {
                   val $params = notification.params
@@ -99,8 +98,7 @@ object JsonRpcServerMacro {
       c.Expr[Handler](
         q"""
             (json: String) => {
-              import io.github.shogowada.scala.jsonrpc.Constants
-              import io.github.shogowada.scala.jsonrpc.Models._
+              ..${macroUtils.imports}
               $jsonSerializer.deserialize[JsonRpcRequest[$parameterType]](json)
                 .map(request => {
                   val $params = request.params
@@ -122,6 +120,8 @@ object JsonRpcServerMacro {
   (json: c.Expr[String])
   : c.Expr[Future[Option[String]]] = {
     import c.universe._
+
+    val macroUtils = MacroUtils[c.type](c)
 
     val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
     val methodNameToHandlerMap: Tree = q"${c.prefix.tree}.methodNameToHandlerMap"
@@ -148,9 +148,7 @@ object JsonRpcServerMacro {
 
     c.Expr(
       q"""
-          import io.github.shogowada.scala.jsonrpc.Constants
-          import io.github.shogowada.scala.jsonrpc.Models._
-          import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer._
+          ..${macroUtils.imports}
           $futureMaybeJson
           """
     )

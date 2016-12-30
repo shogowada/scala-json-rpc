@@ -6,6 +6,14 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   import c.universe._
 
+  val imports =
+    q"""
+        import scala.util._
+        import io.github.shogowada.scala.jsonrpc.Constants
+        import io.github.shogowada.scala.jsonrpc.Models._
+        import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer._
+        """
+
   def getApiMethods
   (apiType: Type)
   : Iterable[MethodSymbol] = {
