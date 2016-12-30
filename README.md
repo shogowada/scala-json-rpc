@@ -11,7 +11,6 @@ It should already serve you well as RMI library, but it is still in early develo
 - Custom method name
 - Named parameter
     - Custom parameter name
-- JSON-RPC notification
 - Custom JSON-RPC error
 - Custom JSON-RPC request ID
 
@@ -111,3 +110,6 @@ val jsonSender: (String) => Unit = (requestJson) => {
 // ...
 client.receive(json) // Explicitly feed JSON-RPC responses.
 ```
+
+### Other Examples
+- [JSON-RPC notification](/examples/notification)
