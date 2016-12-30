@@ -5,7 +5,6 @@ import io.github.shogowada.scala.jsonrpc.Types.JsonSender
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
@@ -19,25 +18,6 @@ class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
   def createApi[API]: API = macro JsonRpcClientMacro.createApi[API]
 
   def receive(json: String): Unit = macro JsonRpcClientMacro.receive
-}
-
-object JsonRpcClient {
-  def apply[JSON_SERIALIZER <: JsonSerializer]
-  (
-      jsonSerializer: JSON_SERIALIZER,
-      jsonSender: (String) => Unit
-  )(
-      implicit executionContext: ExecutionContext
-  ) = new JsonRpcClient(jsonSerializer, (json: String) => {
-    jsonSender(json)
-    Future(None)
-  })
-
-  def apply[JSON_SERIALIZER <: JsonSerializer]
-  (
-      jsonSerializer: JSON_SERIALIZER,
-      jsonSender: JsonSender
-  ) = new JsonRpcClient(jsonSerializer, jsonSender)
 }
 
 object JsonRpcClientMacro {
