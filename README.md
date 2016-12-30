@@ -11,7 +11,6 @@ It should already serve you well as RMI library, but it is still in early develo
 - Custom method name
 - Named parameter
     - Custom parameter name
-- JSON-RPC notification
 - Custom JSON-RPC error
 - Custom JSON-RPC request ID
 
@@ -23,7 +22,9 @@ In this example, we will implement calculator on server side and call the calcul
 
 ```scala
 // Define an API.
-// Note that API methods must return Future type. This is so that client can use the API remotely.
+// Note that API methods must return either Future or Unit type.
+// If the method returns Future, it will be JSON-RPC request method, and client can receive response.
+// If the method returns Unit, it will be JSON-RPC notification method, and client does not receive response.
 trait CalculatorApi {
   def add(lhs: Int, rhs: Int): Future[Int]
   def subtract(lhs: Int, rhs: Int): Future[Int]
@@ -49,11 +50,12 @@ class CalculatorApiImpl extends CalculatorApi {
 }
 
 // Create JSON-RPC server.
-// JsonRpcServer is immutable, meaning everytime it binds a new API, it returns a new instance of JsonRpcServer.
 // JsonSerializer type parameter is required to support JsonSerializer who's implementation is macro.
 // You can bind as many APIs as you want.
-val server: JsonRpcServer[MyJsonSerializer] = JsonRpcServer(new MyJsonSerializer())
-    .bindApi[CalculatorApi](new CalculatorApiImpl)
+val serverBuilder = JsonRpcServerBuilder[MyJsonSerializer](new MyJsonSerializer())
+serverBuilder.bindApi[CalculatorApi](new CalculatorApiImpl)
+
+val server: JsonRpcServer[MyJsonSerializer] = serverBuilder.build
 
 // Feed JSON-RPC request into server and send its response to client.
 // Server's receive method returns Future[Option[String]], where the String is JSON-RPC response.
@@ -76,10 +78,11 @@ val jsonSender: (String) => Future[Option[String]] = (requestJson) => {
   // By returning the future here, it will automatically take care of the responses for you.
   // ...
 }
-val client: JsonRpcClient[MyJsonSerializer] = JsonRpcClient(
+val clientBuilder = JsonRpcClientBuilder[MyJsonSerializer](
   new MyJsonSerializer(),
   jsonSender
 )
+val client: JsonRpcClient[MyJsonSerializer] = clientBuilder.build
 
 // Create an API.
 // You can create as many APIs as you want.
@@ -111,3 +114,6 @@ val jsonSender: (String) => Unit = (requestJson) => {
 // ...
 client.receive(json) // Explicitly feed JSON-RPC responses.
 ```
+
+### Other Examples
+- [JSON-RPC notification](/examples/notification)

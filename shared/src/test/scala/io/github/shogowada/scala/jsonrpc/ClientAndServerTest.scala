@@ -1,10 +1,11 @@
 package io.github.shogowada.scala.jsonrpc
 
-import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
+import io.github.shogowada.scala.jsonrpc.client.JsonRpcClientBuilder
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
+import io.github.shogowada.scala.jsonrpc.server.JsonRpcServerBuilder
 import org.scalatest.{AsyncFunSpec, Matchers}
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
 class ClientAndServerTest extends AsyncFunSpec
@@ -14,12 +15,16 @@ class ClientAndServerTest extends AsyncFunSpec
 
   val jsonSerializer = UpickleJsonSerializer()
 
-  describe("given I have a calculator API") {
+  describe("given I have APIs") {
 
     trait CalculatorApi {
       def add(lhs: Int, rhs: Int): Future[Int]
 
       def subtract(lhs: Int, rhs: Int): Future[Int]
+    }
+
+    trait GreeterApi {
+      def greet(greeting: String): Unit
     }
 
     class CalculatorApiImpl extends CalculatorApi {
@@ -32,28 +37,58 @@ class ClientAndServerTest extends AsyncFunSpec
       }
     }
 
-    val server = JsonRpcServer(jsonSerializer)
-        .bindApi[CalculatorApi](new CalculatorApiImpl)
-    val client: JsonRpcClient[UpickleJsonSerializer] = JsonRpcClient(
-      jsonSerializer,
-      (json: String) => server.receive(json)
-    )
+    class GreeterApiImpl extends GreeterApi {
+      val greetings = ListBuffer.empty[String]
 
-    val clientApi = client.createApi[CalculatorApi]
-
-    describe("when I add 2 values") {
-      val futureResult = clientApi.add(1, 2)
-
-      it("then it should add the 2 values") {
-        futureResult.map(result => result should equal(3))
+      override def greet(greeting: String): Unit = {
+        greetings += greeting
       }
     }
 
-    describe("when I subtract one value from the other") {
-      val futureResult = clientApi.subtract(1, 2)
+    val greeterApiServer = new GreeterApiImpl
 
-      it("then it should subtract the value") {
-        futureResult.map(result => result should equal(-1))
+    val serverBuilder = JsonRpcServerBuilder(jsonSerializer)
+    serverBuilder.bindApi[CalculatorApi](new CalculatorApiImpl)
+    serverBuilder.bindApi[GreeterApi](greeterApiServer)
+
+    val server = serverBuilder.build
+
+    val clientBuilder = JsonRpcClientBuilder(
+      jsonSerializer,
+      (json: String) => server.receive(json)
+    )
+    val client = clientBuilder.build
+
+    describe("when I am using calculator API") {
+      val calculatorApi = client.createApi[CalculatorApi]
+
+      describe("when I add 2 values") {
+        val futureResult = calculatorApi.add(1, 2)
+
+        it("then it should add the 2 values") {
+          futureResult.map(result => result should equal(3))
+        }
+      }
+
+      describe("when I subtract one value from the other") {
+        val futureResult = calculatorApi.subtract(1, 2)
+
+        it("then it should subtract the value") {
+          futureResult.map(result => result should equal(-1))
+        }
+      }
+    }
+
+    describe("when I am using greeter API") {
+      val greeterApi = client.createApi[GreeterApi]
+
+      describe("when I greet") {
+        val greeting = "Hello, World!"
+        greeterApi.greet(greeting)
+
+        it("then it should greet the server") {
+          greeterApiServer.greetings should equal(List(greeting))
+        }
       }
     }
   }
