@@ -78,6 +78,7 @@ object JsonRpcServerMacro {
     }
 
     val params = TermName("params")
+    def methodInvocation(params: TermName) = q"$api.$method(..${arguments(params)})"
 
     val handler: c.Expr[Handler] = if (macroUtils.isNotificationMethod(method)) {
       c.Expr[Handler](
@@ -87,7 +88,7 @@ object JsonRpcServerMacro {
               $jsonSerializer.deserialize[JsonRpcNotification[$parameterType]](json)
                 .map(notification => {
                   val $params = notification.params
-                  $api.$method(..${arguments(params)})
+                  ${methodInvocation(params)}
                   Future(None)
                 })
                 .getOrElse(Future(None))
@@ -102,7 +103,7 @@ object JsonRpcServerMacro {
               $jsonSerializer.deserialize[JsonRpcRequest[$parameterType]](json)
                 .map(request => {
                   val $params = request.params
-                  $api.$method(..${arguments(params)})
+                  ${methodInvocation(params)}
                     .map((result) => JsonRpcResultResponse(jsonrpc = Constants.JsonRpc, id = request.id, result = result))
                     .map((response) => $jsonSerializer.serialize(response))
                 })
