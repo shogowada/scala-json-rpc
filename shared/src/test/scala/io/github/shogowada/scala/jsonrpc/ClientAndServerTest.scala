@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc
 
 import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
+import io.github.shogowada.scala.jsonrpc.server.JsonRpcServerBuilder
 import org.scalatest.{AsyncFunSpec, Matchers}
 
 import scala.collection.mutable.ListBuffer
@@ -47,10 +47,11 @@ class ClientAndServerTest extends AsyncFunSpec
 
     val greeterApiServer = new GreeterApiImpl
 
-    var server = JsonRpcServer(jsonSerializer)
-        .bindApi[CalculatorApi](new CalculatorApiImpl)
-    server = server
-        .bindApi[GreeterApi](greeterApiServer)
+    val serverBuilder = JsonRpcServerBuilder(jsonSerializer)
+    serverBuilder.bindApi[CalculatorApi](new CalculatorApiImpl)
+    serverBuilder.bindApi[GreeterApi](greeterApiServer)
+
+    val server = serverBuilder.build
     val client: JsonRpcClient[UpickleJsonSerializer] = JsonRpcClient(
       jsonSerializer,
       (json: String) => server.receive(json)

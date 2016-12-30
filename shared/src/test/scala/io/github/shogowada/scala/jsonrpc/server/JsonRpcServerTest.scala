@@ -38,8 +38,10 @@ class JsonRpcServerTest extends AsyncFunSpec
     val api = new FakeApiImpl
 
     val jsonSerializer = UpickleJsonSerializer()
-    val target = JsonRpcServer(jsonSerializer)
-        .bindApi[FakeApi](api)
+    val serverBuilder = JsonRpcServerBuilder(jsonSerializer)
+    serverBuilder.bindApi[FakeApi](api)
+
+    val target = serverBuilder.build
 
     Seq("foo").foreach(methodName => {
       describe(s"when I received request for method $methodName") {
