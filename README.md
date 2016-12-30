@@ -62,7 +62,7 @@ val requestJson: String = // ... JSON-RPC request as JSON
 val futureMaybeResponse: Future[Option[String]] = server.receive(requestJson)
 futureMaybeResponse.onComplete {
   case Success(Some(responseJson)) => // Send the response to client.
-  case Success(None) => // Response is absent if the received JSON was JSON-RPC notification.
+  case Success(None) => // Response is absent if it was JSON-RPC notification.
   case _ =>
 }
 ```
@@ -87,12 +87,12 @@ val calculatorApi: CalculatorApi = client.createApi[CalculatorApi]
 
 // Use the API.
 // When you invoke an API method,
-//     1. It will create a JSON-RPC request.
-//     2. It will serialize the request into JSON using JsonSerializer.
-//     3. It will send the JSON to server using JsonSender.
-//     4. It will receive the response JSON via Future[Option[String]] returned from the JsonSender.
-//     5. It will deserialize the response JSON into JSON-RPC response.
-//     6. It will complete the Future returned by the API method with result of the JSON-RPC response.
+//     1. It creates a JSON-RPC request.
+//     2. It serializes the request into JSON using JsonSerializer.
+//     3. It sends the JSON to server using JsonSender.
+//     4. It receives the response JSON via Future[Option[String]] returned from the JsonSender.
+//     5. It deserializes the response JSON into JSON-RPC response using JsonSerializer.
+//     6. It completes the Future returned by the API method with result of the JSON-RPC response.
 val futureResult: Future[Int] = calculatorApi.add(1, 2)
 futureResult.onComplete {
   case Success(result) => // ... Do something with the result.
@@ -100,7 +100,7 @@ futureResult.onComplete {
 }
 ```
 
-Alternatively, you can feed JSON-RPC responses explicitly like below. You can use whichever flow makes more sense for your application. For example, if you are using web socket to connect client and server, this flow might make more sense than to return Future[Option[String]] from the JSON sender.
+Alternatively, you can feed JSON-RPC responses explicitly like below. You can use whichever flow makes more sense for your application. For example, if you are using web socket to connect client and server, this flow might make more sense than to return ```Future[Option[String]]``` from the JSON sender.
 
 ```scala
 val jsonSender: (String) => Unit = (requestJson) => {
