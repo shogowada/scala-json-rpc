@@ -106,8 +106,8 @@ class ClientAndServerTest extends AsyncFunSpec
           response.failed
               .map {
                 case exception: JsonRpcException[_] => {
-                  exception.response should matchPattern {
-                    case JsonRpcErrorResponse(Constants.JsonRpc, _, JsonRpcErrors.methodNotFound) =>
+                  exception.maybeResponse should matchPattern {
+                    case Some(JsonRpcErrorResponse(Constants.JsonRpc, _, JsonRpcErrors.methodNotFound)) =>
                   }
                 }
                 case exception => fail("It should have failed with JsonRpcErrorException, but failed with " + exception)

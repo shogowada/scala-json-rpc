@@ -58,6 +58,6 @@ object Models {
     lazy val internalError = JsonRpcError(-32603, "Internal error", Option("Internal JSON-RPC error."))
   }
 
-  class JsonRpcException[+ERROR](val response: JsonRpcErrorResponse[ERROR]) extends RuntimeException
+  class JsonRpcException[+ERROR](val maybeResponse: Option[JsonRpcErrorResponse[ERROR]]) extends RuntimeException
 
 }

@@ -142,13 +142,10 @@ object JsonRpcClientMacro {
                 .map((json: String) => {
                   $jsonSerializer.deserialize[JsonRpcResultResponse[$resultType]](json)
                       .map(resultResponse => resultResponse.result)
-                      .orElse {
-                        $jsonSerializer.deserialize[JsonRpcErrorResponse[String]](json)
-                          .map(errorResponse => {
-                            throw new JsonRpcException(errorResponse)
-                          })
+                      .getOrElse {
+                        val maybeResponse = $jsonSerializer.deserialize[JsonRpcErrorResponse[String]](json)
+                        throw new JsonRpcException(maybeResponse)
                       }
-                      .get
                 })
             """
       )
