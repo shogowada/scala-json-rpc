@@ -5,7 +5,7 @@ import io.github.shogowada.scala.jsonrpc.Types.JsonSender
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Promise
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
@@ -178,7 +178,7 @@ object JsonRpcClientMacro {
     val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
     val promisedResponseRepository: Tree = q"${c.prefix.tree}.promisedResponseRepository"
 
-    val maybeJsonRpcRequestId = c.Expr[JsonRpcRequestId](
+    val maybeJsonRpcRequestId = c.Expr[Option[JsonRpcRequestId]](
       q"""
           $jsonSerializer.deserialize[JsonRpcRequestId]($json)
               .filter(requestId => requestId.jsonrpc == Constants.JsonRpc)
