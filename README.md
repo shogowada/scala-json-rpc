@@ -74,9 +74,9 @@ futureMaybeResponse.onComplete {
 ```scala
 // Create JSON-RPC client.
 val jsonSender: (String) => Future[Option[String]] = (requestJson) => {
-  // Send JSON to server and return its response as future.
   // By returning the future here, it will automatically take care of the responses for you.
-  // ...
+  val futureMaybeResponseJson: Future[Option[String]] = // ... Send the request JSON and receive its response.
+  futureMaybeResponseJson
 }
 val clientBuilder = JsonRpcClientBuilder[MyJsonSerializer](
   new MyJsonSerializer(),
@@ -89,13 +89,14 @@ val client: JsonRpcClient[MyJsonSerializer] = clientBuilder.build
 val calculatorApi: CalculatorApi = client.createApi[CalculatorApi]
 
 // Use the API.
-// When you invoke an API method,
-//     1. It creates a JSON-RPC request.
-//     2. It serializes the request into JSON using JsonSerializer.
-//     3. It sends the JSON to server using JsonSender.
-//     4. It receives the response JSON via Future[Option[String]] returned from the JsonSender.
-//     5. It deserializes the response JSON into JSON-RPC response using JsonSerializer.
-//     6. It completes the Future returned by the API method with result of the JSON-RPC response.
+// When you invoke an API method, under the hood, it:
+//     1. creates a JSON-RPC request with the given parameters.
+//     2. serializes the request into JSON using JsonSerializer.
+//     3. sends the JSON to server using JsonSender.
+//     4. receives the response JSON via Future[Option[String]] returned from the JsonSender.
+//         - Or, it receives the response JSON via client.receive(responseJson) method.
+//     5. deserializes the response JSON into JSON-RPC response using JsonSerializer.
+//     6. completes the Future returned by the API method with result of the JSON-RPC response.
 val futureResult: Future[Int] = calculatorApi.add(1, 2)
 futureResult.onComplete {
   case Success(result) => // ... Do something with the result.
@@ -108,11 +109,11 @@ Alternatively, you can feed JSON-RPC responses explicitly like below. You can us
 ```scala
 val jsonSender: (String) => Unit = (requestJson) => {
   // Send JSON to server without returning its response as future.
-  // Because client doesn't have access to the response, you need to explicitly feed the response like below.
+  // Because client doesn't have access to the response now, you need to explicitly feed the response like below.
   // ...
 }
 // ...
-client.receive(json) // Explicitly feed JSON-RPC responses.
+client.receive(responseJson) // Explicitly feed JSON-RPC responses.
 ```
 
 ### Other Examples
