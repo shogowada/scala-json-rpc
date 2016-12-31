@@ -49,20 +49,25 @@ object JsonRpcServerMacro {
           """
     )
 
+    val maybeMethodNotFoundErrorJson = c.Expr[Option[String]](
+      q"""
+          $jsonSerializer.deserialize[JsonRpcRequestId]($json)
+            .flatMap(requestId => {
+              $jsonSerializer.serialize(
+                JsonRpcErrorResponse(
+                  jsonrpc = Constants.JsonRpc,
+                  id = requestId.id,
+                  error = JsonRpcErrors.methodNotFound
+                )
+              )
+            })
+          """
+    )
+
     val futureMaybeJson = c.Expr[Future[Option[String]]](
       q"""
           $maybeHandler.map(handler => handler($json))
-            .getOrElse {
-              Future($jsonSerializer.deserialize[JsonRpcRequestId]($json).flatMap(requestId => {
-                $jsonSerializer.serialize(
-                  JsonRpcErrorResponse(
-                    jsonrpc = Constants.JsonRpc,
-                    id = requestId.id,
-                    error = JsonRpcErrors.methodNotFound
-                  )
-                )
-              }))
-            }
+            .getOrElse { Future($maybeMethodNotFoundErrorJson) }
           """
     )
 
