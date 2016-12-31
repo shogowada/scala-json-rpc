@@ -1,10 +1,11 @@
 package io.github.shogowada.scala.jsonrpc.client
 
-import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcNotification, JsonRpcRequest}
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcNotification, JsonRpcRequest, JsonRpcRequestId}
 import io.github.shogowada.scala.jsonrpc.Types.JsonSender
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
+import scala.concurrent.{Future, Promise}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
@@ -141,6 +142,12 @@ object JsonRpcClientMacro {
                 .map((json: String) => {
                   $jsonSerializer.deserialize[JsonRpcResultResponse[$resultType]](json)
                       .map(resultResponse => resultResponse.result)
+                      .orElse {
+                        $jsonSerializer.deserialize[JsonRpcErrorResponse[String]](json)
+                          .map(errorResponse => {
+                            throw new JsonRpcException(errorResponse)
+                          })
+                      }
                       .get
                 })
             """
@@ -174,18 +181,19 @@ object JsonRpcClientMacro {
     val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
     val promisedResponseRepository: Tree = q"${c.prefix.tree}.promisedResponseRepository"
 
-    val maybeJsonRpcResponse =
+    val maybeJsonRpcRequestId = c.Expr[JsonRpcRequestId](
       q"""
-          $jsonSerializer.deserialize[JsonRpcResponse]($json)
-              .filter(response => response.jsonrpc == Constants.JsonRpc)
+          $jsonSerializer.deserialize[JsonRpcRequestId]($json)
+              .filter(requestId => requestId.jsonrpc == Constants.JsonRpc)
           """
+    )
 
-    val maybePromisedResponse =
+    val maybePromisedResponse = c.Expr[Option[Promise[String]]](
       q"""
-          $maybeJsonRpcResponse
-              .map(response => response.id)
-              .flatMap(id => $promisedResponseRepository.getAndRemove(id))
+          $maybeJsonRpcRequestId
+              .flatMap(requestId => $promisedResponseRepository.getAndRemove(requestId.id))
           """
+    )
 
     c.Expr[Unit](
       q"""

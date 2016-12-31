@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc
 
-import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcErrorException, JsonRpcErrorResponse, JsonRpcErrors}
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcErrorResponse, JsonRpcErrors, JsonRpcException}
 import io.github.shogowada.scala.jsonrpc.client.JsonRpcClientBuilder
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServerBuilder
@@ -105,12 +105,12 @@ class ClientAndServerTest extends AsyncFunSpec
         it("then it should response error") {
           response.failed
               .map {
-                case exception: JsonRpcErrorException[_] => {
+                case exception: JsonRpcException[_] => {
                   exception.response should matchPattern {
                     case JsonRpcErrorResponse(Constants.JsonRpc, _, JsonRpcErrors.methodNotFound) =>
                   }
                 }
-                case _ => fail("It should have failed with JsonRpcErrorException")
+                case exception => fail("It should have failed with JsonRpcErrorException, but failed with " + exception)
               }
         }
       }

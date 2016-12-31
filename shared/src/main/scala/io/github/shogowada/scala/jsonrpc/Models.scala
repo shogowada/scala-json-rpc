@@ -6,7 +6,7 @@ object Models {
 
   case class JsonRpcMethod(jsonrpc: String, method: String)
 
-  case class JsonRpcRequestId(id: Either[String, BigDecimal])
+  case class JsonRpcRequestId(jsonrpc: String, id: Either[String, BigDecimal])
 
   case class JsonRpcRequest[PARAMS]
   (
@@ -58,6 +58,6 @@ object Models {
     lazy val internalError = JsonRpcError(-32603, "Internal error", Option("Internal JSON-RPC error."))
   }
 
-  class JsonRpcErrorException[+ERROR](val response: JsonRpcErrorResponse[ERROR]) extends RuntimeException
+  class JsonRpcException[+ERROR](val response: JsonRpcErrorResponse[ERROR]) extends RuntimeException
 
 }
