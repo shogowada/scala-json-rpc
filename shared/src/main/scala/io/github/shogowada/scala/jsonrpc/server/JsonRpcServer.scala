@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.Models.JsonRpcMethod
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcErrorResponse, JsonRpcMethod}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
@@ -49,10 +49,38 @@ object JsonRpcServerMacro {
           """
     )
 
+    def maybeMethodNotFoundErrorForRequest(id: TermName) = c.Expr[JsonRpcErrorResponse[String]](
+      q"""
+          JsonRpcErrorResponse(
+            jsonrpc = Constants.JsonRpc,
+            id = $id,
+            error = JsonRpcErrors.methodNotFound
+          )
+          """
+    )
+
+    def maybeMethodNotFoundErrorJsonForRequest(id: TermName) = c.Expr[Option[String]](
+      q"""
+          $jsonSerializer.serialize(
+            ${maybeMethodNotFoundErrorForRequest(id)}
+          )
+          """
+    )
+
+    val maybeMethodNotFoundErrorJson = c.Expr[Option[String]](
+      q"""
+          $jsonSerializer.deserialize[JsonRpcRequestId]($json)
+            .map(requestId => requestId.id)
+            .flatMap(id => {
+              ${maybeMethodNotFoundErrorJsonForRequest(TermName("id"))}
+            })
+          """
+    )
+
     val futureMaybeJson = c.Expr[Future[Option[String]]](
       q"""
           $maybeHandler.map(handler => handler($json))
-            .getOrElse(Future(None))
+            .getOrElse { Future($maybeMethodNotFoundErrorJson) }
           """
     )
 

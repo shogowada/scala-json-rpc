@@ -20,8 +20,9 @@ object UpickleJsonSerializerMacro {
 
     c.Expr[Option[String]](
       q"""
+          import scala.util.Try
           import upickle.default._
-          Option(write($value))
+          Try(write($value)).toOption
           """
     )
   }
@@ -33,8 +34,9 @@ object UpickleJsonSerializerMacro {
 
     c.Expr[Option[T]](
       q"""
+          import scala.util.Try
           import upickle.default._
-          Option(read[$deserializeType]($json))
+          Try(read[$deserializeType]($json)).toOption
           """
     )
   }
