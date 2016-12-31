@@ -1,5 +1,6 @@
 package io.github.shogowada.scala.jsonrpc
 
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcErrorException, JsonRpcErrorResponse, JsonRpcErrors}
 import io.github.shogowada.scala.jsonrpc.client.JsonRpcClientBuilder
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServerBuilder
@@ -88,6 +89,29 @@ class ClientAndServerTest extends AsyncFunSpec
 
         it("then it should greet the server") {
           greeterApiServer.greetings should equal(List(greeting))
+        }
+      }
+    }
+
+    describe("when I am using invalid API") {
+      trait InvalidApi {
+        def invalidRequest: Future[String]
+      }
+
+      val invalidApi = client.createApi[InvalidApi]
+
+      describe("when I send request") {
+        val response = invalidApi.invalidRequest
+        it("then it should response error") {
+          response.failed
+              .map {
+                case exception: JsonRpcErrorException[_] => {
+                  exception.response should matchPattern {
+                    case JsonRpcErrorResponse(Constants.JsonRpc, _, JsonRpcErrors.methodNotFound) =>
+                  }
+                }
+                case _ => fail("It should have failed with JsonRpcErrorException")
+              }
         }
       }
     }

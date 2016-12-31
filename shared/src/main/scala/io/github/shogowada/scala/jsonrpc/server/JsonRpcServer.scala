@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.Models.JsonRpcMethod
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcRequestId, JsonRpcErrorResponse, JsonRpcMethod}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
@@ -52,7 +52,17 @@ object JsonRpcServerMacro {
     val futureMaybeJson = c.Expr[Future[Option[String]]](
       q"""
           $maybeHandler.map(handler => handler($json))
-            .getOrElse(Future(None))
+            .getOrElse {
+              Future($jsonSerializer.deserialize[JsonRpcRequestId]($json).flatMap(requestId => {
+                $jsonSerializer.serialize(
+                  JsonRpcErrorResponse(
+                    jsonrpc = Constants.JsonRpc,
+                    id = requestId.id,
+                    error = JsonRpcErrors.methodNotFound
+                  )
+                )
+              }))
+            }
           """
     )
 

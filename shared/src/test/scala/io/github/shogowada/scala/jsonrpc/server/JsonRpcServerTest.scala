@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.Constants
-import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcNotification, JsonRpcRequest, JsonRpcResultResponse}
+import io.github.shogowada.scala.jsonrpc.Models._
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import org.scalatest.{AsyncFunSpec, Matchers}
 
@@ -86,6 +86,37 @@ class JsonRpcServerTest extends AsyncFunSpec
       it("then it should not return the response") {
         futureMaybeResponseJson
             .map(maybeResponse => maybeResponse should equal(None))
+      }
+    }
+
+    describe("when I receive request with unknown method") {
+      val id = Left("id")
+      val request = JsonRpcRequest[(String, String)](
+        jsonrpc = Constants.JsonRpc,
+        id = id,
+        method = "unknown",
+        params = ("foo", "bar")
+      )
+      val requestJson = jsonSerializer.serialize(request).get
+
+      val futureMaybeResponseJson = target.receive(requestJson)
+
+      it("then it should respond method not found error") {
+        futureMaybeResponseJson
+            .map(maybeResponseJson => {
+              maybeResponseJson.flatMap(responseJson => {
+                jsonSerializer.deserialize[JsonRpcErrorResponse[String]](responseJson)
+              })
+            })
+            .map(maybeErrorResponse => {
+              maybeErrorResponse should equal(Option(
+                JsonRpcErrorResponse(
+                  jsonrpc = Constants.JsonRpc,
+                  id = id,
+                  error = JsonRpcErrors.methodNotFound
+                )
+              ))
+            })
       }
     }
   }
