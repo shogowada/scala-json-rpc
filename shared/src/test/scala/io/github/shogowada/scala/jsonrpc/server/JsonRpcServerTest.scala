@@ -3,7 +3,7 @@ package io.github.shogowada.scala.jsonrpc.server
 import io.github.shogowada.scala.jsonrpc.Constants
 import io.github.shogowada.scala.jsonrpc.Models._
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
-import org.scalatest.{AsyncFunSpec, Matchers}
+import org.scalatest.{Assertion, AsyncFunSpec, Matchers}
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
@@ -43,6 +43,19 @@ class JsonRpcServerTest extends AsyncFunSpec
 
     val target = serverBuilder.build
 
+    def responseShouldEqual[T]
+    (
+        futureMaybeJson: Future[Option[String]],
+        deserializer: (String) => Option[T],
+        expected: T
+    ): Future[Assertion] = {
+      futureMaybeJson
+          .map((maybeJson: Option[String]) => {
+            maybeJson.flatMap(json => deserializer(json))
+          })
+          .map((maybeActual: Option[T]) => maybeActual should equal(Some(expected)))
+    }
+
     Seq("foo").foreach(methodName => {
       describe(s"when I received request for method $methodName") {
         val requestId = Left("request ID")
@@ -58,11 +71,11 @@ class JsonRpcServerTest extends AsyncFunSpec
 
         it("then it should return the response") {
           val expectedResponse = JsonRpcResultResponse(jsonrpc = Constants.JsonRpc, id = requestId, result = "bar1")
-          futureMaybeResponseJson
-              .map(maybeJson => {
-                maybeJson.flatMap(json => jsonSerializer.deserialize[JsonRpcResultResponse[String]](json))
-              })
-              .map(maybeActualResponse => maybeActualResponse should equal(Some(expectedResponse)))
+          responseShouldEqual(
+            futureMaybeResponseJson,
+            (json) => jsonSerializer.deserialize[JsonRpcResultResponse[String]](json),
+            expectedResponse
+          )
         }
       }
     })
@@ -102,21 +115,15 @@ class JsonRpcServerTest extends AsyncFunSpec
       val futureMaybeResponseJson = target.receive(requestJson)
 
       it("then it should respond method not found error") {
-        futureMaybeResponseJson
-            .map(maybeResponseJson => {
-              maybeResponseJson.flatMap(responseJson => {
-                jsonSerializer.deserialize[JsonRpcErrorResponse[String]](responseJson)
-              })
-            })
-            .map(maybeErrorResponse => {
-              maybeErrorResponse should equal(Option(
-                JsonRpcErrorResponse(
-                  jsonrpc = Constants.JsonRpc,
-                  id = id,
-                  error = JsonRpcErrors.methodNotFound
-                )
-              ))
-            })
+        responseShouldEqual(
+          futureMaybeResponseJson,
+          (json) => jsonSerializer.deserialize[JsonRpcErrorResponse[String]](json),
+          JsonRpcErrorResponse(
+            jsonrpc = Constants.JsonRpc,
+            id = id,
+            error = JsonRpcErrors.methodNotFound
+          )
+        )
       }
     }
   }
