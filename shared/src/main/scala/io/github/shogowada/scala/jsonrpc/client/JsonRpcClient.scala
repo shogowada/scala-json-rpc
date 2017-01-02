@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.client
 
-import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcNotification, JsonRpcRequest, JsonRpcRequestId}
-import io.github.shogowada.scala.jsonrpc.Types.JsonSender
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcNotification, JsonRpcRequest}
+import io.github.shogowada.scala.jsonrpc.Types.{Id, JsonSender}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
@@ -178,17 +178,18 @@ object JsonRpcClientMacro {
     val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
     val promisedResponseRepository: Tree = q"${c.prefix.tree}.promisedResponseRepository"
 
-    val maybeJsonRpcRequestId = c.Expr[Option[JsonRpcRequestId]](
+    val maybeJsonRpcId = c.Expr[Option[Id]](
       q"""
-          $jsonSerializer.deserialize[JsonRpcRequestId]($json)
+          $jsonSerializer.deserialize[JsonRpcId]($json)
               .filter(requestId => requestId.jsonrpc == Constants.JsonRpc)
+              .map(requestId => requestId.id)
           """
     )
 
     val maybePromisedResponse = c.Expr[Option[Promise[String]]](
       q"""
-          $maybeJsonRpcRequestId
-              .flatMap(requestId => $promisedResponseRepository.getAndRemove(requestId.id))
+          $maybeJsonRpcId
+              .flatMap(requestId => $promisedResponseRepository.getAndRemove(requestId))
           """
     )
 

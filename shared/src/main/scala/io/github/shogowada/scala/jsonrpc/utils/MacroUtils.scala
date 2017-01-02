@@ -83,7 +83,7 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
     c.Expr[Option[String]](
       q"""
-          $jsonSerializer.deserialize[JsonRpcRequestId]($json)
+          $jsonSerializer.deserialize[JsonRpcId]($json)
             .map(requestId => requestId.id)
             .flatMap(id => {
               ${maybeErrorJson(TermName("id"))}

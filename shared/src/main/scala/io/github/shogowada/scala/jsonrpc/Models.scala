@@ -8,7 +8,7 @@ object Models {
 
   case class JsonRpcMethod(jsonrpc: String, method: String)
 
-  case class JsonRpcRequestId(jsonrpc: String, id: Id)
+  case class JsonRpcId(jsonrpc: String, id: Id)
 
   case class JsonRpcRequest[PARAMS]
   (
@@ -23,12 +23,6 @@ object Models {
       jsonrpc: String,
       method: String,
       params: PARAMS
-  )
-
-  case class JsonRpcResponse
-  (
-      jsonrpc: String,
-      id: Id
   )
 
   case class JsonRpcResultResponse[RESULT]
