@@ -20,7 +20,9 @@ When notification method is invoked, JSON-RPC server does not return response.
 val loggerApi = new LoggerApiImpl
 val serverBuilder = JsonRpcServerBuilder(/* ... */)
 serverBuilder.bindApi[LoggerApi](loggerApi)
+
 val server = serverBuilder.build
+
 val json: String = // ... JSON-RPC notification
 server.receive(json).onComplete {
   case Success(None) => // Server won't respond because it's notification.
