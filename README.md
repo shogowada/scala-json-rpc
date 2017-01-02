@@ -4,15 +4,21 @@ scala-json-rpc is JSON-RPC 2.0 server and client for Scala JVM/JS. **It has no d
 
 |Component|SBT|Scala Version|Scala JS Version|
 |---|---|---|---|
-|scala-json-rpc|```"io.github.shogowada" %%% "scala-json-rpc" % "0.2.1"```|2.11, 2.12|0.6|
+|scala-json-rpc|```"io.github.shogowada" %%% "scala-json-rpc" % "0.2.2"```|2.11, 2.12|0.6|
 
-It should already serve you well as RMI library, but it is still in early development and does not fully support JSON-RPC spec yet. Here are list of known features that's not supported yet.
+It supports the following features:
 
-- Custom method name
-- Named parameter
-    - Custom parameter name
-- Custom JSON-RPC error
-- Custom JSON-RPC request ID
+- Send/receive JSON-RPC request
+- [Send/receive JSON-RPC notification](/examples/notification)
+- [Respond pre-defined JSON-RPC error](http://www.jsonrpc.org/specification#error_object)
+- [Define custom JSON-RPC method name](/examples/customMethodName)
+
+It should already serve you well as RMI library, but it still does not fully support JSON-RPC spec yet. Here are list of known JSON-RPC features that's not supported yet.
+
+- Send/receive named parameter
+    - Define custom parameter name
+- Send/receive custom JSON-RPC error
+- Define custom JSON-RPC request ID
 
 # Example
 
@@ -36,9 +42,6 @@ class MyJsonSerializer extends JsonSerializer {
   override def deserialize[T](json: String): Option[T] = // ... Deserialize JSON into model.
 }
 ```
-
-- For now, JSON-RPC method names are full name for the API method. For example, if the above ```CalculatorApi``` is defined at package ```io.github.shogowada```, then JSON-RPC method name for the ```add``` method will be ```io.github.shogowada.CalculatorApi.add```.
-    - This is convenient if your are using this library only to achieve RMI between your Scala components. In the future, you will be able to name your methods.
 
 ## Server side
 
@@ -115,6 +118,3 @@ val jsonSender: (String) => Unit = (requestJson) => {
 // ...
 client.receive(responseJson) // Explicitly feed JSON-RPC responses.
 ```
-
-### Other Examples
-- [JSON-RPC notification](/examples/notification)
