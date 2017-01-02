@@ -4,7 +4,8 @@ scala-json-rpc is JSON-RPC 2.0 server and client for Scala JVM/JS. **It has no d
 
 |Component|SBT|Scala Version|Scala JS Version|
 |---|---|---|---|
-|scala-json-rpc|```"io.github.shogowada" %%% "scala-json-rpc" % "0.2.2"```|2.11, 2.12|0.6|
+|scala-json-rpc|```"io.github.shogowada" %%% "scala-json-rpc" % "0.2.3"```|2.11, 2.12|0.6|
+|scala-json-rpc-upickle-json-serializer|```"io.github.shogowada" %%% "scala-json-rpc-upickle-json-serializer" % "0.2.3"```|2.11, 2.12|0.6|
 
 It supports the following features:
 
