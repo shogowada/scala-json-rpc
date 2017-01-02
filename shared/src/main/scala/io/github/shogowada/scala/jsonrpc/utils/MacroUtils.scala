@@ -1,6 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.utils
 
 import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcError, JsonRpcErrorResponse}
+import io.github.shogowada.scala.jsonrpc.api.JsonRpcMethod
 
 import scala.reflect.macros.blackbox
 
@@ -29,7 +30,12 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
   }
 
   def getMethodName(method: MethodSymbol): String = {
-    method.fullName
+    val maybeCustomMethodName: Option[String] = method.annotations
+        .find(annotation => annotation.tree.tpe =:= typeOf[JsonRpcMethod])
+        .map(annotation => annotation.tree.children.tail.head match {
+          case Literal(Constant(name: String)) => name
+        })
+    maybeCustomMethodName.getOrElse(method.fullName)
   }
 
   def getParameterType(method: MethodSymbol): Tree = {

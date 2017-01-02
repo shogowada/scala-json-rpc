@@ -59,7 +59,9 @@ object JsonRpcServerBuilderMacro {
     val jsonSerializer = q"${c.prefix.tree}.jsonSerializer"
     val methodName = macroUtils.getMethodName(method)
 
-    val parameterTypes: Iterable[Type] = method.asMethod.paramLists
+    val parameterLists = method.asMethod.paramLists
+
+    val parameterTypes: Iterable[Type] = parameterLists
         .flatMap((paramList: List[Symbol]) => paramList)
         .map((param: Symbol) => param.typeSignature)
 
@@ -74,7 +76,13 @@ object JsonRpcServerBuilderMacro {
 
     val json = TermName("json")
     val params = TermName("params")
-    def methodInvocation(params: TermName) = q"$api.$method(..${arguments(params)})"
+    def methodInvocation(params: TermName) = {
+      if (parameterLists.isEmpty) {
+        q"$api.$method"
+      } else {
+        q"$api.$method(..${arguments(params)})"
+      }
+    }
 
     def notificationHandler = c.Expr[Handler](
       q"""

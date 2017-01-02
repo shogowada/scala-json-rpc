@@ -1,8 +1,8 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.Constants
 import io.github.shogowada.scala.jsonrpc.Models._
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
+import io.github.shogowada.scala.jsonrpc.{Constants, api}
 import org.scalatest.{Assertion, AsyncFunSpec, Matchers}
 
 import scala.collection.mutable.ListBuffer
@@ -10,6 +10,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait FakeApi {
   def foo(bar: String, baz: Int): Future[String]
+
+  @api.JsonRpcMethod(name = "bar")
+  def bar: Future[String]
 
   def notify(message: String): Unit
 }
@@ -23,6 +26,8 @@ class FakeApiImpl extends FakeApi {
   override def foo(bar: String, baz: Int): Future[String] = {
     Future(s"$bar$baz")
   }
+
+  override def bar = Future("bar")
 
   override def notify(message: String): Unit = {
     notifiedMessages += message
@@ -68,32 +73,55 @@ class JsonRpcServerTest extends AsyncFunSpec
       )
     }
 
-    Seq("foo").foreach(methodName => {
-      describe(s"when I received request for method $methodName") {
-        val requestId = Left("request ID")
-        val request: JsonRpcRequest[(String, Int)] = JsonRpcRequest(
-          jsonrpc = Constants.JsonRpc,
-          id = requestId,
-          method = classOf[FakeApi].getName + s".$methodName",
-          params = ("bar", 1)
-        )
-        val requestJson: String = jsonSerializer.serialize(request).get
+    describe("when I received request for API method") {
+      val requestId = Left("request ID")
+      val request: JsonRpcRequest[(String, Int)] = JsonRpcRequest(
+        jsonrpc = Constants.JsonRpc,
+        id = requestId,
+        method = classOf[FakeApi].getName + ".foo",
+        params = ("bar", 1)
+      )
+      val requestJson: String = jsonSerializer.serialize(request).get
 
-        val futureMaybeResponseJson: Future[Option[String]] = target.receive(requestJson)
+      val futureMaybeResponseJson: Future[Option[String]] = target.receive(requestJson)
 
-        it("then it should return the response") {
-          responseShouldEqual(
-            futureMaybeResponseJson,
-            (json) => jsonSerializer.deserialize[JsonRpcResultResponse[String]](json),
-            JsonRpcResultResponse(
-              jsonrpc = Constants.JsonRpc,
-              id = requestId,
-              result = "bar1"
-            )
+      it("then it should return the response") {
+        responseShouldEqual(
+          futureMaybeResponseJson,
+          (json) => jsonSerializer.deserialize[JsonRpcResultResponse[String]](json),
+          JsonRpcResultResponse(
+            jsonrpc = Constants.JsonRpc,
+            id = requestId,
+            result = "bar1"
           )
-        }
+        )
       }
-    })
+    }
+
+    describe("when I received request for user-named API method") {
+      val id = Left("id")
+      val request = JsonRpcRequest[Unit](
+        jsonrpc = Constants.JsonRpc,
+        id = id,
+        method = "bar",
+        params = ()
+      )
+      val requestJson = jsonSerializer.serialize(request).get
+
+      val futureMaybeResponseJson = target.receive(requestJson)
+
+      it("then it should return the response") {
+        responseShouldEqual(
+          futureMaybeResponseJson,
+          (json) => jsonSerializer.deserialize[JsonRpcResultResponse[String]](json),
+          JsonRpcResultResponse(
+            jsonrpc = Constants.JsonRpc,
+            id = id,
+            result = "bar"
+          )
+        )
+      }
+    }
 
     describe("when I received notification method") {
       val message = "Hello, World!"

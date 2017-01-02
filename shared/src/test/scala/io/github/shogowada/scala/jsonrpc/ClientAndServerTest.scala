@@ -25,6 +25,7 @@ class ClientAndServerTest extends AsyncFunSpec
     }
 
     trait GreeterApi {
+      @api.JsonRpcMethod("greet")
       def greet(greeting: String): Unit
     }
 
