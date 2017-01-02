@@ -3,12 +3,12 @@
 To create a notification method, create an API method that returns ```Unit```.
 
 ```scala
-trait Api {
-  def notify(message: String): Unit
+trait LoggerApi {
+  def log(message: String): Unit
 }
 
-class ApiImpl extends Api {
-  override def notify(message: String): Unit = {
+class LoggerApiImpl extends LoggerApi {
+  override def log(message: String): Unit = {
     println(message)
   }
 }
@@ -17,9 +17,9 @@ class ApiImpl extends Api {
 When notification method is invoked, JSON-RPC server does not return response.
 
 ```scala
-val api = new ApiImpl
+val loggerApi = new LoggerApiImpl
 val serverBuilder = JsonRpcServerBuilder(/* ... */)
-serverBuilder.bindApi[Api](api)
+serverBuilder.bindApi[LoggerApi](loggerApi)
 val server = serverBuilder.build
 val json: String = // ... JSON-RPC notification
 server.receive(json).onComplete {
