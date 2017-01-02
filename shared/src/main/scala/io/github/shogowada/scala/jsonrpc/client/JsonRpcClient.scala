@@ -18,7 +18,7 @@ class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
 
   def createApi[API]: API = macro JsonRpcClientMacro.createApi[API]
 
-  def receive(json: String): Unit = macro JsonRpcClientMacro.receive
+  def receive(json: String): Boolean = macro JsonRpcClientMacro.receive
 }
 
 object JsonRpcClientMacro {
@@ -170,7 +170,7 @@ object JsonRpcClientMacro {
   def receive
   (c: blackbox.Context)
   (json: c.Expr[String])
-  : c.Expr[Unit] = {
+  : c.Expr[Boolean] = {
     import c.universe._
 
     val macroUtils = MacroUtils[c.type](c)
@@ -193,11 +193,15 @@ object JsonRpcClientMacro {
           """
     )
 
-    c.Expr[Unit](
+    c.Expr[Boolean](
       q"""
           ..${macroUtils.imports}
           $maybePromisedResponse
-              .foreach(promisedResponse => promisedResponse.success($json))
+              .map(promisedResponse => {
+                promisedResponse.success($json)
+                true
+              })
+              .getOrElse(false)
           """
     )
   }
