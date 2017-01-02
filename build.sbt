@@ -1,4 +1,4 @@
-crossScalaVersions := Seq("2.11.8", "2.12.0")
+crossScalaVersions := Seq("2.11.8", "2.12.1")
 
 publishTo := {
   val nexus = "https://oss.sonatype.org/"
@@ -13,7 +13,7 @@ val commonSettings = Seq(
   organization := "io.github.shogowada",
   name := "scala-json-rpc",
   version := "0.2.1-SNAPSHOT",
-  scalaVersion := "2.12.0",
+  scalaVersion := "2.12.1",
   licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
   homepage := Some(url("https://github.com/shogowada/scala-json-rpc")),
   publishMavenStyle := true,
