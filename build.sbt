@@ -79,3 +79,19 @@ lazy val upickleJsonSerializer = (crossProject in file("upickle-json-serializer"
 
 lazy val upickleJsonSerializerJvm = upickleJsonSerializer.jvm
 lazy val upickleJsonSerializerJs = upickleJsonSerializer.js
+
+lazy val exampleE2e = (crossProject in file("examples/e2e"))
+    .settings(commonSettings: _*)
+    .settings(
+      name += "-example-e2e",
+      publishArtifact := false
+    )
+    .dependsOn(core, upickleJsonSerializer)
+
+lazy val exampleE2eJvm = exampleE2e.jvm
+lazy val exampleE2eJs = exampleE2e.js
+    .settings(
+      libraryDependencies ++= Seq(
+        "org.scala-js" %%% "scalajs-dom" % "0.9.+"
+      )
+    )
