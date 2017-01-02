@@ -12,6 +12,7 @@ It supports the following features:
 - Send/receive JSON-RPC request
 - [Send/receive JSON-RPC notification](/examples/notification)
 - [Respond pre-defined JSON-RPC error](http://www.jsonrpc.org/specification#error_object)
+- [Define custom JSON serialization](/examples/customJsonSerialization)
 - [Define custom JSON-RPC method name](/examples/customMethodName)
 
 It should already serve you well as RMI library, but it still does not fully support JSON-RPC spec yet. Here are list of known JSON-RPC features that's not supported yet.
