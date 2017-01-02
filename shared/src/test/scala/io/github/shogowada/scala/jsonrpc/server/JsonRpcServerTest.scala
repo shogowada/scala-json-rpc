@@ -56,6 +56,18 @@ class JsonRpcServerTest extends AsyncFunSpec
           .map((maybeActual: Option[T]) => maybeActual should equal(Some(expected)))
     }
 
+    def responseShouldEqualError
+    (
+        futureMaybeJson: Future[Option[String]],
+        expected: JsonRpcErrorResponse[String]
+    ): Future[Assertion] = {
+      responseShouldEqual(
+        futureMaybeJson,
+        (json) => jsonSerializer.deserialize[JsonRpcErrorResponse[String]](json),
+        expected
+      )
+    }
+
     Seq("foo").foreach(methodName => {
       describe(s"when I received request for method $methodName") {
         val requestId = Left("request ID")
@@ -70,11 +82,14 @@ class JsonRpcServerTest extends AsyncFunSpec
         val futureMaybeResponseJson: Future[Option[String]] = target.receive(requestJson)
 
         it("then it should return the response") {
-          val expectedResponse = JsonRpcResultResponse(jsonrpc = Constants.JsonRpc, id = requestId, result = "bar1")
           responseShouldEqual(
             futureMaybeResponseJson,
             (json) => jsonSerializer.deserialize[JsonRpcResultResponse[String]](json),
-            expectedResponse
+            JsonRpcResultResponse(
+              jsonrpc = Constants.JsonRpc,
+              id = requestId,
+              result = "bar1"
+            )
           )
         }
       }
@@ -115,13 +130,79 @@ class JsonRpcServerTest extends AsyncFunSpec
       val futureMaybeResponseJson = target.receive(requestJson)
 
       it("then it should respond method not found error") {
-        responseShouldEqual(
+        responseShouldEqualError(
           futureMaybeResponseJson,
-          (json) => jsonSerializer.deserialize[JsonRpcErrorResponse[String]](json),
           JsonRpcErrorResponse(
             jsonrpc = Constants.JsonRpc,
             id = id,
             error = JsonRpcErrors.methodNotFound
+          )
+        )
+      }
+    }
+
+    describe("when I receive JSON without method name") {
+      val id = Left("id")
+      val requestJson = jsonSerializer.serialize(
+        JsonRpcRequestId(jsonrpc = Constants.JsonRpc, id = id)
+      ).get
+      val futureMaybeResponseJson = target.receive(requestJson)
+
+      it("then it should respond JSON parse error") {
+        responseShouldEqualError(
+          futureMaybeResponseJson,
+          JsonRpcErrorResponse(
+            jsonrpc = Constants.JsonRpc,
+            id = id,
+            error = JsonRpcErrors.parseError
+          )
+        )
+      }
+    }
+
+    describe("when I receive request with mismatching JSON-RPC version") {
+      val id = Left("id")
+      val requestJson = jsonSerializer.serialize(
+        JsonRpcRequest(
+          jsonrpc = "1.0",
+          id = id,
+          method = "foo",
+          params = ("bar", "baz")
+        )
+      ).get
+      val futureMaybeResponseJson = target.receive(requestJson)
+
+      it("then it should respond invalid request") {
+        responseShouldEqualError(
+          futureMaybeResponseJson,
+          JsonRpcErrorResponse(
+            jsonrpc = Constants.JsonRpc,
+            id = id,
+            error = JsonRpcErrors.invalidRequest
+          )
+        )
+      }
+    }
+
+    describe("when I receive request with invalid params") {
+      val id = Left("id")
+      val request: JsonRpcRequest[Tuple1[String]] = JsonRpcRequest(
+        jsonrpc = Constants.JsonRpc,
+        id = id,
+        method = classOf[FakeApi].getName + ".foo",
+        params = Tuple1("bar")
+      )
+      val requestJson = jsonSerializer.serialize(request).get
+
+      val futureMaybeResponseJson = target.receive(requestJson)
+
+      it("then it should respond invalid params") {
+        responseShouldEqualError(
+          futureMaybeResponseJson,
+          JsonRpcErrorResponse(
+            jsonrpc = Constants.JsonRpc,
+            id = id,
+            error = JsonRpcErrors.invalidParams
           )
         )
       }
