@@ -5,7 +5,7 @@ scala-json-rpc is JSON-RPC 2.0 server and client for Scala JVM/JS. **It has no d
 |Component|SBT|Scala Version|Scala JS Version|
 |---|---|---|---|
 |scala-json-rpc|```"io.github.shogowada" %%% "scala-json-rpc" % "0.2.3"```|2.11, 2.12|0.6|
-|scala-json-rpc-upickle-json-serializer|```"io.github.shogowada" %%% "scala-json-rpc-upickle-json-serializer" % "0.2.3"```|2.11, 2.12|0.6|
+|[scala-json-rpc-upickle-json-serializer](/upickle-json-serializer)|```"io.github.shogowada" %%% "scala-json-rpc-upickle-json-serializer" % "0.2.3"```|2.11, 2.12|0.6|
 
 It supports the following features:
 
@@ -44,6 +44,8 @@ class MyJsonSerializer extends JsonSerializer {
   override def deserialize[T](json: String): Option[T] = // ... Deserialize JSON into model.
 }
 ```
+
+You can also use [upickle-json-serializer](/upickle-json-serializer) as your ```JsonSerializer``` instead of [implementing it by yourself](/examples/customJsonSerialization).
 
 ## Server side
 
