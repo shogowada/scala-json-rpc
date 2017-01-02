@@ -171,9 +171,7 @@ class JsonRpcServerTest extends AsyncFunSpec
 
     describe("when I receive JSON without method name") {
       val id = Left("id")
-      val requestJson = jsonSerializer.serialize(
-        JsonRpcRequestId(jsonrpc = Constants.JsonRpc, id = id)
-      ).get
+      val requestJson = """{"jsonrpc":"2.0","id":"id"}"""
       val futureMaybeResponseJson = target.receive(requestJson)
 
       it("then it should respond JSON parse error") {

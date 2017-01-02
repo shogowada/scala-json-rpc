@@ -1,17 +1,19 @@
 package io.github.shogowada.scala.jsonrpc
 
+import io.github.shogowada.scala.jsonrpc.Types.Id
+
 import scala.language.experimental.macros
 
 object Models {
 
   case class JsonRpcMethod(jsonrpc: String, method: String)
 
-  case class JsonRpcRequestId(jsonrpc: String, id: Either[String, BigDecimal])
+  case class JsonRpcRequestId(jsonrpc: String, id: Id)
 
   case class JsonRpcRequest[PARAMS]
   (
       jsonrpc: String,
-      id: Either[String, BigDecimal],
+      id: Id,
       method: String,
       params: PARAMS
   )
@@ -26,20 +28,20 @@ object Models {
   case class JsonRpcResponse
   (
       jsonrpc: String,
-      id: Either[String, BigDecimal]
+      id: Id
   )
 
   case class JsonRpcResultResponse[RESULT]
   (
       jsonrpc: String,
-      id: Either[String, BigDecimal],
+      id: Id,
       result: RESULT
   )
 
   case class JsonRpcErrorResponse[+ERROR]
   (
       jsonrpc: String,
-      id: Either[String, BigDecimal],
+      id: Id,
       error: JsonRpcError[ERROR]
   )
 
