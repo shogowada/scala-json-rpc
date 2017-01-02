@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcError, JsonRpcErrorResponse}
+import io.github.shogowada.scala.jsonrpc.Models.JsonRpcError
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
@@ -34,11 +34,11 @@ object JsonRpcServerMacro {
     val methodNameToHandlerMap: Tree = q"${c.prefix.tree}.methodNameToHandlerMap"
 
     val maybeParseErrorJson: c.Expr[Option[String]] =
-      createMaybeErrorJson[c.type](c)(json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.parseError"))
+      macroUtils.createMaybeErrorJson(json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.parseError"))
     val maybeInvalidRequestErrorJson: c.Expr[Option[String]] =
-      createMaybeErrorJson[c.type](c)(json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.invalidRequest"))
+      macroUtils.createMaybeErrorJson(json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.invalidRequest"))
     val maybeMethodNotFoundErrorJson: c.Expr[Option[String]] =
-      createMaybeErrorJson[c.type](c)(json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.methodNotFound"))
+      macroUtils.createMaybeErrorJson(json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.methodNotFound"))
 
     val maybeErrorJsonOrMethodName = c.Expr[Either[Option[String], String]](
       q"""
@@ -77,40 +77,6 @@ object JsonRpcServerMacro {
       q"""
           ..${macroUtils.imports}
           $futureMaybeJson
-          """
-    )
-  }
-
-  private def createMaybeErrorJson
-  [CONTEXT <: blackbox.Context]
-  (c: CONTEXT)
-  (json: c.Expr[String], jsonRpcError: c.Expr[JsonRpcError[String]])
-  : c.Expr[Option[String]] = {
-    import c.universe._
-
-    val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
-
-    val error = (id: TermName) => c.Expr[JsonRpcErrorResponse[String]](
-      q"""
-          JsonRpcErrorResponse(
-            jsonrpc = Constants.JsonRpc,
-            id = $id,
-            error = $jsonRpcError
-          )
-          """
-    )
-
-    val maybeErrorJson = (id: TermName) => c.Expr[Option[String]](
-      q"""$jsonSerializer.serialize(${error(id)})"""
-    )
-
-    c.Expr[Option[String]](
-      q"""
-          $jsonSerializer.deserialize[JsonRpcRequestId]($json)
-            .map(requestId => requestId.id)
-            .flatMap(id => {
-              ${maybeErrorJson(TermName("id"))}
-            })
           """
     )
   }

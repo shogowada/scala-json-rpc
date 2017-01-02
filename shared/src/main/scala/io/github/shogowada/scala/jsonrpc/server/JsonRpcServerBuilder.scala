@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.Models.JsonRpcRequest
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcError, JsonRpcRequest}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
@@ -81,18 +81,23 @@ object JsonRpcServerBuilderMacro {
           ($json: String) => {
             ..${macroUtils.imports}
             $jsonSerializer.deserialize[JsonRpcNotification[$parameterType]]($json)
-              .map(notification => {
+              .foreach(notification => {
                 val $params = notification.params
                 ${methodInvocation(params)}
-                Future(None)
               })
-              .getOrElse(Future(None))
+            Future(None)
           }
           """
     )
 
     def requestHandler = {
       val request = TermName("request")
+
+      val maybeInvalidParamsErrorJson: c.Expr[Option[String]] =
+        macroUtils.createMaybeErrorJson(
+          c.Expr[String](q"$json"),
+          c.Expr[JsonRpcError[String]](q"JsonRpcErrors.invalidParams")
+        )
 
       def maybeJsonRpcRequest(json: TermName) = c.Expr[JsonRpcRequest[parameterType.type]](
         q"""$jsonSerializer.deserialize[JsonRpcRequest[$parameterType]]($json)"""
@@ -113,7 +118,7 @@ object JsonRpcServerBuilderMacro {
                     ))
                     .map((response) => $jsonSerializer.serialize(response))
                 })
-                .getOrElse(Future(None))
+                .getOrElse(Future($maybeInvalidParamsErrorJson))
             }
             """
       )

@@ -172,13 +172,37 @@ class JsonRpcServerTest extends AsyncFunSpec
       ).get
       val futureMaybeResponseJson = target.receive(requestJson)
 
-      it("then it should response invalid request") {
+      it("then it should respond invalid request") {
         responseShouldEqualError(
           futureMaybeResponseJson,
           JsonRpcErrorResponse(
             jsonrpc = Constants.JsonRpc,
             id = id,
             error = JsonRpcErrors.invalidRequest
+          )
+        )
+      }
+    }
+
+    describe("when I receive request with invalid params") {
+      val id = Left("id")
+      val request: JsonRpcRequest[Tuple1[String]] = JsonRpcRequest(
+        jsonrpc = Constants.JsonRpc,
+        id = id,
+        method = classOf[FakeApi].getName + ".foo",
+        params = Tuple1("bar")
+      )
+      val requestJson = jsonSerializer.serialize(request).get
+
+      val futureMaybeResponseJson = target.receive(requestJson)
+
+      it("then it should respond invalid params") {
+        responseShouldEqualError(
+          futureMaybeResponseJson,
+          JsonRpcErrorResponse(
+            jsonrpc = Constants.JsonRpc,
+            id = id,
+            error = JsonRpcErrors.invalidParams
           )
         )
       }

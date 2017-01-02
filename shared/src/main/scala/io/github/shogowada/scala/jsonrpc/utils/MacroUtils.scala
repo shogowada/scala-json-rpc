@@ -1,5 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.utils
 
+import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcError, JsonRpcErrorResponse}
+
 import scala.reflect.macros.blackbox
 
 class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
@@ -50,6 +52,38 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   def getType[T: c.TypeTag]: Type = {
     typeOf[T]
+  }
+
+  def createMaybeErrorJson
+  (json: c.Expr[String], jsonRpcError: c.Expr[JsonRpcError[String]])
+  : c.Expr[Option[String]] = {
+    import c.universe._
+
+    val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
+
+    val error = (id: TermName) => c.Expr[JsonRpcErrorResponse[String]](
+      q"""
+          JsonRpcErrorResponse(
+            jsonrpc = Constants.JsonRpc,
+            id = $id,
+            error = $jsonRpcError
+          )
+          """
+    )
+
+    val maybeErrorJson = (id: TermName) => c.Expr[Option[String]](
+      q"""$jsonSerializer.serialize(${error(id)})"""
+    )
+
+    c.Expr[Option[String]](
+      q"""
+          $jsonSerializer.deserialize[JsonRpcRequestId]($json)
+            .map(requestId => requestId.id)
+            .flatMap(id => {
+              ${maybeErrorJson(TermName("id"))}
+            })
+          """
+    )
   }
 }
 
