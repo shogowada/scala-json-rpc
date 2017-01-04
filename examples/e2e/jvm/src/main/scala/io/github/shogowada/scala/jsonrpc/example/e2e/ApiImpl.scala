@@ -15,12 +15,12 @@ class CalculatorApiImpl extends CalculatorApi {
 
 class EchoApiImpl extends EchoApi {
   override def echo(message: String): Future[String] = {
-    Future(message)
+    Future(message) // It just returns the message as is
   }
 }
 
 class LoggerApiImpl extends LoggerApi {
   override def log(message: String): Unit = {
-    println(message)
+    println(message) // It logs the message
   }
 }
