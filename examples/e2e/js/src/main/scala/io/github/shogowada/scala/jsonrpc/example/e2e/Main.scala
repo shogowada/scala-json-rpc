@@ -13,10 +13,11 @@ object Main extends JSApp {
   override def main(): Unit = {
     val jsonSender: (String) => Future[Option[String]] =
       (json: String) => {
+        val NoContentStatus = 204
         dom.ext.Ajax
             .post(url = "/jsonrpc", data = json)
             .map(response => {
-              if (response.status == 204) {
+              if (response.status == NoContentStatus) {
                 None
               } else {
                 Option(response.responseText)
