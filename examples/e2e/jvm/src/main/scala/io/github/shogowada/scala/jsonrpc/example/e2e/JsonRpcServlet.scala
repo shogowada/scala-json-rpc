@@ -5,7 +5,6 @@ import org.scalatra._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.language.postfixOps
 
 class JsonRpcServlet extends ScalatraServlet {
   post("/") {
@@ -14,6 +13,6 @@ class JsonRpcServlet extends ScalatraServlet {
       case Some(responseJson) => Ok(responseJson)
       case None => NoContent()
     }
-    Await.result(futureResult, 1 minutes)
+    Await.result(futureResult, 1.minutes)
   }
 }
