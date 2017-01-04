@@ -83,25 +83,37 @@ lazy val upickleJsonSerializer = (crossProject in file("upickle-json-serializer"
 lazy val upickleJsonSerializerJvm = upickleJsonSerializer.jvm
 lazy val upickleJsonSerializerJs = upickleJsonSerializer.js
 
+lazy val exampleCommonSettings = Seq(
+  name += "-example",
+  publishArtifact := false
+)
+
+lazy val exampleJvmCommonSettings = Seq(
+  scalaJSProjects := Seq(exampleE2eJs),
+  pipelineStages in Assets := Seq(scalaJSDev),
+  unmanagedResourceDirectories in Assets ++= Seq(
+    (baseDirectory in exampleE2eJs).value / "src" / "main" / "public"
+  ),
+  WebKeys.packagePrefix in Assets := "public/",
+  managedClasspath in Runtime += (packageBin in Assets).value
+)
+
+lazy val exampleJsCommonSettings = Seq(
+  persistLauncher := true
+)
+
 lazy val exampleE2e = (crossProject in file("examples/e2e"))
     .settings(commonSettings: _*)
+    .settings(exampleCommonSettings: _*)
     .settings(
-      name += "-example-e2e",
-      persistLauncher := true,
-      publishArtifact := false
+      name += "-e2e"
     )
     .dependsOn(core, upickleJsonSerializer)
 
 lazy val exampleE2eJvm = exampleE2e.jvm
     .enablePlugins(SbtWeb)
+    .settings(exampleJvmCommonSettings: _*)
     .settings(
-      scalaJSProjects := Seq(exampleE2eJs),
-      pipelineStages in Assets := Seq(scalaJSDev),
-      unmanagedResourceDirectories in Assets ++= Seq(
-        (baseDirectory in exampleE2eJs).value / "src" / "main" / "public"
-      ),
-      WebKeys.packagePrefix in Assets := "public/",
-      managedClasspath in Runtime += (packageBin in Assets).value,
       mainClass := Option("io.github.shogowada.scala.jsonrpc.example.e2e.Main"),
       libraryDependencies ++= Seq(
         "org.eclipse.jetty" % "jetty-webapp" % "9.+",
@@ -112,6 +124,7 @@ lazy val exampleE2eJvm = exampleE2e.jvm
 lazy val exampleE2eJs = exampleE2e.js
     .enablePlugins(ScalaJSPlugin)
     .disablePlugins(AssemblyPlugin)
+    .settings(exampleJsCommonSettings: _*)
     .settings(
       libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % "0.9.+"
