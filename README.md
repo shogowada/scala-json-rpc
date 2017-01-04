@@ -26,7 +26,7 @@ It should already serve you well as a RPC library, but it still does not fully s
 - Send/receive custom JSON-RPC error
 - Define custom JSON-RPC request ID
 
-# Example
+# Quick Look
 
 In this example, we will implement calculator on server side and call the calculator methods from client side.
 
