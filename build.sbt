@@ -84,11 +84,21 @@ lazy val exampleE2e = (crossProject in file("examples/e2e"))
     .settings(commonSettings: _*)
     .settings(
       name += "-example-e2e",
+      libraryDependencies ++= Seq(
+        "com.softwaremill.macwire" %% "macros" % "2.+"
+      ),
       publishArtifact := false
     )
     .dependsOn(core, upickleJsonSerializer)
 
 lazy val exampleE2eJvm = exampleE2e.jvm
+    .settings(
+      libraryDependencies ++= Seq(
+        "org.eclipse.jetty" % "jetty-webapp" % "9.+",
+
+        "org.scalatra" %% "scalatra" % "2.5.+"
+      )
+    )
 lazy val exampleE2eJs = exampleE2e.js
     .settings(
       libraryDependencies ++= Seq(
