@@ -1,4 +1,4 @@
-# JSON-RPC between Scala JS & Scala JVM over HTTP
+# Unidirectional JSON-RPC from Scala JS to Scala JVM over HTTP
 
 In this example, we will show how to implement JSON-RPC client on Scala JS and JSON-RPC server on Scala JVM and how to let them communicate via JSON-RPC APIs.
 
