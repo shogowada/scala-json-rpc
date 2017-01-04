@@ -6,6 +6,7 @@ import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
@@ -13,7 +14,8 @@ import scala.reflect.macros.blackbox
 class JsonRpcServerBuilder[JSON_SERIALIZER <: JsonSerializer]
 (
     val methodNameToHandlerMap: mutable.Map[String, Handler],
-    val jsonSerializer: JSON_SERIALIZER
+    val jsonSerializer: JSON_SERIALIZER,
+    val executionContext: ExecutionContext
 ) {
   def bindApi[API](api: API): Unit = macro JsonRpcServerBuilderMacro.bindApi[JSON_SERIALIZER, API]
 
@@ -24,8 +26,16 @@ class JsonRpcServerBuilder[JSON_SERIALIZER <: JsonSerializer]
 }
 
 object JsonRpcServerBuilder {
-  def apply[JSON_SERIALIZER <: JsonSerializer](jsonSerializer: JSON_SERIALIZER): JsonRpcServerBuilder[JSON_SERIALIZER] =
-    new JsonRpcServerBuilder[JSON_SERIALIZER](mutable.Map(), jsonSerializer)
+  def apply[JSON_SERIALIZER <: JsonSerializer]
+  (jsonSerializer: JSON_SERIALIZER)
+  (implicit executionContext: ExecutionContext)
+  : JsonRpcServerBuilder[JSON_SERIALIZER] = {
+    new JsonRpcServerBuilder[JSON_SERIALIZER](
+      mutable.Map(),
+      jsonSerializer,
+      executionContext
+    )
+  }
 }
 
 object JsonRpcServerBuilderMacro {
@@ -57,6 +67,7 @@ object JsonRpcServerBuilderMacro {
     val macroUtils = MacroUtils[c.type](c)
 
     val jsonSerializer = q"${c.prefix.tree}.jsonSerializer"
+    val executionContext = q"${c.prefix.tree}.executionContext"
     val methodName = macroUtils.getMethodName(method)
 
     val parameterLists = method.asMethod.paramLists
@@ -93,7 +104,7 @@ object JsonRpcServerBuilderMacro {
                 val $params = notification.params
                 ${methodInvocation(params)}
               })
-            Future(None)
+            Future(None)($executionContext)
           }
           """
     )
@@ -107,7 +118,7 @@ object JsonRpcServerBuilderMacro {
           c.Expr[JsonRpcError[String]](q"JsonRpcErrors.invalidParams")
         )
 
-      def maybeJsonRpcRequest(json: TermName) = c.Expr[JsonRpcRequest[parameterType.type]](
+      def maybeJsonRpcRequest(json: TermName) = c.Expr[Option[JsonRpcRequest[parameterType.type]]](
         q"""$jsonSerializer.deserialize[JsonRpcRequest[$parameterType]]($json)"""
       )
 
@@ -123,10 +134,10 @@ object JsonRpcServerBuilderMacro {
                       jsonrpc = Constants.JsonRpc,
                       id = $request.id,
                       result = result
-                    ))
-                    .map((response) => $jsonSerializer.serialize(response))
+                    ))($executionContext)
+                    .map((response) => $jsonSerializer.serialize(response))($executionContext)
                 })
-                .getOrElse(Future($maybeInvalidParamsErrorJson))
+                .getOrElse(Future($maybeInvalidParamsErrorJson)($executionContext))
             }
             """
       )

@@ -11,6 +11,7 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   val imports =
     q"""
+        import scala.concurrent.Future
         import scala.util._
         import io.github.shogowada.scala.jsonrpc.Constants
         import io.github.shogowada.scala.jsonrpc.Models._

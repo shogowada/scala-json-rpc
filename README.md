@@ -15,14 +15,18 @@ It supports the following features:
 - [Define custom JSON serialization](/examples/customJsonSerialization)
 - [Define custom JSON-RPC method name](/examples/customMethodName)
 
-It should already serve you well as RMI library, but it still does not fully support JSON-RPC spec yet. Here are list of known JSON-RPC features that's not supported yet.
+We have the following example projects for common use cases:
+
+- [Unidirectional JSON-RPC from Scala JS to Scala JVM over HTTP](examples/e2e)
+
+It should already serve you well as a RPC library, but it still does not fully support JSON-RPC spec yet. Here are list of known JSON-RPC features that's not supported yet.
 
 - Send/receive named parameter
     - Define custom parameter name
 - Send/receive custom JSON-RPC error
 - Define custom JSON-RPC request ID
 
-# Example
+# Quick Look
 
 In this example, we will implement calculator on server side and call the calculator methods from client side.
 
@@ -57,7 +61,7 @@ class CalculatorApiImpl extends CalculatorApi {
 }
 
 // Create JSON-RPC server.
-// JsonSerializer type parameter is required to support JsonSerializer who's implementation is macro.
+// JsonSerializer type parameter is required to support JsonSerializer who's implementation is macro (e.g. upickle).
 // You can bind as many APIs as you want.
 val serverBuilder = JsonRpcServerBuilder[MyJsonSerializer](new MyJsonSerializer())
 serverBuilder.bindApi[CalculatorApi](new CalculatorApiImpl)
@@ -97,13 +101,13 @@ val calculatorApi: CalculatorApi = client.createApi[CalculatorApi]
 
 // Use the API.
 // When you invoke an API method, under the hood, it:
-//     1. creates a JSON-RPC request with the given parameters.
-//     2. serializes the request into JSON using JsonSerializer.
-//     3. sends the JSON to server using JsonSender.
-//     4. receives the response JSON via Future[Option[String]] returned from the JsonSender.
-//         - Or, it receives the response JSON via client.receive(responseJson) method.
-//     5. deserializes the response JSON into JSON-RPC response using JsonSerializer.
-//     6. completes the Future returned by the API method with result of the JSON-RPC response.
+// 1. creates a JSON-RPC request with the given parameters.
+// 2. serializes the request into JSON using JsonSerializer.
+// 3. sends the JSON to server using JsonSender.
+// 4. receives the response JSON via Future[Option[String]] returned from the JsonSender.
+//     - Or, it receives the response JSON via client.receive(responseJson) method.
+// 5. deserializes the response JSON into JSON-RPC response using JsonSerializer.
+// 6. completes the Future returned by the API method with result of the JSON-RPC response.
 val futureResult: Future[Int] = calculatorApi.add(1, 2)
 futureResult.onComplete {
   case Success(result) => // ... Do something with the result.
