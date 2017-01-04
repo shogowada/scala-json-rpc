@@ -39,6 +39,7 @@ val commonSettings = Seq(
 )
 
 lazy val core = (crossProject in file("."))
+    .disablePlugins(AssemblyPlugin)
     .settings(commonSettings: _*)
     .settings(
       libraryDependencies ++= Seq(
@@ -55,6 +56,7 @@ lazy val jvm = core.jvm
 lazy val js = core.js
 
 lazy val jsonSerializer = (crossProject in file("json-serializer"))
+    .disablePlugins(AssemblyPlugin)
     .settings(commonSettings: _*)
     .settings(
       name += "-json-serializer",
@@ -65,6 +67,7 @@ lazy val jsonSerializerJvm = jsonSerializer.jvm
 lazy val jsonSerializerJs = jsonSerializer.js
 
 lazy val upickleJsonSerializer = (crossProject in file("upickle-json-serializer"))
+    .disablePlugins(AssemblyPlugin)
     .settings(commonSettings: _*)
     .settings(
       name += "-upickle-json-serializer",
@@ -84,15 +87,22 @@ lazy val exampleE2e = (crossProject in file("examples/e2e"))
     .settings(commonSettings: _*)
     .settings(
       name += "-example-e2e",
-      libraryDependencies ++= Seq(
-        "com.softwaremill.macwire" %% "macros" % "2.+"
-      ),
+      persistLauncher := true,
       publishArtifact := false
     )
     .dependsOn(core, upickleJsonSerializer)
 
 lazy val exampleE2eJvm = exampleE2e.jvm
+    .enablePlugins(SbtWeb)
     .settings(
+      scalaJSProjects := Seq(exampleE2eJs),
+      pipelineStages in Assets := Seq(scalaJSDev),
+      unmanagedResourceDirectories in Assets ++= Seq(
+        (baseDirectory in exampleE2eJs).value / "src" / "main" / "public"
+      ),
+      WebKeys.packagePrefix in Assets := "public/",
+      managedClasspath in Runtime += (packageBin in Assets).value,
+      mainClass := Option("io.github.shogowada.scala.jsonrpc.example.e2e.Main"),
       libraryDependencies ++= Seq(
         "org.eclipse.jetty" % "jetty-webapp" % "9.+",
 
@@ -100,6 +110,8 @@ lazy val exampleE2eJvm = exampleE2e.jvm
       )
     )
 lazy val exampleE2eJs = exampleE2e.js
+    .enablePlugins(ScalaJSPlugin)
+    .disablePlugins(AssemblyPlugin)
     .settings(
       libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % "0.9.+"

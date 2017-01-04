@@ -3,7 +3,9 @@ package io.github.shogowada.scala.jsonrpc.example.e2e
 import org.scalatra._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
 
 class JsonRpcServlet extends ScalatraServlet {
   post("/") {
@@ -12,6 +14,6 @@ class JsonRpcServlet extends ScalatraServlet {
       case Some(responseJson) => Ok(responseJson)
       case None => NoContent()
     }
-    futureResult
+    Await.result(futureResult, 1 minutes)
   }
 }

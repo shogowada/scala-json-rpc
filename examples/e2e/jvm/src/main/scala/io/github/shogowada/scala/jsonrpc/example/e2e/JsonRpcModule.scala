@@ -6,18 +6,11 @@ import io.github.shogowada.scala.jsonrpc.server.{JsonRpcServer, JsonRpcServerBui
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object JsonRpcModule {
-
-  import com.softwaremill.macwire._
-
-  lazy val calculatorApi = wire[CalculatorApiImpl]
-  lazy val echoApi = wire[EchoApiImpl]
-  lazy val loggerApi = wire[LoggerApiImpl]
-
   lazy val jsonRpcServer: JsonRpcServer[UpickleJsonSerializer] = {
     val builder = JsonRpcServerBuilder(UpickleJsonSerializer())
-    builder.bindApi[CalculatorApi](calculatorApi)
-    builder.bindApi[EchoApi](echoApi)
-    builder.bindApi[LoggerApi](loggerApi)
+    builder.bindApi[CalculatorApi](new CalculatorApiImpl)
+    builder.bindApi[EchoApi](new EchoApiImpl)
+    builder.bindApi[LoggerApi](new LoggerApiImpl)
     builder.build
   }
 }
