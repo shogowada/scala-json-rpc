@@ -18,6 +18,7 @@ It supports the following features:
 We have the following example projects for common use cases:
 
 - [Unidirectional JSON-RPC from Scala JS to Scala JVM over HTTP](examples/e2e)
+- Bidirectional JSON-RPC between Scals JS and Scala JVM over WebSocket (coming soon)
 
 It should already serve you well as a RPC library, but it still does not fully support JSON-RPC spec yet. Here are list of known JSON-RPC features that's not supported yet.
 
