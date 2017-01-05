@@ -85,17 +85,24 @@ lazy val upickleJsonSerializerJs = upickleJsonSerializer.js
 
 lazy val exampleCommonSettings = Seq(
   name += "-example",
+  libraryDependencies ++= Seq(
+    "com.softwaremill.macwire" %% "macros" % "2.+"
+  ),
   publishArtifact := false
 )
 
 lazy val exampleJvmCommonSettings = Seq(
-  scalaJSProjects := Seq(exampleE2eJs),
   pipelineStages in Assets := Seq(scalaJSDev),
   unmanagedResourceDirectories in Assets ++= Seq(
     (baseDirectory in exampleE2eJs).value / "src" / "main" / "public"
   ),
   WebKeys.packagePrefix in Assets := "public/",
-  managedClasspath in Runtime += (packageBin in Assets).value
+  managedClasspath in Runtime += (packageBin in Assets).value,
+  libraryDependencies ++= Seq(
+    "org.eclipse.jetty" % "jetty-webapp" % "9.+",
+
+    "org.scalatra" %% "scalatra" % "2.5.+"
+  )
 )
 
 lazy val exampleJsCommonSettings = Seq(
@@ -114,12 +121,8 @@ lazy val exampleE2eJvm = exampleE2e.jvm
     .enablePlugins(SbtWeb)
     .settings(exampleJvmCommonSettings: _*)
     .settings(
-      mainClass := Option("io.github.shogowada.scala.jsonrpc.example.e2e.Main"),
-      libraryDependencies ++= Seq(
-        "org.eclipse.jetty" % "jetty-webapp" % "9.+",
-
-        "org.scalatra" %% "scalatra" % "2.5.+"
-      )
+      scalaJSProjects := Seq(exampleE2eJs),
+      mainClass := Option("io.github.shogowada.scala.jsonrpc.example.e2e.Main")
     )
 lazy val exampleE2eJs = exampleE2e.js
     .enablePlugins(ScalaJSPlugin)
@@ -130,3 +133,21 @@ lazy val exampleE2eJs = exampleE2e.js
         "org.scala-js" %%% "scalajs-dom" % "0.9.+"
       )
     )
+
+lazy val exampleE2eWebSocket = (crossProject in file("examples/e2eWebSocket"))
+    .settings(commonSettings: _*)
+    .settings(exampleCommonSettings: _*)
+    .settings(
+      name += "-e2e-websocket"
+    )
+    .dependsOn(core, upickleJsonSerializer)
+
+lazy val exampleE2eWebSocketJvm = exampleE2eWebSocket.jvm
+    .enablePlugins(SbtWeb)
+    .settings(exampleJvmCommonSettings: _*)
+    .settings(
+      scalaJSProjects := Seq(exampleE2eWebSocketJs)
+    )
+lazy val exampleE2eWebSocketJs = exampleE2eWebSocket.js
+    .enablePlugins(ScalaJSPlugin)
+    .disablePlugins(AssemblyPlugin)
