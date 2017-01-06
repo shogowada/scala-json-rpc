@@ -1,11 +1,15 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
-trait RandomNumberSubscriberApi {
-  def subscribe(): Unit
+import scala.concurrent.Future
 
-  def unsubscribe(): Unit
+trait RandomNumberSubjectApi {
+  def register(observerId: String): Unit
+
+  def unregister(observerId: String): Unit
 }
 
-trait RandomNumberReceiverApi {
-  def receive(randomNumber: Int): Unit
+trait RandomNumberObserverApi {
+  def getId: Future[String]
+
+  def notify(randomNumber: Int): Unit
 }

@@ -83,6 +83,10 @@ lazy val upickleJsonSerializer = (crossProject in file("upickle-json-serializer"
 lazy val upickleJsonSerializerJvm = upickleJsonSerializer.jvm
 lazy val upickleJsonSerializerJs = upickleJsonSerializer.js
 
+// Examples
+
+lazy val JettyVersion = "9.+"
+
 lazy val exampleCommonSettings = Seq(
   name += "-example",
   libraryDependencies ++= Seq(
@@ -99,7 +103,7 @@ lazy val exampleJvmCommonSettings = Seq(
   WebKeys.packagePrefix in Assets := "public/",
   managedClasspath in Runtime += (packageBin in Assets).value,
   libraryDependencies ++= Seq(
-    "org.eclipse.jetty" % "jetty-webapp" % "9.+",
+    "org.eclipse.jetty" % "jetty-webapp" % JettyVersion,
 
     "org.scalatra" %% "scalatra" % "2.5.+"
   )
@@ -146,7 +150,11 @@ lazy val exampleE2eWebSocketJvm = exampleE2eWebSocket.jvm
     .enablePlugins(SbtWeb)
     .settings(exampleJvmCommonSettings: _*)
     .settings(
-      scalaJSProjects := Seq(exampleE2eWebSocketJs)
+      scalaJSProjects := Seq(exampleE2eWebSocketJs),
+      libraryDependencies ++= Seq(
+        "org.eclipse.jetty.websocket" % "websocket-api" % JettyVersion,
+        "org.eclipse.jetty.websocket" % "websocket-server" % JettyVersion
+      )
     )
 lazy val exampleE2eWebSocketJs = exampleE2eWebSocket.js
     .enablePlugins(ScalaJSPlugin)

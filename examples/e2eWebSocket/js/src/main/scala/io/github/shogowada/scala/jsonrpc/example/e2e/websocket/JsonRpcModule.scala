@@ -1,5 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
+import io.github.shogowada.scala.jsonrpc.JsonRpcServerAndClient
 import io.github.shogowada.scala.jsonrpc.client.JsonRpcClientBuilder
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServerBuilder
@@ -10,11 +11,11 @@ object JsonRpcModule {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  lazy val randomNumberReceiverApi: RandomNumberReceiverApi = wire[RandomNumberReceiverApiImpl]
+  lazy val randomNumberReceiverApi: RandomNumberObserverApi = wire[RandomNumberObserverApiImpl]
 
   lazy val jsonRpcServer = {
     val builder = JsonRpcServerBuilder(UpickleJsonSerializer())
-    builder.bindApi[RandomNumberReceiverApi](randomNumberReceiverApi)
+    builder.bindApi[RandomNumberObserverApi](randomNumberReceiverApi)
     builder.build
   }
 
@@ -26,5 +27,7 @@ object JsonRpcModule {
     builder.build
   }
 
-  lazy val randomNumberSubscriberApi = jsonRpcClient.createApi[RandomNumberSubscriberApi]
+  lazy val randomNumberSubscriberApi = jsonRpcClient.createApi[RandomNumberSubjectApi]
+
+  lazy val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
 }
