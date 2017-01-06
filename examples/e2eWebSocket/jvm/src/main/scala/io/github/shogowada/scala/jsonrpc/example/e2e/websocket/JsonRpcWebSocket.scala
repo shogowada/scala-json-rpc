@@ -3,6 +3,7 @@ package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 import io.github.shogowada.scala.jsonrpc.JsonRpcServerAndClient
 import io.github.shogowada.scala.jsonrpc.client.JsonRpcClientBuilder
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
+import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
 import org.eclipse.jetty.websocket.api.{RemoteEndpoint, Session, WebSocketAdapter}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -18,7 +19,7 @@ class JsonRpcWebSocket extends WebSocketAdapter {
     val remote: RemoteEndpoint = session.getRemote
     val sendString: (String) => Unit = (json: String) => Try(remote.sendString(json))
 
-    connectedWebSocket = new JsonRpcConnectedWebSocket(sendString)
+    connectedWebSocket = JsonRpcModule.jsonRpcConnectedWebSocket(sendString)
   }
 
   override def onWebSocketClose(statusCode: Int, reason: String): Unit = {
@@ -34,11 +35,13 @@ class JsonRpcWebSocket extends WebSocketAdapter {
 }
 
 class JsonRpcConnectedWebSocket(
+    jsonRpcServer: JsonRpcServer[UpickleJsonSerializer],
+    randomNumberSubjectApi: RandomNumberSubjectApi,
     sendString: (String) => Unit
 ) {
   private val jsonRpcClientBuilder = JsonRpcClientBuilder(UpickleJsonSerializer(), sendString)
   private val jsonRpcClient = jsonRpcClientBuilder.build
-  private val jsonRpcServerAndClient = JsonRpcServerAndClient(JsonRpcModule.jsonRpcServer, jsonRpcClient)
+  private val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
 
   private val randomNumberObserverApi = jsonRpcClient.createApi[RandomNumberObserverApi]
 
@@ -52,6 +55,6 @@ class JsonRpcConnectedWebSocket(
   }
 
   def onWebSocketClose(): Unit = {
-    futureObserverId.foreach(observerId => JsonRpcModule.randomNumberSubjectApi.unregister(observerId))
+    futureObserverId.foreach(observerId => randomNumberSubjectApi.unregister(observerId))
   }
 }

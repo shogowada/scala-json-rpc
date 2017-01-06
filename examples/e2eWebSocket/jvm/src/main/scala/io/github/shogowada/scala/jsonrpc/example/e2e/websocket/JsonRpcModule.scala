@@ -30,4 +30,6 @@ object JsonRpcModule {
   lazy val randomNumberObserverApi = jsonRpcClient.createApi[RandomNumberObserverApi]
 
   lazy val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
+
+  def jsonRpcConnectedWebSocket(sendString: (String) => Unit) = wire[JsonRpcConnectedWebSocket]
 }
