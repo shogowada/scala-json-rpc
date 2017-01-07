@@ -5,14 +5,15 @@ import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 class JsonRpcServer[JSON_SERIALIZER <: JsonSerializer]
 (
     val methodNameToHandlerMap: Map[String, Handler],
-    val jsonSerializer: JSON_SERIALIZER
+    val jsonSerializer: JSON_SERIALIZER,
+    val executionContext: ExecutionContext
 ) {
   def receive(json: String): Future[Option[String]] = macro JsonRpcServerMacro.receive
 }
@@ -24,7 +25,7 @@ object JsonRpcServer {
 object JsonRpcServerMacro {
   def receive
   (c: blackbox.Context)
-  (json: c.Expr[String])
+      (json: c.Expr[String])
   : c.Expr[Future[Option[String]]] = {
     import c.universe._
 

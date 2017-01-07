@@ -21,14 +21,15 @@ class JsonRpcServerBuilder[JSON_SERIALIZER <: JsonSerializer]
 
   def build: JsonRpcServer[JSON_SERIALIZER] = new JsonRpcServer(
     methodNameToHandlerMap.toMap,
-    jsonSerializer
+    jsonSerializer,
+    executionContext
   )
 }
 
 object JsonRpcServerBuilder {
   def apply[JSON_SERIALIZER <: JsonSerializer]
   (jsonSerializer: JSON_SERIALIZER)
-  (implicit executionContext: ExecutionContext)
+      (implicit executionContext: ExecutionContext)
   : JsonRpcServerBuilder[JSON_SERIALIZER] = {
     new JsonRpcServerBuilder[JSON_SERIALIZER](
       mutable.Map(),
@@ -41,7 +42,7 @@ object JsonRpcServerBuilder {
 object JsonRpcServerBuilderMacro {
   def bindApi[JSON_SERIALIZER <: JsonSerializer, API: c.WeakTypeTag]
   (c: blackbox.Context)
-  (api: c.Expr[API])
+      (api: c.Expr[API])
   : c.Expr[Unit] = {
     import c.universe._
 
@@ -60,7 +61,7 @@ object JsonRpcServerBuilderMacro {
 
   private def createMethodNameToHandler[CONTEXT <: blackbox.Context, API]
   (c: blackbox.Context)
-  (api: c.Expr[API], method: c.universe.MethodSymbol)
+      (api: c.Expr[API], method: c.universe.MethodSymbol)
   : c.Expr[(String, Handler)] = {
     import c.universe._
 
@@ -70,10 +71,10 @@ object JsonRpcServerBuilderMacro {
     val executionContext = q"${c.prefix.tree}.executionContext"
     val methodName = macroUtils.getMethodName(method)
 
-    val parameterLists = method.asMethod.paramLists
+    val parameterLists: List[List[Symbol]] = method.asMethod.paramLists
 
     val parameterTypes: Iterable[Type] = parameterLists
-        .flatMap((paramList: List[Symbol]) => paramList)
+        .flatten
         .map((param: Symbol) => param.typeSignature)
 
     val parameterType: Tree = macroUtils.getParameterType(method)
@@ -82,11 +83,11 @@ object JsonRpcServerBuilderMacro {
       Range(0, parameterTypes.size)
           .map(index => TermName(s"_${index + 1}"))
           .map(fieldName => q"$params.$fieldName")
-          .toSeq
     }
 
     val json = TermName("json")
     val params = TermName("params")
+
     def methodInvocation(params: TermName) = {
       if (parameterLists.isEmpty) {
         q"$api.$method"

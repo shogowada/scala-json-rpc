@@ -12,7 +12,7 @@ import scala.reflect.macros.blackbox
 class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
 (
     val jsonSerializer: JSON_SERIALIZER,
-    val jsonSender: JsonSender
+    val send: JsonSender
 ) {
   val promisedResponseRepository = new JsonRpcPromisedResponseRepository
 
@@ -48,7 +48,7 @@ object JsonRpcClientMacro {
 
   private def createMemberFunction[CONTEXT <: blackbox.Context]
   (c: CONTEXT)
-  (apiMethod: c.universe.MethodSymbol)
+      (apiMethod: c.universe.MethodSymbol)
   : c.Tree = {
     import c.universe._
 
@@ -77,7 +77,8 @@ object JsonRpcClientMacro {
     val returnType: Type = apiMethod.returnType
 
     val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
-    val jsonSender: Tree = q"${c.prefix.tree}.jsonSender"
+    val send: Tree = q"${c.prefix.tree}.send"
+    val receive: Tree = q"${c.prefix.tree}.receive"
     val promisedResponseRepository: Tree = q"${c.prefix.tree}.promisedResponseRepository"
 
     def createNotificationMethodBody: c.Expr[returnType.type] = {
@@ -99,7 +100,7 @@ object JsonRpcClientMacro {
 
       c.Expr[returnType.type](
         q"""
-            $jsonSender($notificationJson)
+            $send($notificationJson)
             """
       )
     }
@@ -133,8 +134,8 @@ object JsonRpcClientMacro {
             val $requestId = Left(java.util.UUID.randomUUID.toString)
             val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
 
-            $jsonSender($requestJson).onComplete {
-              case Success(Some(responseJson: String)) => ${c.prefix.tree}.receive(responseJson)
+            $send($requestJson).onComplete {
+              case Success(Some(responseJson: String)) => $receive(responseJson)
               case _ =>
             }
 
@@ -169,7 +170,7 @@ object JsonRpcClientMacro {
 
   def receive
   (c: blackbox.Context)
-  (json: c.Expr[String])
+      (json: c.Expr[String])
   : c.Expr[Boolean] = {
     import c.universe._
 

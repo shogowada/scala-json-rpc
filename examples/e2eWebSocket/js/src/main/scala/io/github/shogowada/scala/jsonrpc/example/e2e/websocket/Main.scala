@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
 import org.scalajs.dom
 
-import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js.JSApp
 import scala.util.{Success, Try}
 
@@ -17,16 +17,9 @@ object Main extends JSApp {
 
     webSocket.onmessage = (messageEvent: dom.MessageEvent) => {
       jsonRpcServerAndClient.receive(messageEvent.data.toString).onComplete {
-        case Success(Some(responseJson)) => jsonSender(responseJson)
+        case Success(Some(responseJson: String)) => jsonRpcServerAndClient.send(responseJson)
         case _ =>
       }
     }
-
-    val randomNumberSubjectApi = jsonRpcServerAndClient.createApi[RandomNumberSubjectApi]
-
-    val futureUnregisterer: Future[() => Unit] = randomNumberSubjectApi
-        .register((randomNumber) => {
-          println(randomNumber)
-        })
   }
 }

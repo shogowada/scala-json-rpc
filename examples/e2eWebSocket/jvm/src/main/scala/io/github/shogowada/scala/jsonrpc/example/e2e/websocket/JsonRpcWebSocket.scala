@@ -32,12 +32,11 @@ class JsonRpcWebSocket extends WebSocketAdapter {
 }
 
 class JsonRpcConnectedWebSocket(
-    jsonRpcServerAndClient: JsonRpcServerAndClient[UpickleJsonSerializer],
-    sendString: (String) => Unit
+    jsonRpcServerAndClient: JsonRpcServerAndClient[UpickleJsonSerializer]
 ) {
   def onWebSocketText(message: String): Unit = {
     jsonRpcServerAndClient.receive(message).onComplete {
-      case Success(Some(responseJson: String)) => sendString(responseJson)
+      case Success(Some(responseJson: String)) => jsonRpcServerAndClient.send(responseJson)
       case _ =>
     }
   }

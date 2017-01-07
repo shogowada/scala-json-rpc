@@ -15,7 +15,7 @@ object JsonRpcModule {
 
   lazy val jsonRpcServer = {
     val builder = JsonRpcServerBuilder(UpickleJsonSerializer())
-    builder.bindApi(randomNumberSubjectApi)
+    builder.bindApi[RandomNumberSubjectApi](randomNumberSubjectApi)
     builder.build
   }
 
@@ -36,9 +36,6 @@ object JsonRpcModule {
 
   def jsonRpcConnectedWebSocket(sendString: (String) => Unit) = {
     val serverAndClient = jsonRpcServerAndClient(sendString)
-    new JsonRpcConnectedWebSocket(
-      serverAndClient,
-      sendString
-    )
+    new JsonRpcConnectedWebSocket(serverAndClient)
   }
 }
