@@ -19,17 +19,26 @@ object JsonRpcModule {
     builder.build
   }
 
-  lazy val jsonRpcClient = {
+  def jsonRpcClient(jsonSender: (String) => Unit) = {
     val builder = JsonRpcClientBuilder(
       UpickleJsonSerializer(),
-      (json: String) => ()
+      jsonSender
     )
     builder.build
   }
 
-  lazy val randomNumberObserverApi = jsonRpcClient.createApi[RandomNumberObserverApi]
+  def jsonRpcServerAndClient(jsonSender: (String) => Unit) = {
+    JsonRpcServerAndClient(
+      jsonRpcServer,
+      jsonRpcClient(jsonSender)
+    )
+  }
 
-  lazy val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
-
-  def jsonRpcConnectedWebSocket(sendString: (String) => Unit) = wire[JsonRpcConnectedWebSocket]
+  def jsonRpcConnectedWebSocket(sendString: (String) => Unit) = {
+    val serverAndClient = jsonRpcServerAndClient(sendString)
+    new JsonRpcConnectedWebSocket(
+      serverAndClient,
+      sendString
+    )
+  }
 }

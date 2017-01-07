@@ -1,13 +1,10 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
 import io.github.shogowada.scala.jsonrpc.JsonRpcServerAndClient
-import io.github.shogowada.scala.jsonrpc.client.JsonRpcClientBuilder
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
 import org.eclipse.jetty.websocket.api.{RemoteEndpoint, Session, WebSocketAdapter}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.util.{Success, Try}
 
 class JsonRpcWebSocket extends WebSocketAdapter {
@@ -35,18 +32,9 @@ class JsonRpcWebSocket extends WebSocketAdapter {
 }
 
 class JsonRpcConnectedWebSocket(
-    jsonRpcServer: JsonRpcServer[UpickleJsonSerializer],
-    randomNumberSubjectApi: RandomNumberSubjectApi,
+    jsonRpcServerAndClient: JsonRpcServerAndClient[UpickleJsonSerializer],
     sendString: (String) => Unit
 ) {
-  private val jsonRpcClientBuilder = JsonRpcClientBuilder(UpickleJsonSerializer(), sendString)
-  private val jsonRpcClient = jsonRpcClientBuilder.build
-  private val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
-
-  private val randomNumberObserverApi = jsonRpcClient.createApi[RandomNumberObserverApi]
-
-  private val futureObserverId: Future[String] = randomNumberObserverApi.getId
-
   def onWebSocketText(message: String): Unit = {
     jsonRpcServerAndClient.receive(message).onComplete {
       case Success(Some(responseJson: String)) => sendString(responseJson)
@@ -55,6 +43,5 @@ class JsonRpcConnectedWebSocket(
   }
 
   def onWebSocketClose(): Unit = {
-    futureObserverId.foreach(observerId => randomNumberSubjectApi.unregister(observerId))
   }
 }

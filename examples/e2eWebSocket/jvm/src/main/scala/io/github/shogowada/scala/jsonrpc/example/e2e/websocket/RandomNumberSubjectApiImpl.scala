@@ -1,17 +1,14 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
+import scala.concurrent.Future
+
 class RandomNumberSubjectApiImpl extends RandomNumberSubjectApi {
-  private var observerIds: Set[String] = Set()
+  private var observers: Set[(Int) => Unit] = Set()
 
-  override def register(observerId: String): Unit = {
-    this.synchronized {
-      observerIds = observerIds + observerId
-    }
-  }
-
-  override def unregister(observerId: String): Unit = {
-    this.synchronized {
-      observerIds = observerIds - observerId
-    }
+  override def register(observer: (Int) => Unit): Future[() => Unit] = {
+    this.synchronized(observers = observers + observer)
+    Future(() => {
+      this.synchronized(observers = observers - observer)
+    })
   }
 }

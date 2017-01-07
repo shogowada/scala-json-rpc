@@ -7,27 +7,25 @@ import io.github.shogowada.scala.jsonrpc.server.JsonRpcServerBuilder
 
 object JsonRpcModule {
 
-  import com.softwaremill.macwire._
-
   import scala.concurrent.ExecutionContext.Implicits.global
-
-  lazy val randomNumberReceiverApi: RandomNumberObserverApi = wire[RandomNumberObserverApiImpl]
 
   lazy val jsonRpcServer = {
     val builder = JsonRpcServerBuilder(UpickleJsonSerializer())
-    builder.bindApi[RandomNumberObserverApi](randomNumberReceiverApi)
     builder.build
   }
 
-  lazy val jsonRpcClient = {
+  def jsonRpcClient(jsonSender: (String) => Unit) = {
     val builder = JsonRpcClientBuilder(
       UpickleJsonSerializer(),
-      (json: String) => ()
+      jsonSender
     )
     builder.build
   }
 
-  lazy val randomNumberSubscriberApi = jsonRpcClient.createApi[RandomNumberSubjectApi]
-
-  lazy val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
+  def jsonRpcServerAndClient(jsonSender: (String) => Unit) = {
+    JsonRpcServerAndClient(
+      jsonRpcServer,
+      jsonRpcClient(jsonSender)
+    )
+  }
 }

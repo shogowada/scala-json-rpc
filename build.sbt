@@ -110,7 +110,10 @@ lazy val exampleJvmCommonSettings = Seq(
 )
 
 lazy val exampleJsCommonSettings = Seq(
-  persistLauncher := true
+  persistLauncher := true,
+  libraryDependencies ++= Seq(
+    "org.scala-js" %%% "scalajs-dom" % "0.9.+"
+  )
 )
 
 lazy val exampleE2e = (crossProject in file("examples/e2e"))
@@ -132,11 +135,6 @@ lazy val exampleE2eJs = exampleE2e.js
     .enablePlugins(ScalaJSPlugin)
     .disablePlugins(AssemblyPlugin)
     .settings(exampleJsCommonSettings: _*)
-    .settings(
-      libraryDependencies ++= Seq(
-        "org.scala-js" %%% "scalajs-dom" % "0.9.+"
-      )
-    )
 
 lazy val exampleE2eWebSocket = (crossProject in file("examples/e2eWebSocket"))
     .settings(commonSettings: _*)
@@ -159,3 +157,4 @@ lazy val exampleE2eWebSocketJvm = exampleE2eWebSocket.jvm
 lazy val exampleE2eWebSocketJs = exampleE2eWebSocket.js
     .enablePlugins(ScalaJSPlugin)
     .disablePlugins(AssemblyPlugin)
+    .settings(exampleJsCommonSettings: _*)
