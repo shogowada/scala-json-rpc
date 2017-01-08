@@ -8,39 +8,40 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Success, Try}
 
 class JsonRpcWebSocket extends WebSocketAdapter {
-  private var connectedWebSocket: JsonRpcConnectedWebSocket = _
+  private var serverAndClient: JsonRpcServerAndClient[UpickleJsonSerializer] = _
+  private var observerApi: RandomNumberObserverApi = _
+
+  private val observerApiRepository = JsonRpcModule.randomNumberObserverApiRepository
 
   override def onWebSocketConnect(session: Session): Unit = {
     super.onWebSocketConnect(session)
 
     val remote: RemoteEndpoint = session.getRemote
-    val sendString: (String) => Unit = (json: String) => Try(remote.sendString(json))
+    val jsonSender: (String) => Unit = (json: String) => Try(remote.sendString(json))
 
-    connectedWebSocket = JsonRpcModule.jsonRpcConnectedWebSocket(sendString)
+    println(s"New WebSocket connected at ${session.getRemoteAddress}")
+
+    serverAndClient = JsonRpcModule.jsonRpcServerAndClient(jsonSender)
+    observerApi = serverAndClient.createApi[RandomNumberObserverApi]
+
+    observerApiRepository.add(observerApi)
   }
 
   override def onWebSocketClose(statusCode: Int, reason: String): Unit = {
-    connectedWebSocket.onWebSocketClose()
-    connectedWebSocket = null
+    observerApiRepository.remove(observerApi)
+
+    observerApi = null
+    serverAndClient = null
+
+    println(s"WebSocket closed at ${getSession.getRemoteAddress}: $reason")
 
     super.onWebSocketClose(statusCode, reason)
   }
 
   override def onWebSocketText(message: String): Unit = {
-    connectedWebSocket.onWebSocketText(message)
-  }
-}
-
-class JsonRpcConnectedWebSocket(
-    jsonRpcServerAndClient: JsonRpcServerAndClient[UpickleJsonSerializer]
-) {
-  def onWebSocketText(message: String): Unit = {
-    jsonRpcServerAndClient.receive(message).onComplete {
-      case Success(Some(responseJson: String)) => jsonRpcServerAndClient.send(responseJson)
+    serverAndClient.receive(message).onComplete {
+      case Success(Some(responseJson: String)) => serverAndClient.send(responseJson)
       case _ =>
     }
-  }
-
-  def onWebSocketClose(): Unit = {
   }
 }

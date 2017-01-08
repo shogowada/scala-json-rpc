@@ -23,10 +23,7 @@ object JsonRpcServer {
 }
 
 object JsonRpcServerMacro {
-  def receive
-  (c: blackbox.Context)
-      (json: c.Expr[String])
-  : c.Expr[Future[Option[String]]] = {
+  def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Future[Option[String]]] = {
     import c.universe._
 
     val macroUtils = MacroUtils[c.type](c)

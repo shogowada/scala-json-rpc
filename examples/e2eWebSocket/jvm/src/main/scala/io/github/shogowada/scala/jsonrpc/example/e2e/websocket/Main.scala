@@ -18,8 +18,12 @@ object Main {
           .toASCIIString
     )
     context.addServlet(classOf[DefaultServlet], "/")
+    context.addServlet(classOf[JsonRpcWebSocketServlet], "/jsonrpc")
 
     server.setHandler(context)
+
+    val subjectApi = JsonRpcModule.randomNumberSubjectApi
+    subjectApi.start()
 
     server.start()
     server.join()

@@ -97,9 +97,6 @@ lazy val exampleCommonSettings = Seq(
 
 lazy val exampleJvmCommonSettings = Seq(
   pipelineStages in Assets := Seq(scalaJSDev),
-  unmanagedResourceDirectories in Assets ++= Seq(
-    (baseDirectory in exampleE2eJs).value / "src" / "main" / "public"
-  ),
   WebKeys.packagePrefix in Assets := "public/",
   managedClasspath in Runtime += (packageBin in Assets).value,
   libraryDependencies ++= Seq(
@@ -129,6 +126,9 @@ lazy val exampleE2eJvm = exampleE2e.jvm
     .settings(exampleJvmCommonSettings: _*)
     .settings(
       scalaJSProjects := Seq(exampleE2eJs),
+      unmanagedResourceDirectories in Assets ++= Seq(
+        (baseDirectory in exampleE2eJs).value / "src" / "main" / "public"
+      ),
       mainClass := Option("io.github.shogowada.scala.jsonrpc.example.e2e.Main")
     )
 lazy val exampleE2eJs = exampleE2e.js
@@ -149,6 +149,9 @@ lazy val exampleE2eWebSocketJvm = exampleE2eWebSocket.jvm
     .settings(exampleJvmCommonSettings: _*)
     .settings(
       scalaJSProjects := Seq(exampleE2eWebSocketJs),
+      unmanagedResourceDirectories in Assets ++= Seq(
+        (baseDirectory in exampleE2eWebSocketJs).value / "src" / "main" / "public"
+      ),
       libraryDependencies ++= Seq(
         "org.eclipse.jetty.websocket" % "websocket-api" % JettyVersion,
         "org.eclipse.jetty.websocket" % "websocket-server" % JettyVersion

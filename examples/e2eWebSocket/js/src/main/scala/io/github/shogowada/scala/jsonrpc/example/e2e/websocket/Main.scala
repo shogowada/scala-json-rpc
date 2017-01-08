@@ -24,13 +24,18 @@ object Main extends JSApp {
       }
     }
 
-    val subjectApi = jsonRpcServerAndClient.createApi[RandomNumberSubjectApi]
-    val futureObserverId: Future[String] = subjectApi.createObserverId()
+    webSocket.onopen = (_: dom.Event) => {
+      val subjectApi = jsonRpcServerAndClient.createApi[RandomNumberSubjectApi]
+      val futureObserverId: Future[String] = subjectApi.createObserverId()
 
-    val randomNumberObserverApi = JsonRpcModule.randomNumberObserverApi
-    futureObserverId.onComplete {
-      case Success(id) => randomNumberObserverApi.setId(id)
-      case _ =>
+      futureObserverId.onComplete {
+        case Success(id) => {
+          val observerApi = JsonRpcModule.randomNumberObserverApi
+          observerApi.setId(id)
+          subjectApi.register(id)
+        }
+        case _ =>
+      }
     }
   }
 }

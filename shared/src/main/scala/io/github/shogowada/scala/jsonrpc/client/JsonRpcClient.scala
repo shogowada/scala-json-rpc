@@ -5,16 +5,18 @@ import io.github.shogowada.scala.jsonrpc.Types.{Id, JsonSender}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
-import scala.concurrent.Promise
+import scala.concurrent.{Future, Promise}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
 (
     val jsonSerializer: JSON_SERIALIZER,
-    val send: JsonSender
+    val jsonSender: JsonSender
 ) {
   val promisedResponseRepository = new JsonRpcPromisedResponseRepository
+
+  def send(json: String): Future[Option[String]] = jsonSender(json)
 
   def createApi[API]: API = macro JsonRpcClientMacro.createApi[API]
 
@@ -22,9 +24,7 @@ class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
 }
 
 object JsonRpcClientMacro {
-  def createApi[API: c.WeakTypeTag]
-  (c: blackbox.Context)
-  : c.Expr[API] = {
+  def createApi[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
     val apiType: Type = weakTypeOf[API]
     val memberFunctions = createMemberFunctions[c.type, API](c)
@@ -46,10 +46,9 @@ object JsonRpcClientMacro {
         .map((apiMethod: MethodSymbol) => createMemberFunction[c.type](c)(apiMethod))
   }
 
-  private def createMemberFunction[CONTEXT <: blackbox.Context]
-  (c: CONTEXT)
-      (apiMethod: c.universe.MethodSymbol)
-  : c.Tree = {
+  private def createMemberFunction[CONTEXT <: blackbox.Context](c: CONTEXT)(
+      apiMethod: c.universe.MethodSymbol
+  ): c.Tree = {
     import c.universe._
 
     val macroUtils = MacroUtils[c.type](c)
@@ -168,10 +167,7 @@ object JsonRpcClientMacro {
         """
   }
 
-  def receive
-  (c: blackbox.Context)
-      (json: c.Expr[String])
-  : c.Expr[Boolean] = {
+  def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Boolean] = {
     import c.universe._
 
     val macroUtils = MacroUtils[c.type](c)

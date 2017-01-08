@@ -1,6 +1,5 @@
 package io.github.shogowada.scala.jsonrpc
 
-import io.github.shogowada.scala.jsonrpc.Types.JsonSender
 import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
@@ -14,7 +13,7 @@ class JsonRpcServerAndClient[JSON_SERIALIZER <: JsonSerializer](
     val server: JsonRpcServer[JSON_SERIALIZER],
     val client: JsonRpcClient[JSON_SERIALIZER]
 ) {
-  val send: JsonSender = client.send
+  def send(json: String): Future[Option[String]] = client.send(json)
 
   def createApi[API]: API = macro JsonRpcServerAndClientMacro.createApi[API]
 
@@ -29,16 +28,13 @@ object JsonRpcServerAndClient {
 }
 
 object JsonRpcServerAndClientMacro {
-  def createApi[API: c.WeakTypeTag]
-  (c: blackbox.Context)
-  : c.Expr[API] = {
+  def createApi[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
     val apiType: Type = weakTypeOf[API]
     c.Expr[API](q"${c.prefix.tree}.client.createApi[$apiType]")
   }
 
-  def receive(c: blackbox.Context)(json: c.Expr[String])
-  : c.Expr[Future[Option[String]]] = {
+  def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Future[Option[String]]] = {
     import c.universe._
     val macroUtils = MacroUtils[c.type](c)
     val client: Tree = q"${c.prefix.tree}.client"

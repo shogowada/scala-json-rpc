@@ -11,19 +11,18 @@ object JsonRpcModule {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  lazy val randomNumberSubjectApi: RandomNumberSubjectApi = wire[RandomNumberSubjectApiImpl]
+  lazy val randomNumberSubjectApi: RandomNumberSubjectApiImpl = wire[RandomNumberSubjectApiImpl]
+
+  lazy val jsonSerializer = UpickleJsonSerializer()
 
   lazy val jsonRpcServer = {
-    val builder = JsonRpcServerBuilder(UpickleJsonSerializer())
+    val builder = JsonRpcServerBuilder(jsonSerializer)
     builder.bindApi[RandomNumberSubjectApi](randomNumberSubjectApi)
     builder.build
   }
 
   def jsonRpcClient(jsonSender: (String) => Unit) = {
-    val builder = JsonRpcClientBuilder(
-      UpickleJsonSerializer(),
-      jsonSender
-    )
+    val builder = JsonRpcClientBuilder(jsonSerializer, jsonSender)
     builder.build
   }
 
@@ -34,8 +33,5 @@ object JsonRpcModule {
     )
   }
 
-  def jsonRpcConnectedWebSocket(sendString: (String) => Unit) = {
-    val serverAndClient = jsonRpcServerAndClient(sendString)
-    new JsonRpcConnectedWebSocket(serverAndClient)
-  }
+  lazy val randomNumberObserverApiRepository = wire[RandomNumberObserverApiRepository]
 }

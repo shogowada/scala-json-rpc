@@ -27,10 +27,11 @@ class JsonRpcServerBuilder[JSON_SERIALIZER <: JsonSerializer]
 }
 
 object JsonRpcServerBuilder {
-  def apply[JSON_SERIALIZER <: JsonSerializer]
-  (jsonSerializer: JSON_SERIALIZER)
-      (implicit executionContext: ExecutionContext)
-  : JsonRpcServerBuilder[JSON_SERIALIZER] = {
+  def apply[JSON_SERIALIZER <: JsonSerializer](
+      jsonSerializer: JSON_SERIALIZER
+  )(
+      implicit executionContext: ExecutionContext
+  ): JsonRpcServerBuilder[JSON_SERIALIZER] = {
     new JsonRpcServerBuilder[JSON_SERIALIZER](
       mutable.Map(),
       jsonSerializer,
@@ -40,10 +41,9 @@ object JsonRpcServerBuilder {
 }
 
 object JsonRpcServerBuilderMacro {
-  def bindApi[JSON_SERIALIZER <: JsonSerializer, API: c.WeakTypeTag]
-  (c: blackbox.Context)
-      (api: c.Expr[API])
-  : c.Expr[Unit] = {
+  def bindApi[JSON_SERIALIZER <: JsonSerializer, API: c.WeakTypeTag](c: blackbox.Context)(
+      api: c.Expr[API]
+  ): c.Expr[Unit] = {
     import c.universe._
 
     val methodNameToHandlerMap = q"${c.prefix.tree}.methodNameToHandlerMap"
@@ -59,10 +59,10 @@ object JsonRpcServerBuilderMacro {
     )
   }
 
-  private def createMethodNameToHandler[CONTEXT <: blackbox.Context, API]
-  (c: blackbox.Context)
-      (api: c.Expr[API], method: c.universe.MethodSymbol)
-  : c.Expr[(String, Handler)] = {
+  private def createMethodNameToHandler[CONTEXT <: blackbox.Context, API](c: blackbox.Context)(
+      api: c.Expr[API],
+      method: c.universe.MethodSymbol
+  ): c.Expr[(String, Handler)] = {
     import c.universe._
 
     val macroUtils = MacroUtils[c.type](c)
