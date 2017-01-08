@@ -13,7 +13,7 @@ class RandomNumberObserverApiRepository {
     }
   }
 
-  def remove(apiToRemove: RandomNumberObserverApi): Unit = {
+  def remove(apiToRemove: RandomNumberObserverApi): Option[String] = {
     this.synchronized {
       val maybeId: Option[String] = idToApiMap
           .find {
@@ -24,6 +24,7 @@ class RandomNumberObserverApiRepository {
             case (id, _) => id
           }
       maybeId.foreach(id => idToApiMap = idToApiMap - id)
+      maybeId
     }
   }
 

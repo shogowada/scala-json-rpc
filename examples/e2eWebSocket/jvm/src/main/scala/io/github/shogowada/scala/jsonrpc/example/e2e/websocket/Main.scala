@@ -22,8 +22,8 @@ object Main {
 
     server.setHandler(context)
 
-    val subjectApi = JsonRpcModule.randomNumberSubjectApi
-    subjectApi.start()
+    val randomNumberSubject = JsonRpcModule.randomNumberSubject
+    randomNumberSubject.start()
 
     server.start()
     server.join()

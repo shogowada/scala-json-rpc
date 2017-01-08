@@ -7,9 +7,11 @@ import io.github.shogowada.scala.jsonrpc.server.JsonRpcServerBuilder
 
 object JsonRpcModule {
 
+  import com.softwaremill.macwire._
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  lazy val randomNumberObserverApi: RandomNumberObserverApi = new RandomNumberObserverApiImpl
+  lazy val randomNumberObserverApi: RandomNumberObserverApi = wire[RandomNumberObserver]
 
   lazy val jsonSerializer = UpickleJsonSerializer()
 

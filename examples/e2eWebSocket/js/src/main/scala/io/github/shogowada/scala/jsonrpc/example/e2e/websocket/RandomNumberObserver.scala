@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
 import scala.concurrent.{Future, Promise}
 
-class RandomNumberObserverApiImpl extends RandomNumberObserverApi {
+class RandomNumberObserver extends RandomNumberObserverApi {
   val promisedId: Promise[String] = Promise()
 
   override def getId: Future[String] = {

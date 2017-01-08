@@ -6,7 +6,7 @@ import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class RandomNumberSubjectApiImpl(
+class RandomNumberSubject(
     observerApiRepository: RandomNumberObserverApiRepository
 ) extends RandomNumberSubjectApi {
   private var registeredObserverIds: Set[String] = Set()

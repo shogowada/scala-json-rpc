@@ -11,6 +11,7 @@ class JsonRpcWebSocket extends WebSocketAdapter {
   private var serverAndClient: JsonRpcServerAndClient[UpickleJsonSerializer] = _
   private var observerApi: RandomNumberObserverApi = _
 
+  private val randomNumberSubject = JsonRpcModule.randomNumberSubject
   private val observerApiRepository = JsonRpcModule.randomNumberObserverApiRepository
 
   override def onWebSocketConnect(session: Session): Unit = {
@@ -19,8 +20,6 @@ class JsonRpcWebSocket extends WebSocketAdapter {
     val remote: RemoteEndpoint = session.getRemote
     val jsonSender: (String) => Unit = (json: String) => Try(remote.sendString(json))
 
-    println(s"New WebSocket connected at ${session.getRemoteAddress}")
-
     serverAndClient = JsonRpcModule.jsonRpcServerAndClient(jsonSender)
     observerApi = serverAndClient.createApi[RandomNumberObserverApi]
 
@@ -28,12 +27,11 @@ class JsonRpcWebSocket extends WebSocketAdapter {
   }
 
   override def onWebSocketClose(statusCode: Int, reason: String): Unit = {
-    observerApiRepository.remove(observerApi)
+    val maybeObserverId: Option[String] = observerApiRepository.remove(observerApi)
+    maybeObserverId.foreach(id => randomNumberSubject.unregister(id))
 
     observerApi = null
     serverAndClient = null
-
-    println(s"WebSocket closed at ${getSession.getRemoteAddress}: $reason")
 
     super.onWebSocketClose(statusCode, reason)
   }
