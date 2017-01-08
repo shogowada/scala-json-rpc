@@ -4,8 +4,7 @@ import io.github.shogowada.scala.jsonrpc.JsonRpcServerAndClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import org.eclipse.jetty.websocket.api.{RemoteEndpoint, Session, WebSocketAdapter}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Success, Try}
+import scala.util.Try
 
 class JsonRpcWebSocket extends WebSocketAdapter {
   private var serverAndClient: JsonRpcServerAndClient[UpickleJsonSerializer] = _
@@ -37,9 +36,6 @@ class JsonRpcWebSocket extends WebSocketAdapter {
   }
 
   override def onWebSocketText(message: String): Unit = {
-    serverAndClient.receive(message).onComplete {
-      case Success(Some(responseJson: String)) => serverAndClient.send(responseJson)
-      case _ =>
-    }
+    serverAndClient.receive(message)
   }
 }

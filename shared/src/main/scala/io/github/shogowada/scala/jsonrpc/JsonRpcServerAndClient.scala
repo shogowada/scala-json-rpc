@@ -17,7 +17,7 @@ class JsonRpcServerAndClient[JSON_SERIALIZER <: JsonSerializer](
 
   def createApi[API]: API = macro JsonRpcServerAndClientMacro.createApi[API]
 
-  def receive(json: String): Future[Option[String]] = macro JsonRpcServerAndClientMacro.receive
+  def receive(json: String): Unit = macro JsonRpcServerAndClientMacro.receive
 }
 
 object JsonRpcServerAndClient {
@@ -34,20 +34,22 @@ object JsonRpcServerAndClientMacro {
     c.Expr[API](q"${c.prefix.tree}.client.createApi[$apiType]")
   }
 
-  def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Future[Option[String]]] = {
+  def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Unit] = {
     import c.universe._
     val macroUtils = MacroUtils[c.type](c)
     val client: Tree = q"${c.prefix.tree}.client"
     val server: Tree = q"${c.prefix.tree}.server"
     val executionContext: c.Expr[ExecutionContext] = c.Expr(q"$server.executionContext")
-    c.Expr[Future[Option[String]]](
+    c.Expr[Unit](
       q"""
           ..${macroUtils.imports}
           val wasJsonRpcResponse: Boolean = $client.receive($json)
-          if (wasJsonRpcResponse) {
-            Future(None)($executionContext)
-          } else {
+          if (!wasJsonRpcResponse) {
             $server.receive($json)
+              .onComplete((tried: Try[Option[String]]) => tried match {
+                case Success(Some(responseJson: String)) => $client.send(responseJson)
+                case _ =>
+              })($executionContext)
           }
           """
     )

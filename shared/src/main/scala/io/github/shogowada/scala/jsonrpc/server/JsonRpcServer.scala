@@ -30,6 +30,7 @@ object JsonRpcServerMacro {
 
     val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
     val methodNameToHandlerMap: Tree = q"${c.prefix.tree}.methodNameToHandlerMap"
+    val executionContext: Tree = q"${c.prefix.tree}.executionContext"
 
     val maybeParseErrorJson: c.Expr[Option[String]] =
       macroUtils.createMaybeErrorJson(json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.parseError"))
@@ -65,7 +66,7 @@ object JsonRpcServerMacro {
     val futureMaybeJson = c.Expr[Future[Option[String]]](
       q"""
           $maybeErrorJsonOrHandler.fold[Future[Option[String]]](
-            maybeErrorJson => Future(maybeErrorJson),
+            maybeErrorJson => Future(maybeErrorJson)($executionContext),
             handler => handler($json)
           )
           """

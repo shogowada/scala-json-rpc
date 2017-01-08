@@ -5,14 +5,15 @@ import io.github.shogowada.scala.jsonrpc.Types.{Id, JsonSender}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
 (
     val jsonSerializer: JSON_SERIALIZER,
-    val jsonSender: JsonSender
+    val jsonSender: JsonSender,
+    val executionContext: ExecutionContext
 ) {
   val promisedResponseRepository = new JsonRpcPromisedResponseRepository
 
@@ -79,6 +80,7 @@ object JsonRpcClientMacro {
     val send: Tree = q"${c.prefix.tree}.send"
     val receive: Tree = q"${c.prefix.tree}.receive"
     val promisedResponseRepository: Tree = q"${c.prefix.tree}.promisedResponseRepository"
+    val executionContext: Tree = q"${c.prefix.tree}.executionContext"
 
     def createNotificationMethodBody: c.Expr[returnType.type] = {
       val notification = c.Expr[JsonRpcNotification[parameterType.type]](
@@ -133,10 +135,10 @@ object JsonRpcClientMacro {
             val $requestId = Left(java.util.UUID.randomUUID.toString)
             val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
 
-            $send($requestJson).onComplete {
+            $send($requestJson).onComplete((tried: Try[Option[String]]) => tried match {
               case Success(Some(responseJson: String)) => $receive(responseJson)
               case _ =>
-            }
+            })($executionContext)
 
             $promisedResponse.future
                 .map((json: String) => {
@@ -146,7 +148,7 @@ object JsonRpcClientMacro {
                         val maybeResponse = $jsonSerializer.deserialize[JsonRpcErrorResponse[String]](json)
                         throw new JsonRpcException(maybeResponse)
                       }
-                })
+                })($executionContext)
             """
       )
     }

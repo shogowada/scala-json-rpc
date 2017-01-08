@@ -4,39 +4,31 @@ import io.github.shogowada.scala.jsonrpc.Types._
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.experimental.macros
 
-class JsonRpcClientBuilder[JSON_SERIALIZER <: JsonSerializer]
-(
+class JsonRpcClientBuilder[JSON_SERIALIZER <: JsonSerializer](
     jsonSerializer: JSON_SERIALIZER,
-    jsonSender: (String) => Future[Option[String]]
+    jsonSender: JsonSender,
+    executionContext: ExecutionContext
 ) {
   def build: JsonRpcClient[JSON_SERIALIZER] = new JsonRpcClient(
     jsonSerializer,
-    jsonSender
+    jsonSender,
+    executionContext
   )
 }
 
 object JsonRpcClientBuilder {
-  def apply[JSON_SERIALIZER <: JsonSerializer]
-  (
+  def apply[JSON_SERIALIZER <: JsonSerializer](
       jsonSerializer: JSON_SERIALIZER,
-      jsonSender: (String) => Unit
+      jsonSender: (String) => Future[Option[String]]
   )(
       implicit executionContext: ExecutionContext
-  ) = new JsonRpcClientBuilder(
-    jsonSerializer,
-    (json: String) => {
-      jsonSender(json)
-      Future(None)
-    }
-  )
-
-  def apply[JSON_SERIALIZER <: JsonSerializer]
-  (
-      jsonSerializer: JSON_SERIALIZER,
-      jsonSender: JsonSender
-  ) = new JsonRpcClientBuilder(
-    jsonSerializer,
-    jsonSender
-  )
+  ): JsonRpcClientBuilder[JSON_SERIALIZER] = {
+    new JsonRpcClientBuilder(
+      jsonSerializer,
+      jsonSender,
+      executionContext
+    )
+  }
 }

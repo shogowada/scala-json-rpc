@@ -5,6 +5,8 @@ import io.github.shogowada.scala.jsonrpc.client.JsonRpcClientBuilder
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServerBuilder
 
+import scala.concurrent.Future
+
 object JsonRpcModule {
 
   import com.softwaremill.macwire._
@@ -22,7 +24,10 @@ object JsonRpcModule {
   }
 
   def jsonRpcClient(jsonSender: (String) => Unit) = {
-    val builder = JsonRpcClientBuilder(jsonSerializer, jsonSender)
+    val builder = JsonRpcClientBuilder(jsonSerializer, (json) => {
+      jsonSender(json)
+      Future(None)
+    })
     builder.build
   }
 

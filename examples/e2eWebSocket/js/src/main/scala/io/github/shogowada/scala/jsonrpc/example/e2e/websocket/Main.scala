@@ -18,10 +18,7 @@ object Main extends JSApp {
 
     webSocket.onmessage = (messageEvent: dom.MessageEvent) => {
       val message = messageEvent.data.toString
-      jsonRpcServerAndClient.receive(message).onComplete {
-        case Success(Some(responseJson: String)) => jsonRpcServerAndClient.send(responseJson)
-        case _ =>
-      }
+      jsonRpcServerAndClient.receive(message)
     }
 
     webSocket.onopen = (_: dom.Event) => {
