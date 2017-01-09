@@ -62,12 +62,9 @@ class CalculatorApiImpl extends CalculatorApi {
 }
 
 // Create JSON-RPC server.
-// JsonSerializer type parameter is required to support JsonSerializer who's implementation is macro (e.g. upickle).
 // You can bind as many APIs as you want.
-val serverBuilder = JsonRpcServerBuilder[MyJsonSerializer](new MyJsonSerializer())
-serverBuilder.bindApi[CalculatorApi](new CalculatorApiImpl)
-
-val server: JsonRpcServer[MyJsonSerializer] = serverBuilder.build
+val server = JsonRpcServer(new MyJsonSerializer())
+server.bindApi[CalculatorApi](new CalculatorApiImpl)
 
 // Feed JSON-RPC request into server and send its response to client.
 // Server's receive method returns Future[Option[String]], where the String is JSON-RPC response.
@@ -90,11 +87,10 @@ val jsonSender: (String) => Future[Option[String]] = (requestJson) => {
   val futureMaybeResponseJson: Future[Option[String]] = // ... Send the request JSON and receive its response.
   futureMaybeResponseJson
 }
-val clientBuilder = JsonRpcClientBuilder[MyJsonSerializer](
+val client = JsonRpcClient(
   new MyJsonSerializer(),
   jsonSender
 )
-val client: JsonRpcClient[MyJsonSerializer] = clientBuilder.build
 
 // Create an API.
 // You can create as many APIs as you want.
