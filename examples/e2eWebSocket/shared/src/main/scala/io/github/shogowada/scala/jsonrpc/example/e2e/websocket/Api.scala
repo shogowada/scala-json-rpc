@@ -13,7 +13,5 @@ trait RandomNumberSubjectApi {
 trait RandomNumberObserverApi {
   def getId: Future[String]
 
-  def setId(id: String): Unit
-
   def notify(randomNumber: Int): Unit
 }
