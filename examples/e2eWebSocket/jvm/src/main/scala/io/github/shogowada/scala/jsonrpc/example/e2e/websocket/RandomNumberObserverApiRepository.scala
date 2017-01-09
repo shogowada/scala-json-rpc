@@ -1,16 +1,10 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Success
-
 class RandomNumberObserverApiRepository {
   private var idToApiMap: Map[String, RandomNumberObserverApi] = Map()
 
-  def add(api: RandomNumberObserverApi): Unit = {
-    api.getId.onComplete {
-      case Success(id) => this.synchronized(idToApiMap = idToApiMap + (id -> api))
-      case _ =>
-    }
+  def add(clientId: String, api: RandomNumberObserverApi): Unit = {
+    this.synchronized(idToApiMap = idToApiMap + (clientId -> api))
   }
 
   def remove(apiToRemove: RandomNumberObserverApi): Option[String] = {

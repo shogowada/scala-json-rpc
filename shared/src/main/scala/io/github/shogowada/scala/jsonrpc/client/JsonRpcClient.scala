@@ -24,6 +24,19 @@ class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
   def receive(json: String): Boolean = macro JsonRpcClientMacro.receive
 }
 
+object JsonRpcClient {
+  def apply[JSON_SERIALIZER <: JsonSerializer](
+      jsonSerializer: JSON_SERIALIZER,
+      jsonSender: JsonSender
+  )(implicit executionContext: ExecutionContext) = {
+    new JsonRpcClient(
+      jsonSerializer,
+      jsonSender,
+      executionContext
+    )
+  }
+}
+
 object JsonRpcClientMacro {
   def createApi[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._

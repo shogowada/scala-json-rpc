@@ -1,9 +1,9 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
 import io.github.shogowada.scala.jsonrpc.JsonRpcServerAndClient
-import io.github.shogowada.scala.jsonrpc.client.JsonRpcClientBuilder
+import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServerBuilder
+import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
 
 import scala.concurrent.Future
 
@@ -13,22 +13,23 @@ object JsonRpcModule {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
+  lazy val clientIdFactoryApi: ClientIdFactoryApi = wire[ClientIdFactoryApiImpl]
   lazy val randomNumberSubject: RandomNumberSubject = wire[RandomNumberSubject]
 
   lazy val jsonSerializer = UpickleJsonSerializer()
 
   lazy val jsonRpcServer = {
-    val builder = JsonRpcServerBuilder(jsonSerializer)
-    builder.bindApi[RandomNumberSubjectApi](randomNumberSubject)
-    builder.build
+    val server = JsonRpcServer(jsonSerializer)
+    server.bindApi[ClientIdFactoryApi](clientIdFactoryApi)
+    server.bindApi[RandomNumberSubjectApi](randomNumberSubject)
+    server
   }
 
   def jsonRpcClient(jsonSender: (String) => Unit) = {
-    val builder = JsonRpcClientBuilder(jsonSerializer, (json) => {
+    JsonRpcClient(jsonSerializer, (json) => {
       jsonSender(json)
       Future(None)
     })
-    builder.build
   }
 
   def jsonRpcServerAndClient(jsonSender: (String) => Unit) = {

@@ -6,10 +6,17 @@ import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+class ClientIdFactoryApiImpl extends ClientIdFactoryApi {
+  override def create(): Future[String] = {
+    val clientId = UUID.randomUUID().toString
+    Future(clientId)
+  }
+}
+
 class RandomNumberSubject(
     observerApiRepository: RandomNumberObserverApiRepository
 ) extends RandomNumberSubjectApi {
-  private var registeredObserverIds: Set[String] = Set()
+  private var registeredClientIds: Set[String] = Set()
 
   def start(): Unit = {
     val threadPoolExecutor = new ScheduledThreadPoolExecutor(1)
@@ -24,23 +31,18 @@ class RandomNumberSubject(
 
   private def notifyObservers(randomNumber: Int): Unit = {
     val registeredObserverApis = observerApiRepository.getIdToApiMap
-        .filterKeys(observerApi => registeredObserverIds.contains(observerApi))
+        .filterKeys(clientId => registeredClientIds.contains(clientId))
         .values
     registeredObserverApis.foreach(api => api.notify(randomNumber))
   }
 
-  override def createObserverId(): Future[String] = {
-    val observerId = UUID.randomUUID().toString
-    Future(observerId)
+  override def register(clientId: String): Unit = {
+    println(s"Registering observer with client ID $clientId")
+    this.synchronized(registeredClientIds = registeredClientIds + clientId)
   }
 
-  override def register(observerId: String): Unit = {
-    println(s"Registering observer with ID $observerId")
-    this.synchronized(registeredObserverIds = registeredObserverIds + observerId)
-  }
-
-  override def unregister(observerId: String): Unit = {
-    println(s"Unregistering observer with ID $observerId")
-    this.synchronized(registeredObserverIds = registeredObserverIds - observerId)
+  override def unregister(clientId: String): Unit = {
+    println(s"Unregistering observer with client ID $clientId")
+    this.synchronized(registeredClientIds = registeredClientIds - clientId)
   }
 }

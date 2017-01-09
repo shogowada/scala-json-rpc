@@ -43,10 +43,8 @@ class JsonRpcServerTest extends AsyncFunSpec
     val api = new FakeApiImpl
 
     val jsonSerializer = UpickleJsonSerializer()
-    val serverBuilder = JsonRpcServerBuilder(jsonSerializer)
-    serverBuilder.bindApi[FakeApi](api)
-
-    val target = serverBuilder.build
+    val target = JsonRpcServer(jsonSerializer)
+    target.bindApi[FakeApi](api)
 
     def responseShouldEqual[T]
     (

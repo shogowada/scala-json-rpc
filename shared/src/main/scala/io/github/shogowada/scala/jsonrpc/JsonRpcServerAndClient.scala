@@ -15,6 +15,8 @@ class JsonRpcServerAndClient[JSON_SERIALIZER <: JsonSerializer](
 ) {
   def send(json: String): Future[Option[String]] = client.send(json)
 
+  def bindApi[API](api: API): Unit = macro JsonRpcServerAndClientMacro.bindApi[API]
+
   def createApi[API]: API = macro JsonRpcServerAndClientMacro.createApi[API]
 
   def receive(json: String): Unit = macro JsonRpcServerAndClientMacro.receive
@@ -28,6 +30,13 @@ object JsonRpcServerAndClient {
 }
 
 object JsonRpcServerAndClientMacro {
+  def bindApi[API: c.WeakTypeTag](c: blackbox.Context)(api: c.Expr[API]): c.Expr[Unit] = {
+    import c.universe._
+    val server = q"${c.prefix.tree}.server"
+    val apiType: Type = weakTypeOf[API]
+    c.Expr[Unit](q"$server.bindApi[$apiType]($api)")
+  }
+
   def createApi[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
     val apiType: Type = weakTypeOf[API]

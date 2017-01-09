@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e
 
-import io.github.shogowada.scala.jsonrpc.client.JsonRpcClientBuilder
+import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import org.scalajs.dom
 
@@ -25,9 +25,7 @@ object Main extends JSApp {
             })
       }
 
-    val clientBuilder = JsonRpcClientBuilder(UpickleJsonSerializer(), jsonSender)
-
-    val client = clientBuilder.build
+    val client = JsonRpcClient(UpickleJsonSerializer(), jsonSender)
 
     val calculatorApi = client.createApi[CalculatorApi]
     val echoApi = client.createApi[EchoApi]

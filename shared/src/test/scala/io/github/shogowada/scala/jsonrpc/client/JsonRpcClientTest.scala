@@ -10,8 +10,7 @@ class JsonRpcClientTest extends path.FunSpec
   override def newInstance: path.FunSpecLike = new JsonRpcClientTest
 
   implicit val executionContext = ExecutionContext.Implicits.global
-  val target = JsonRpcClientBuilder(UpickleJsonSerializer(), (json: String) => {})
-      .build
+  val target = JsonRpcClient(UpickleJsonSerializer(), (json: String) => Future(None))
 
   describe("given I have an API") {
     trait Api {

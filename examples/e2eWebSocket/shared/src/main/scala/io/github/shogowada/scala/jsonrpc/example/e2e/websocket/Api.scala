@@ -2,16 +2,20 @@ package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
 import scala.concurrent.Future
 
+trait ClientIdFactoryApi {
+  def create(): Future[String]
+}
+
+trait ClientApi {
+  def id: Future[String]
+}
+
 trait RandomNumberSubjectApi {
-  def createObserverId(): Future[String]
+  def register(clientId: String): Unit
 
-  def register(observerId: String): Unit
-
-  def unregister(observerId: String): Unit
+  def unregister(clientId: String): Unit
 }
 
 trait RandomNumberObserverApi {
-  def getId: Future[String]
-
   def notify(randomNumber: Int): Unit
 }
