@@ -55,11 +55,11 @@ We build JSON-RPC server using those API implementations.
 ```scala
 object JsonRpcModule {
   lazy val jsonRpcServer: JsonRpcServer[UpickleJsonSerializer] = {
-    val builder = JsonRpcServerBuilder(UpickleJsonSerializer())
-    builder.bindApi[CalculatorApi](new CalculatorApiImpl)
-    builder.bindApi[EchoApi](new EchoApiImpl)
-    builder.bindApi[LoggerApi](new LoggerApiImpl)
-    builder.build
+    val server = JsonRpcServer(UpickleJsonSerializer())
+    server.bindApi[CalculatorApi](new CalculatorApiImpl)
+    server.bindApi[EchoApi](new EchoApiImpl)
+    server.bindApi[LoggerApi](new LoggerApiImpl)
+    server
   }
 }
 ```
@@ -104,9 +104,7 @@ val jsonSender: (String) => Future[Option[String]] =
         })
   }
 
-val clientBuilder = JsonRpcClientBuilder(UpickleJsonSerializer(), jsonSender)
-
-val client = clientBuilder.build
+val client = JsonRpcClient(UpickleJsonSerializer(), jsonSender)
 ```
 
 Once the client is built, we can use it to create and use the APIs like below.
