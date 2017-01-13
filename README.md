@@ -39,15 +39,23 @@ In this example, we will implement calculator on server side and call the calcul
 
 ## Shared
 
-### Define an API
+### Define APIs
+
+API traits are shared between server and client.
+
+Server uses it to implement the API, while client uses it to create a client side API that calls server and returns result.
 
 ```scala
 // Note that API methods must return either Future or Unit type.
 // If the method returns Future, it will be JSON-RPC request method, and client can receive response.
-// If the method returns Unit, it will be JSON-RPC notification method, and client does not receive response.
 trait CalculatorApi {
   def add(lhs: Int, rhs: Int): Future[Int]
   def subtract(lhs: Int, rhs: Int): Future[Int]
+}
+
+// If the method returns Unit, it will be JSON-RPC notification method, and client does not receive response.
+trait LoggerApi {
+  def log(message: String): Unit
 }
 ```
 
@@ -63,7 +71,7 @@ class MyJsonSerializer extends JsonSerializer {
 
 val jsonSerializer = new MyJsonSerializer()
 
-// Or
+// Or, if you just want it to work, use UpickleJsonSerializer.
 
 val jsonSerializer = UpickleJsonSerializer()
 ```
@@ -71,16 +79,23 @@ val jsonSerializer = UpickleJsonSerializer()
 ## Server side
 
 ```scala
-// Implement the API.
+// Implement the APIs.
 class CalculatorApiImpl extends CalculatorApi {
   override def add(lhs: Int, rhs: Int): Future[Int] = Future(lhs + rhs)
   override def subtract(lhs: Int, rhs: Int): Future[Int] = Future(lhs - rhs)
 }
 
+class LoggerApiImpl extends LoggerApi {
+  override def log(message: String): Unit = println(message)
+}
+
 // Create JSON-RPC server.
-// You can bind as many APIs as you want.
-val server = JsonRpcServer(new MyJsonSerializer())
+val jsonSerializer = new MyJsonSerializer()
+val server = JsonRpcServer(jsonSerializer)
+
+// Bind as many APIs as you want.
 server.bindApi[CalculatorApi](new CalculatorApiImpl)
+server.bindApi[LoggerApi](new LoggerApiImpl)
 
 // Feed JSON-RPC request into server and send its response to client.
 // Server's receive method returns Future[Option[String]], where the String is JSON-RPC response.
@@ -89,7 +104,7 @@ val requestJson: String = // ... JSON-RPC request as JSON
 val futureMaybeResponse: Future[Option[String]] = server.receive(requestJson)
 futureMaybeResponse.onComplete {
   case Success(Some(responseJson)) => // Send the response to client.
-  case Success(None) => // Response is absent if it was JSON-RPC notification.
+  case Success(None) => // Response is absent if it was JSON-RPC notification (API method returning Unit), but it was still a successful RPC.
   case _ =>
 }
 ```
@@ -98,19 +113,18 @@ futureMaybeResponse.onComplete {
 
 ```scala
 // Create JSON-RPC client.
+val jsonSerializer = new MyJsonSerializer()
 val jsonSender: (String) => Future[Option[String]] = (requestJson) => {
-  // By returning the future here, it will automatically take care of the responses for you.
+  // By returning the future response here, it will automatically take care of the responses for you.
   val futureMaybeResponseJson: Future[Option[String]] = // ... Send the request JSON and receive its response.
   futureMaybeResponseJson
 }
-val client = JsonRpcClient(
-  new MyJsonSerializer(),
-  jsonSender
-)
+val client = JsonRpcClient(jsonSerializer, jsonSender)
 
-// Create an API.
-// You can create as many APIs as you want.
+// Create as many APIs as you want.
+// Client APIs are implemented by the library, so all you need to do is to pass the trait type.
 val calculatorApi: CalculatorApi = client.createApi[CalculatorApi]
+val loggerApi: LoggerApi = client.createApi[LoggerApi]
 
 // Use the API.
 // When you invoke an API method, under the hood, it:
@@ -126,6 +140,8 @@ futureResult.onComplete {
   case Success(result) => // ... Do something with the result.
   case _ =>
 }
+
+loggerApi.log("I've just made RPC without pain!")
 ```
 
 Alternatively, you can feed JSON-RPC responses explicitly like below. You can use whichever flow makes more sense for your application. For example, if you are using WebSocket to connect client and server, this flow might make more sense than to return future response from the JSON sender.
