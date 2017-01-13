@@ -11,7 +11,7 @@ It supports the following features:
 
 - Send/receive JSON-RPC request
 - [Send/receive JSON-RPC notification](/examples/notification)
-- [Respond pre-defined JSON-RPC error](http://www.jsonrpc.org/specification#error_object)
+- Respond [standard JSON-RPC error](http://www.jsonrpc.org/specification#error_object)
 - [Define custom JSON serialization](/examples/customJsonSerialization)
 - [Define custom JSON-RPC method name](/examples/customMethodName)
 
