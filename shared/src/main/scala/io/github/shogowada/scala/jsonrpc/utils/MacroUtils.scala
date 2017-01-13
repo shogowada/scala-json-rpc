@@ -40,8 +40,9 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
   }
 
   def getParameterType(method: MethodSymbol): Tree = {
-    val parameterTypes: Iterable[Type] = method.asMethod.paramLists
-        .flatMap((paramList: List[Symbol]) => paramList)
+    val parameterLists: List[List[Symbol]] = method.asMethod.paramLists
+    val parameterTypes: Iterable[Type] = parameterLists
+        .flatten
         .map((param: Symbol) => param.typeSignature)
 
     if (parameterTypes.size == 1) {

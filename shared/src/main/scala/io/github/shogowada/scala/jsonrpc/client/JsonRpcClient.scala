@@ -5,26 +5,40 @@ import io.github.shogowada.scala.jsonrpc.Types.{Id, JsonSender}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
-import scala.concurrent.Promise
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
 (
     val jsonSerializer: JSON_SERIALIZER,
-    val jsonSender: JsonSender
+    val jsonSender: JsonSender,
+    val executionContext: ExecutionContext
 ) {
   val promisedResponseRepository = new JsonRpcPromisedResponseRepository
+
+  def send(json: String): Future[Option[String]] = jsonSender(json)
 
   def createApi[API]: API = macro JsonRpcClientMacro.createApi[API]
 
   def receive(json: String): Boolean = macro JsonRpcClientMacro.receive
 }
 
+object JsonRpcClient {
+  def apply[JSON_SERIALIZER <: JsonSerializer](
+      jsonSerializer: JSON_SERIALIZER,
+      jsonSender: JsonSender
+  )(implicit executionContext: ExecutionContext) = {
+    new JsonRpcClient(
+      jsonSerializer,
+      jsonSender,
+      executionContext
+    )
+  }
+}
+
 object JsonRpcClientMacro {
-  def createApi[API: c.WeakTypeTag]
-  (c: blackbox.Context)
-  : c.Expr[API] = {
+  def createApi[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
     val apiType: Type = weakTypeOf[API]
     val memberFunctions = createMemberFunctions[c.type, API](c)
@@ -46,10 +60,9 @@ object JsonRpcClientMacro {
         .map((apiMethod: MethodSymbol) => createMemberFunction[c.type](c)(apiMethod))
   }
 
-  private def createMemberFunction[CONTEXT <: blackbox.Context]
-  (c: CONTEXT)
-  (apiMethod: c.universe.MethodSymbol)
-  : c.Tree = {
+  private def createMemberFunction[CONTEXT <: blackbox.Context](c: CONTEXT)(
+      apiMethod: c.universe.MethodSymbol
+  ): c.Tree = {
     import c.universe._
 
     val macroUtils = MacroUtils[c.type](c)
@@ -77,8 +90,10 @@ object JsonRpcClientMacro {
     val returnType: Type = apiMethod.returnType
 
     val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
-    val jsonSender: Tree = q"${c.prefix.tree}.jsonSender"
+    val send: Tree = q"${c.prefix.tree}.send"
+    val receive: Tree = q"${c.prefix.tree}.receive"
     val promisedResponseRepository: Tree = q"${c.prefix.tree}.promisedResponseRepository"
+    val executionContext: Tree = q"${c.prefix.tree}.executionContext"
 
     def createNotificationMethodBody: c.Expr[returnType.type] = {
       val notification = c.Expr[JsonRpcNotification[parameterType.type]](
@@ -99,7 +114,7 @@ object JsonRpcClientMacro {
 
       c.Expr[returnType.type](
         q"""
-            $jsonSender($notificationJson)
+            $send($notificationJson)
             """
       )
     }
@@ -133,10 +148,10 @@ object JsonRpcClientMacro {
             val $requestId = Left(java.util.UUID.randomUUID.toString)
             val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
 
-            $jsonSender($requestJson).onComplete {
-              case Success(Some(responseJson: String)) => ${c.prefix.tree}.receive(responseJson)
+            $send($requestJson).onComplete((tried: Try[Option[String]]) => tried match {
+              case Success(Some(responseJson: String)) => $receive(responseJson)
               case _ =>
-            }
+            })($executionContext)
 
             $promisedResponse.future
                 .map((json: String) => {
@@ -146,7 +161,7 @@ object JsonRpcClientMacro {
                         val maybeResponse = $jsonSerializer.deserialize[JsonRpcErrorResponse[String]](json)
                         throw new JsonRpcException(maybeResponse)
                       }
-                })
+                })($executionContext)
             """
       )
     }
@@ -167,10 +182,7 @@ object JsonRpcClientMacro {
         """
   }
 
-  def receive
-  (c: blackbox.Context)
-  (json: c.Expr[String])
-  : c.Expr[Boolean] = {
+  def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Boolean] = {
     import c.universe._
 
     val macroUtils = MacroUtils[c.type](c)

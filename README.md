@@ -11,14 +11,14 @@ It supports the following features:
 
 - Send/receive JSON-RPC request
 - [Send/receive JSON-RPC notification](/examples/notification)
-- [Respond pre-defined JSON-RPC error](http://www.jsonrpc.org/specification#error_object)
+- Respond [standard JSON-RPC error](http://www.jsonrpc.org/specification#error_object)
 - [Define custom JSON serialization](/examples/customJsonSerialization)
 - [Define custom JSON-RPC method name](/examples/customMethodName)
 
 We have the following example projects for common use cases:
 
 - [Unidirectional JSON-RPC from Scala JS to Scala JVM over HTTP](examples/e2e)
-- Bidirectional JSON-RPC between Scals JS and Scala JVM over WebSocket (coming soon)
+- [Bidirectional JSON-RPC between Scals JS and Scala JVM over WebSocket](examples/e2eWebSocket)
 
 It should already serve you well as a RPC library, but it still does not fully support JSON-RPC spec yet. Here are list of known JSON-RPC features that's not supported yet.
 
@@ -62,12 +62,9 @@ class CalculatorApiImpl extends CalculatorApi {
 }
 
 // Create JSON-RPC server.
-// JsonSerializer type parameter is required to support JsonSerializer who's implementation is macro (e.g. upickle).
 // You can bind as many APIs as you want.
-val serverBuilder = JsonRpcServerBuilder[MyJsonSerializer](new MyJsonSerializer())
-serverBuilder.bindApi[CalculatorApi](new CalculatorApiImpl)
-
-val server: JsonRpcServer[MyJsonSerializer] = serverBuilder.build
+val server = JsonRpcServer(new MyJsonSerializer())
+server.bindApi[CalculatorApi](new CalculatorApiImpl)
 
 // Feed JSON-RPC request into server and send its response to client.
 // Server's receive method returns Future[Option[String]], where the String is JSON-RPC response.
@@ -90,11 +87,10 @@ val jsonSender: (String) => Future[Option[String]] = (requestJson) => {
   val futureMaybeResponseJson: Future[Option[String]] = // ... Send the request JSON and receive its response.
   futureMaybeResponseJson
 }
-val clientBuilder = JsonRpcClientBuilder[MyJsonSerializer](
+val client = JsonRpcClient(
   new MyJsonSerializer(),
   jsonSender
 )
-val client: JsonRpcClient[MyJsonSerializer] = clientBuilder.build
 
 // Create an API.
 // You can create as many APIs as you want.
