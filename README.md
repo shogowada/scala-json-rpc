@@ -128,7 +128,7 @@ futureResult.onComplete {
 }
 ```
 
-Alternatively, you can feed JSON-RPC responses explicitly like below. You can use whichever flow makes more sense for your application. For example, if you are using WebSocket to connect client and server, this flow might make more sense than to return ```Future[Option[String]]``` from the JSON sender.
+Alternatively, you can feed JSON-RPC responses explicitly like below. You can use whichever flow makes more sense for your application. For example, if you are using WebSocket to connect client and server, this flow might make more sense than to return future response from the JSON sender.
 
 ```scala
 val jsonSender: (String) => Future[Option[String]] = (requestJson) => {
