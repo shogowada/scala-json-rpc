@@ -37,8 +37,9 @@ In this example, we will implement calculator on server side and call the calcul
 
 ## Shared
 
+### Define an API
+
 ```scala
-// Define an API.
 // Note that API methods must return either Future or Unit type.
 // If the method returns Future, it will be JSON-RPC request method, and client can receive response.
 // If the method returns Unit, it will be JSON-RPC notification method, and client does not receive response.
@@ -46,15 +47,24 @@ trait CalculatorApi {
   def add(lhs: Int, rhs: Int): Future[Int]
   def subtract(lhs: Int, rhs: Int): Future[Int]
 }
+```
 
-// Define how to serialize/deserialize JSON.
+### Define JSON serialization/deserialization method
+
+If you just want it to work, you can also use [upickle-json-serializer](/upickle-json-serializer) as your ```JsonSerializer``` instead of [implementing it by yourself](/examples/customJsonSerialization).
+
+```scala
 class MyJsonSerializer extends JsonSerializer {
   override def serialize[T](value: T): Option[String] = // ... Serialize model into JSON.
   override def deserialize[T](json: String): Option[T] = // ... Deserialize JSON into model.
 }
-```
 
-You can also use [upickle-json-serializer](/upickle-json-serializer) as your ```JsonSerializer``` instead of [implementing it by yourself](/examples/customJsonSerialization).
+val jsonSerializer = new MyJsonSerializer()
+
+// Or
+
+val jsonSerializer = UpickleJsonSerializer()
+```
 
 ## Server side
 
