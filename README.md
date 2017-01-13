@@ -1,6 +1,6 @@
 # scala-json-rpc
 
-Make communication between your server and client as easy as calling functions!
+Make communication between your server and client as easy as making function calls!
 
 scala-json-rpc is a [Remove Procedure Call (RPC)](remote procedure call) library for Scala JVM/JS following [JSON-RPC 2.0](http://www.jsonrpc.org/specification) spec. **It has no dependency** and should fit into any of your Scala JVM/JS application.
 
