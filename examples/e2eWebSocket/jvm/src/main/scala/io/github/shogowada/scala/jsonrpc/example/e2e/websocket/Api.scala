@@ -19,6 +19,7 @@ class RandomNumberSubject(
   private var registeredClientIds: Set[String] = Set()
 
   def start(): Unit = {
+    // Once started, it will generate and notify random numbers to registered observers every second.
     val threadPoolExecutor = new ScheduledThreadPoolExecutor(1)
     val executor = new Runnable {
       override def run() = {
