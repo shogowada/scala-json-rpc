@@ -144,7 +144,10 @@ Alternatively, you can feed JSON-RPC responses explicitly like below. You can us
 val jsonSender: (String) => Future[Option[String]] = (requestJson) => {
   // If client doesn't have access to the future response now, you can explicitly feed the response like below too.
   // ...
-  Future(None)
+  Try(/* send requestJson */).fold(
+    throwable => Future.failed(throwable),
+    _ => Future(None)
+  )
 }
 // ...
 client.receive(responseJson) // Explicitly feed JSON-RPC responses.
