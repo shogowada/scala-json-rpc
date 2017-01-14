@@ -49,8 +49,10 @@ object Main extends JSApp {
     val jsonRpcServer = JsonRpcServer(jsonSerializer)
 
     val jsonSender: (String) => Future[Option[String]] = (json: String) => {
-      Try(webSocket.send(json))
-      Future(None)
+      Try(webSocket.send(json)).fold(
+        throwable => Future.failed(throwable),
+        _ => Future(None)
+      )
     }
     val jsonRpcClient = JsonRpcClient(jsonSerializer, jsonSender)
 

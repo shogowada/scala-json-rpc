@@ -22,8 +22,10 @@ class JsonRpcWebSocket extends WebSocketAdapter {
 
     val remote: RemoteEndpoint = session.getRemote
     val jsonSender: (String) => Future[Option[String]] = (json: String) => {
-      Try(remote.sendString(json))
-      Future(None)
+      Try(remote.sendString(json)).fold(
+        throwable => Future.failed(throwable),
+        _ => Future(None)
+      )
     }
 
     // Create an independent client for each WebSocket session.
