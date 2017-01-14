@@ -114,8 +114,10 @@ object Main extends JSApp {
     val jsonRpcServer = JsonRpcServer(jsonSerializer)
 
     val jsonSender: (String) => Future[Option[String]] = (json: String) => {
-      Try(webSocket.send(json))
-      Future(None)
+      Try(webSocket.send(json)).fold(
+        throwable => Future.failed(throwable),
+        _ => Future(None)
+      )
     }
     val jsonRpcClient = JsonRpcClient(jsonSerializer, jsonSender)
 
@@ -188,8 +190,10 @@ class JsonRpcWebSocket extends WebSocketAdapter {
 
     val remote: RemoteEndpoint = session.getRemote
     val jsonSender: (String) => Future[Option[String]] = (json: String) => {
-      Try(remote.sendString(json))
-      Future(None)
+      Try(remote.sendString(json)).fold(
+        throwable => Future.failed(throwable),
+        _ => Future(None)
+      )
     }
 
     // Create an independent client for each WebSocket session.
