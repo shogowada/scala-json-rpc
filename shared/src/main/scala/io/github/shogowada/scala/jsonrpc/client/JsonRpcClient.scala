@@ -150,6 +150,7 @@ object JsonRpcClientMacro {
 
             $send($requestJson).onComplete((tried: Try[Option[String]]) => tried match {
               case Success(Some(responseJson: String)) => $receive(responseJson)
+              case Failure(throwable) => $promisedResponse.failure(throwable)
               case _ =>
             })($executionContext)
 
