@@ -10,9 +10,10 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   import c.universe._
 
+  lazy val macroUtils = MacroUtils[c.type](c)
   lazy val functionMacroFactory = new JsonRpcFunctionMacroFactory[c.type](c)
 
-  def createHandler[API](
+  def createHandlerFromApiMethod[API](
       server: c.Tree,
       maybeClient: Option[c.Tree],
       api: c.Expr[API],
@@ -30,7 +31,26 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     )
   }
 
-  def createHandler(
+  def createHandlerFromJsonRpcFunction(
+      client: Tree,
+      server: Tree,
+      jsonRpcFunction: TermName,
+      jsonRpcFunctionType: Type
+  ): c.Expr[Handler] = {
+    val functionType: Type = macroUtils.getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType)
+    val paramTypes: Seq[Type] = functionType.typeArgs.init
+    val returnType: Type = functionType.typeArgs.last
+
+    createHandler(
+      server,
+      Some(client),
+      q"$jsonRpcFunction.call",
+      Seq(paramTypes),
+      returnType
+    )
+  }
+
+  private def createHandler(
       server: c.Tree,
       maybeClient: Option[c.Tree],
       method: c.Tree,

@@ -33,9 +33,7 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   def getExecutionContext(prefix: Tree): Tree = q"$prefix.executionContext"
 
-  def getJsonRpcApiMethods
-  (apiType: Type)
-  : Iterable[MethodSymbol] = {
+  def getJsonRpcApiMethods(apiType: Type): Iterable[MethodSymbol] = {
     apiType.decls
         .filter((apiMember: Symbol) => isJsonRpcMethod(apiMember))
         .map((apiMember: Symbol) => apiMember.asMethod)
@@ -52,12 +50,6 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
           case Literal(Constant(name: String)) => name
         })
     maybeCustomMethodName.getOrElse(method.fullName)
-  }
-
-  def getJsonRpcParameterType(method: MethodSymbol): Tree = {
-    val paramTypes: Seq[Type] = method.paramLists.flatten
-        .map(param => param.typeSignature)
-    getJsonRpcParameterType(paramTypes)
   }
 
   def getJsonRpcParameterType(paramTypes: Seq[Type]): Tree = {
@@ -86,10 +78,6 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   def getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType: Type): Type = {
     jsonRpcFunctionType.typeArgs.head
-  }
-
-  def isJsonRpcNotificationMethod(method: MethodSymbol): Boolean = {
-    isJsonRpcNotificationMethod(method.returnType)
   }
 
   def isJsonRpcNotificationMethod(returnType: Type): Boolean = {

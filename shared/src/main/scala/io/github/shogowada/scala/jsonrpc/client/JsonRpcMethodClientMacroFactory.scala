@@ -2,7 +2,6 @@ package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcNotification, JsonRpcRequest}
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcHandlerMacroFactory
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
 import scala.reflect.macros.blackbox
@@ -12,6 +11,7 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
   import c.universe._
 
   lazy val macroUtils = MacroUtils[c.type](c)
+  lazy val handlerMacroFactory = new JsonRpcHandlerMacroFactory[c.type](c)
 
   def createMethodClientAsFunction(
       client: Tree,
@@ -87,34 +87,13 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
     val newMethodName = q"Constants.FunctionMethodNamePrefix + ${macroUtils.newUuid}"
 
     val bindHandler = macroUtils.getBindHandler(server)
-    val handler = createJsonRpcFunctionHandler(client, server, jsonRpcFunction, jsonRpcFunctionType)
+    val handler = handlerMacroFactory.createHandlerFromJsonRpcFunction(client, server, jsonRpcFunction, jsonRpcFunctionType)
 
     q"""
         val methodName = $newMethodName
         $bindHandler(methodName, $handler)
         methodName
         """
-  }
-
-  private def createJsonRpcFunctionHandler(
-      client: Tree,
-      server: Tree,
-      jsonRpcFunction: TermName,
-      jsonRpcFunctionType: Type
-  ): c.Expr[Handler] = {
-    val functionType: Type = macroUtils.getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType)
-    val paramTypes: Seq[Type] = functionType.typeArgs.init
-    val returnType: Type = functionType.typeArgs.last
-
-    val handlerMacroFactory = new JsonRpcHandlerMacroFactory[c.type](c)
-
-    handlerMacroFactory.createHandler(
-      server,
-      Some(client),
-      q"$jsonRpcFunction.call",
-      Seq(paramTypes),
-      returnType
-    )
   }
 
   private def createNotificationMethodBody(
@@ -137,9 +116,7 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
           """
     )
 
-    val notificationJson = c.Expr[String](
-      q"$jsonSerializer.serialize($notification).get"
-    )
+    val notificationJson = c.Expr[String](q"$jsonSerializer.serialize($notification).get")
 
     c.Expr[returnType.type](q"$send($notificationJson)")
   }
