@@ -37,7 +37,10 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
         var bar: JsonRpcFunction[(String) => Future[String]] = _
         var baz: JsonRpcFunction[(String) => Unit] = _
 
-        override def foo(givenBar: JsonRpcFunction[(String) => Future[String]], givenBaz: JsonRpcFunction[(String) => Unit]) = {
+        override def foo(
+            givenBar: JsonRpcFunction[(String) => Future[String]],
+            givenBaz: JsonRpcFunction[(String) => Unit]
+        ): Unit = {
           bar = givenBar
           bar.call("A").onComplete {
             case Success(response) => barResponses += response
@@ -56,6 +59,10 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
 
       val barImpl: (String) => Future[String] = (bar: String) => Future(bar)
       val bazImpl: (String) => Unit = (baz: String) => bazValues += baz
+
+      it("then it should create a clinet API") {
+        apiClient should not be null
+      }
 
       describe("when I call the method") {
         apiClient.foo(barImpl, bazImpl)

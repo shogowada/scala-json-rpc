@@ -5,7 +5,7 @@ import scala.util.Try
 
 trait JsonRpcFunction[Function] {
   val function: Function
-  val call: Function = function
+  lazy val call: Function = function
 
   def dispose(): Try[Unit]
 }
@@ -15,6 +15,8 @@ class JsonRpcClientFunction[Function](override val function: Function) extends J
     throw new UnsupportedOperationException("dispose method is supposed to be invoked by server")
   }
 }
+
+// JsonRpcServerFunction equivalent will be constructed by macro
 
 object JsonRpcFunction {
   def apply[Function](function: Function): JsonRpcFunction[Function] = {
