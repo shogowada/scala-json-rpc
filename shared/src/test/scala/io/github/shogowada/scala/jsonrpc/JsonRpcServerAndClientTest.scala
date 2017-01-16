@@ -26,29 +26,38 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
 
     describe("and I have an API that takes function as parameter") {
       trait Api {
-        def foo(bar: JsonRpcFunction[(String) => Future[String]], baz: JsonRpcFunction[(String) => Unit]): Unit
+        def foo(
+            requestFunction: JsonRpcFunction[(String) => Future[String]],
+            notificationFunction: JsonRpcFunction[(String) => Unit]
+        ): Unit
       }
 
-      val promisedA1: Promise[String] = Promise()
-      val promisedB1: Promise[String] = Promise()
-      val promisedB2: Promise[String] = Promise()
+      val requestValue1 = "A1"
+      val requestValue2 = "A2"
+      val notificationValue1 = "B1"
+      val notificationValue2 = "B2"
+
+      val promisedRequestResponse1: Promise[String] = Promise()
+      val promisedRequestResponse2: Promise[String] = Promise()
+      val promisedNotificationValue1: Promise[String] = Promise()
+      val promisedNotificationValue2: Promise[String] = Promise()
 
       class ApiImpl extends Api {
-        var bar: JsonRpcFunction[(String) => Future[String]] = _
-        var baz: JsonRpcFunction[(String) => Unit] = _
+        var requestFunction: JsonRpcFunction[(String) => Future[String]] = _
+        var notificationFunction: JsonRpcFunction[(String) => Unit] = _
 
         override def foo(
-            theBar: JsonRpcFunction[(String) => Future[String]],
-            theBaz: JsonRpcFunction[(String) => Unit]
+            theRequestFunction: JsonRpcFunction[(String) => Future[String]],
+            theNotificationFunction: JsonRpcFunction[(String) => Unit]
         ): Unit = {
-          bar = theBar
-          bar.call("A1").onComplete {
-            case Success(response) => promisedA1.success(response)
+          requestFunction = theRequestFunction
+          requestFunction.call(requestValue1).onComplete {
+            case Success(response) => promisedRequestResponse1.success(response)
             case _ =>
           }
 
-          baz = theBaz
-          baz.call("B1")
+          notificationFunction = theNotificationFunction
+          notificationFunction.call(notificationValue1)
         }
       }
 
@@ -57,13 +66,13 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
 
       val apiClient = serverAndClient2.createApi[Api]
 
-      val barImpl: (String) => Future[String] = (bar: String) => {
-        Future(bar)
+      val requestFunctionImpl: (String) => Future[String] = (value: String) => {
+        Future(value)
       }
-      val bazImpl: (String) => Unit = (baz: String) => {
-        baz match {
-          case "B1" => promisedB1.success(baz)
-          case "B2" => promisedB2.success(baz)
+      val notificationFunctionImpl: (String) => Unit = (value: String) => {
+        value match {
+          case `notificationValue1` => promisedNotificationValue1.success(value)
+          case `notificationValue2` => promisedNotificationValue2.success(value)
           case _ =>
         }
       }
@@ -73,46 +82,58 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
       }
 
       describe("when I call the method") {
-        apiClient.foo(barImpl, bazImpl)
+        apiClient.foo(requestFunctionImpl, notificationFunctionImpl)
 
         it("then it should send the response for the request function") {
-          promisedA1.future.map(a1 => a1 should equal("A1"))
+          promisedRequestResponse1.future
+              .map(response => response should equal(requestValue1))
         }
 
         it("then it should callback the notification function") {
-          promisedB1.future.map(b1 => b1 should equal("B1"))
+          promisedNotificationValue1.future
+              .map(value => value should equal(notificationValue1))
         }
 
         describe("when I call the functions again") {
-          val promisedA2: Promise[String] = Promise()
-
-          apiImpl.bar.call("A2").onComplete {
-            case Success(result) => promisedA2.success(result)
+          apiImpl.requestFunction.call(requestValue2).onComplete {
+            case Success(result) => promisedRequestResponse2.success(result)
             case _ =>
           }
 
-          apiImpl.baz.call("B2")
+          apiImpl.notificationFunction.call(notificationValue2)
 
           it("then it should call the request function again") {
-            promisedA2.future.map(a2 => a2 should equal("A2"))
+            promisedRequestResponse2.future
+                .map(response => response should equal(requestValue2))
           }
 
           it("then it should call the notification function again") {
-            promisedB2.future.map(b2 => b2 should equal("B2"))
+            promisedNotificationValue2.future
+                .map(value => value should equal(notificationValue2))
           }
 
           describe("but if I dispose the functions") {
-            apiImpl.bar.dispose()
-            apiImpl.baz.dispose()
+            val futureDisposeRequestFunctionResult = apiImpl.requestFunction.dispose()
+            val futureDisposeNotificationFunctionResult = apiImpl.notificationFunction.dispose()
+
+            it("then it should successfully dispose the request function") {
+              futureDisposeRequestFunctionResult
+                  .map(result => result should equal(()))
+            }
+
+            it("then it should successfully dispose the notification function") {
+              futureDisposeNotificationFunctionResult
+                  .map(result => result should equal(()))
+            }
 
             it("then calling the request function should fail") {
               recoverToSucceededIf[JsonRpcException[String]] {
-                apiImpl.bar.call("FAKE")
+                apiImpl.requestFunction.call("FAKE")
               }
             }
 
             it("then calling the notification function should ignore the error") {
-              noException should be thrownBy apiImpl.baz.call("FAKE")
+              noException should be thrownBy apiImpl.notificationFunction.call("FAKE")
             }
           }
         }

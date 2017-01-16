@@ -1,17 +1,17 @@
 package io.github.shogowada.scala.jsonrpc
 
+import scala.concurrent.Future
 import scala.language.implicitConversions
-import scala.util.Try
 
 trait JsonRpcFunction[Function] {
   val function: Function
   lazy val call: Function = function
 
-  def dispose(): Try[Unit]
+  def dispose(): Future[Unit]
 }
 
 class JsonRpcClientFunction[Function](override val function: Function) extends JsonRpcFunction[Function] {
-  override def dispose(): Try[Unit] = {
+  override def dispose(): Future[Unit] = {
     throw new UnsupportedOperationException("dispose method is supposed to be invoked by server")
   }
 }

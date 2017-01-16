@@ -22,6 +22,10 @@ class JsonRpcServer[JSON_SERIALIZER <: JsonSerializer]
     lock.synchronized(methodNameToHandlerMap = methodNameToHandlerMap + (methodName -> handler))
   }
 
+  def unbindMethod(methodName: String): Unit = {
+    lock.synchronized(methodNameToHandlerMap = methodNameToHandlerMap - methodName)
+  }
+
   def bindApi[API](api: API): Unit = macro JsonRpcServerMacro.bindApi[API]
 
   def receive(json: String): Future[Option[String]] = macro JsonRpcServerMacro.receive
@@ -236,8 +240,8 @@ object JsonRpcServerMacro {
         new {} with JsonRpcFunction[$functionType] {
           override val function = $function
 
-          override def dispose(): Try[Unit] = {
-            Try(throw new UnsupportedOperationException("TODO: dispose the function"))
+          override def dispose(): Future[Unit] = {
+            Future.failed(new UnsupportedOperationException("TODO: dispose the function"))
           }
         }
         """
