@@ -61,7 +61,7 @@ object JsonRpcServerMacro {
 
     c.Expr[Unit](
       q"""
-          Map(..$methodNameToHandlerList).foreach {
+          Seq(..$methodNameToHandlerList).foreach {
             case (methodName, handler) => $bindHandler(methodName, handler)
           }
           """

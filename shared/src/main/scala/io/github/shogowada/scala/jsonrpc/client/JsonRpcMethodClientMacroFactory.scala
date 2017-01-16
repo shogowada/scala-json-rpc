@@ -20,29 +20,8 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
       paramTypes: Seq[Type],
       returnType: Type
   ): Tree = {
-    def getParamName(index: Int): TermName = TermName(s"param$index")
-
     val jsonRpcParameterType: Tree = macroUtils.getJsonRpcParameterType(paramTypes)
-    val jsonRpcParameters: Seq[Tree] = paramTypes
-        .indices
-        .map(index => {
-          val paramName = getParamName(index)
-          val paramType = paramTypes(index)
-          if (macroUtils.isJsonRpcFunctionType(paramType)) {
-            maybeServer
-                .map(server => getOrCreateJsonRpcFunctionParameter(client, server, paramName, paramType))
-                .getOrElse(throw new UnsupportedOperationException("To use JsonRpcFunction, you need to create an API with JsonRpcServerAndClient."))
-          } else {
-            q"$paramName"
-          }
-        })
-
-    val jsonRpcParameter = if (jsonRpcParameters.size == 1) {
-      val parameter = jsonRpcParameters.head
-      q"Tuple1($parameter)"
-    } else {
-      q"(..$jsonRpcParameters)"
-    }
+    val jsonRpcParameter = getJsonRpcParameter(client, maybeServer, paramTypes)
 
     def createMethodBody: c.Expr[returnType.type] = {
       if (macroUtils.isJsonRpcNotificationMethod(returnType)) {
@@ -53,7 +32,7 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
           jsonRpcParameter,
           returnType
         )
-      } else {
+      } else if (macroUtils.isJsonRpcRequestMethod(returnType)) {
         createRequestMethodBody(
           client,
           jsonRpcParameterType,
@@ -61,6 +40,8 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
           jsonRpcParameter,
           returnType
         )
+      } else {
+        throw new UnsupportedOperationException("JSON RPC method must return either Unit or Future")
       }
     }
 
@@ -76,6 +57,37 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
           $createMethodBody
         }
         """
+  }
+
+  private def getJsonRpcParameter(
+      client: Tree,
+      maybeServer: Option[Tree],
+      paramTypes: Seq[Type]
+  ): Tree = {
+    val jsonRpcParameters: Seq[Tree] = paramTypes
+        .indices
+        .map(index => {
+          val paramName = getParamName(index)
+          val paramType = paramTypes(index)
+          if (macroUtils.isJsonRpcFunctionType(paramType)) {
+            maybeServer
+                .map(server => getOrCreateJsonRpcFunctionParameter(client, server, paramName, paramType))
+                .getOrElse(throw new UnsupportedOperationException("To use JsonRpcFunction, you need to create an API with JsonRpcServerAndClient."))
+          } else {
+            q"$paramName"
+          }
+        })
+
+    if (jsonRpcParameters.size == 1) {
+      val parameter = jsonRpcParameters.head
+      q"Tuple1($parameter)"
+    } else {
+      q"(..$jsonRpcParameters)"
+    }
+  }
+
+  private def getParamName(index: Int): TermName = {
+    TermName(s"param_$index")
   }
 
   private def getOrCreateJsonRpcFunctionParameter(

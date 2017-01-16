@@ -4,6 +4,7 @@ import io.github.shogowada.scala.jsonrpc.JsonRpcFunction
 import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcError, JsonRpcErrorResponse}
 import io.github.shogowada.scala.jsonrpc.api.JsonRpcMethod
 
+import scala.concurrent.Future
 import scala.reflect.macros.blackbox
 
 class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
@@ -82,6 +83,10 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   def isJsonRpcNotificationMethod(returnType: Type): Boolean = {
     returnType =:= getType[Unit]
+  }
+
+  def isJsonRpcRequestMethod(returnType: Type): Boolean = {
+    returnType <:< getType[Future[_]]
   }
 
   def getType[T: c.TypeTag]: Type = {

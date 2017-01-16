@@ -91,12 +91,12 @@ object JsonRpcClientMacro {
     )
 
     val name: TermName = apiMethod.name
-    val parameterLists: List[List[Tree]] =
-      apiMethod.paramLists.map((parameterList: List[Symbol]) => {
-        parameterList.map((parameter: Symbol) => {
-          q"${parameter.name.toTermName}: ${parameter.typeSignature}"
+    val parameterLists: List[List[Tree]] = apiMethod.paramLists
+        .map((parameterList: List[Symbol]) => {
+          parameterList.map((parameter: Symbol) => {
+            q"${parameter.name.toTermName}: ${parameter.typeSignature}"
+          })
         })
-      })
     val arguments: Seq[TermName] =
       apiMethod.paramLists.flatten
           .map(argument => argument.name.toTermName)
