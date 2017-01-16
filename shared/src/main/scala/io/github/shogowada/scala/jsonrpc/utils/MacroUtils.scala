@@ -21,6 +21,16 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   lazy val uuid: c.Expr[String] = c.Expr[String](q"java.util.UUID.randomUUID.toString")
 
+  def getJsonSerializer(prefix: Tree): Tree = q"$prefix.jsonSerializer"
+
+  def getPromisedResponseRepository(prefix: Tree): Tree = q"$prefix.promisedResponseRepository"
+
+  def getSend(prefix: Tree): Tree = q"$prefix.send"
+
+  def getReceive(prefix: Tree): Tree = q"$prefix.receive"
+
+  def getExecutionContext(prefix: Tree): Tree = q"$prefix.executionContext"
+
   def getJsonRpcApiMethods
   (apiType: Type)
   : Iterable[MethodSymbol] = {
@@ -35,14 +45,14 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   def createClientMethodAsFunction(
       client: Tree,
-      methodName: String,
+      jsonRpcMethodName: String,
       paramTypes: Seq[Type],
       returnType: Type
   ): Tree = {
     def paramName(index: Int): TermName = TermName(s"param$index")
 
-    val parameterType: Tree = getJsonRpcParameterType(paramTypes)
-    val parameters: Seq[Tree] = paramTypes
+    val jsonRpcParameterType: Tree = getJsonRpcParameterType(paramTypes)
+    val jsonRpcParameters: Seq[Tree] = paramTypes
         .indices
         .map(index => {
           val paramType = paramTypes(index)
@@ -53,96 +63,30 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
           }
         })
 
-    val parametersAsTuple = if (parameters.size == 1) {
-      val parameter = parameters.head
+    val jsonRpcParameter = if (jsonRpcParameters.size == 1) {
+      val parameter = jsonRpcParameters.head
       q"Tuple1($parameter)"
     } else {
-      q"(..$parameters)"
-    }
-
-    val jsonSerializer: Tree = q"$client.jsonSerializer"
-    val send: Tree = q"$client.send"
-    val receive: Tree = q"$client.receive"
-    val promisedResponseRepository: Tree = q"$client.promisedResponseRepository"
-    val executionContext: Tree = q"$client.executionContext"
-
-    def createNotificationMethodBody: c.Expr[returnType.type] = {
-      val notification = c.Expr[JsonRpcNotification[parameterType.type]](
-        q"""
-            JsonRpcNotification[$parameterType](
-              jsonrpc = Constants.JsonRpc,
-              method = $methodName,
-              params = $parametersAsTuple
-            )
-            """
-      )
-
-      val notificationJson = c.Expr[String](
-        q"""
-            $jsonSerializer.serialize($notification).get
-            """
-      )
-
-      c.Expr[returnType.type](
-        q"""
-            $send($notificationJson)
-            """
-      )
-    }
-
-    def createRequestMethodBody: c.Expr[returnType.type] = {
-      val resultType: Type = returnType.typeArgs.head
-
-      val requestId = TermName("requestId")
-
-      val request = c.Expr[JsonRpcRequest[parameterType.type]](
-        q"""
-            JsonRpcRequest[$parameterType](
-              jsonrpc = Constants.JsonRpc,
-              id = $requestId,
-              method = $methodName,
-              params = $parametersAsTuple
-            )
-            """
-      )
-
-      val requestJson = c.Expr[String](
-        q"""
-            $jsonSerializer.serialize($request).get
-            """
-      )
-
-      val promisedResponse = TermName("promisedResponse")
-
-      c.Expr[returnType.type](
-        q"""
-            val $requestId = Left(${uuid})
-            val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
-
-            $send($requestJson).onComplete((tried: Try[Option[String]]) => tried match {
-              case Success(Some(responseJson: String)) => $receive(responseJson)
-              case Failure(throwable) => $promisedResponse.failure(throwable)
-              case _ =>
-            })($executionContext)
-
-            $promisedResponse.future
-                .map((json: String) => {
-                  $jsonSerializer.deserialize[JsonRpcResultResponse[$resultType]](json)
-                      .map(resultResponse => resultResponse.result)
-                      .getOrElse {
-                        val maybeResponse = $jsonSerializer.deserialize[JsonRpcErrorResponse[String]](json)
-                        throw new JsonRpcException(maybeResponse)
-                      }
-                })($executionContext)
-            """
-      )
+      q"(..$jsonRpcParameters)"
     }
 
     def createMethodBody: c.Expr[returnType.type] = {
       if (isJsonRpcNotificationMethod(returnType)) {
-        createNotificationMethodBody
+        createNotificationMethodBody(
+          client,
+          jsonRpcParameterType,
+          jsonRpcMethodName,
+          jsonRpcParameter,
+          returnType
+        )
       } else {
-        createRequestMethodBody
+        createRequestMethodBody(
+          client,
+          jsonRpcParameterType,
+          jsonRpcMethodName,
+          jsonRpcParameter,
+          returnType
+        )
       }
     }
 
@@ -151,12 +95,96 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
           val paramType = paramTypes(index)
           q"${paramName(index)}: $paramType"
         })
+
     q"""
         (..$parameterList) => {
           ..${imports}
           $createMethodBody
         }
         """
+  }
+
+  def createNotificationMethodBody(
+      client: Tree,
+      jsonRpcParameterType: Tree,
+      jsonRpcMethodName: String,
+      jsonRpcParameter: Tree,
+      returnType: Type
+  ): c.Expr[returnType.type] = {
+    val jsonSerializer = getJsonSerializer(client)
+    val send = getSend(client)
+
+    val notification = c.Expr[JsonRpcNotification[jsonRpcParameterType.type]](
+      q"""
+          JsonRpcNotification[$jsonRpcParameterType](
+            jsonrpc = Constants.JsonRpc,
+            method = $jsonRpcMethodName,
+            params = $jsonRpcParameter
+          )
+          """
+    )
+
+    val notificationJson = c.Expr[String](
+      q"$jsonSerializer.serialize($notification).get"
+    )
+
+    c.Expr[returnType.type](q"$send($notificationJson)")
+  }
+
+  def createRequestMethodBody(
+      client: Tree,
+      jsonRpcParameterType: Tree,
+      jsonRpcMethodName: String,
+      jsonRpcParameter: Tree,
+      returnType: Type
+  ): c.Expr[returnType.type] = {
+    val jsonSerializer = getJsonSerializer(client)
+    val promisedResponseRepository = getPromisedResponseRepository(client)
+    val send = getSend(client)
+    val receive = getReceive(client)
+    val executionContext = getExecutionContext(client)
+
+    val resultType: Type = returnType.typeArgs.head
+
+    val requestId = TermName("requestId")
+
+    val request = c.Expr[JsonRpcRequest[jsonRpcParameterType.type]](
+      q"""
+          JsonRpcRequest[$jsonRpcParameterType](
+            jsonrpc = Constants.JsonRpc,
+            id = $requestId,
+            method = $jsonRpcMethodName,
+            params = $jsonRpcParameter
+          )
+          """
+    )
+
+    val requestJson = c.Expr[String](q"""$jsonSerializer.serialize($request).get""")
+
+    val promisedResponse = TermName("promisedResponse")
+
+    c.Expr[returnType.type](
+      q"""
+          val $requestId = Left(${uuid})
+          val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
+
+          $send($requestJson).onComplete((tried: Try[Option[String]]) => tried match {
+            case Success(Some(responseJson: String)) => $receive(responseJson)
+            case Failure(throwable) => $promisedResponse.failure(throwable)
+            case _ =>
+          })($executionContext)
+
+          $promisedResponse.future
+              .map((json: String) => {
+                $jsonSerializer.deserialize[JsonRpcResultResponse[$resultType]](json)
+                    .map(resultResponse => resultResponse.result)
+                    .getOrElse {
+                      val maybeResponse = $jsonSerializer.deserialize[JsonRpcErrorResponse[String]](json)
+                      throw new JsonRpcException(maybeResponse)
+                    }
+              })($executionContext)
+          """
+    )
   }
 
   def getJsonRpcMethodName(method: MethodSymbol): String = {
