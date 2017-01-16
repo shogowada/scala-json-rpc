@@ -19,11 +19,13 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
         import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer._
         """
 
-  lazy val uuid: c.Expr[String] = c.Expr[String](q"java.util.UUID.randomUUID.toString")
+  lazy val createUuid: c.Expr[String] = c.Expr[String](q"java.util.UUID.randomUUID.toString")
 
   def getJsonSerializer(prefix: Tree): Tree = q"$prefix.jsonSerializer"
 
   def getPromisedResponseRepository(prefix: Tree): Tree = q"$prefix.promisedResponseRepository"
+
+  def getMethodNameToHandlerMap(prefix: Tree): Tree = q"$prefix.methodNameToHandlerMap"
 
   def getSend(prefix: Tree): Tree = q"$prefix.send"
 
@@ -45,11 +47,11 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   def createClientMethodAsFunction(
       client: Tree,
-      jsonRpcMethodName: String,
+      jsonRpcMethodName: Tree,
       paramTypes: Seq[Type],
       returnType: Type
   ): Tree = {
-    def paramName(index: Int): TermName = TermName(s"param$index")
+    def getParamName(index: Int): TermName = TermName(s"param$index")
 
     val jsonRpcParameterType: Tree = getJsonRpcParameterType(paramTypes)
     val jsonRpcParameters: Seq[Tree] = paramTypes
@@ -57,9 +59,9 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
         .map(index => {
           val paramType = paramTypes(index)
           if (isJsonRpcFunctionType(paramType)) {
-            q"${uuid}"
+            createJsonRpcFunctionParameter(paramType)
           } else {
-            q"${paramName(index)}"
+            q"${getParamName(index)}"
           }
         })
 
@@ -93,7 +95,7 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     val parameterList: Seq[Tree] = paramTypes.indices
         .map(index => {
           val paramType = paramTypes(index)
-          q"${paramName(index)}: $paramType"
+          q"${getParamName(index)}: $paramType"
         })
 
     q"""
@@ -104,10 +106,16 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
         """
   }
 
+  def createJsonRpcFunctionParameter(
+      jsonRpcFunctionType: Type
+  ): Tree = {
+    q"$createUuid"
+  }
+
   def createNotificationMethodBody(
       client: Tree,
       jsonRpcParameterType: Tree,
-      jsonRpcMethodName: String,
+      jsonRpcMethodName: Tree,
       jsonRpcParameter: Tree,
       returnType: Type
   ): c.Expr[returnType.type] = {
@@ -134,7 +142,7 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
   def createRequestMethodBody(
       client: Tree,
       jsonRpcParameterType: Tree,
-      jsonRpcMethodName: String,
+      jsonRpcMethodName: Tree,
       jsonRpcParameter: Tree,
       returnType: Type
   ): c.Expr[returnType.type] = {
@@ -165,7 +173,7 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
     c.Expr[returnType.type](
       q"""
-          val $requestId = Left(${uuid})
+          val $requestId = Left($createUuid)
           val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
 
           $send($requestJson).onComplete((tried: Try[Option[String]]) => tried match {

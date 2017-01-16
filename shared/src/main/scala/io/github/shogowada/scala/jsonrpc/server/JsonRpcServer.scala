@@ -57,6 +57,13 @@ object JsonRpcServerMacro {
     )
   }
 
+  private def addHandler[CONTEXT <: blackbox.Context](c: CONTEXT)(
+      methodName: c.Tree,
+      handler: c.Tree
+  ): c.Tree = {
+    
+  }
+
   private def createMethodNameToHandler[CONTEXT <: blackbox.Context, API](c: blackbox.Context)(
       server: c.Tree,
       maybeClient: Option[c.Tree],
@@ -67,8 +74,8 @@ object JsonRpcServerMacro {
 
     val macroUtils = MacroUtils[c.type](c)
 
-    val jsonSerializer = q"$server.jsonSerializer"
-    val executionContext = q"$server.executionContext"
+    val jsonSerializer = macroUtils.getJsonSerializer(server)
+    val executionContext = macroUtils.getExecutionContext(server)
     val methodName = macroUtils.getJsonRpcMethodName(method)
 
     val parameterLists: List[List[Symbol]] = method.asMethod.paramLists
@@ -87,7 +94,7 @@ object JsonRpcServerMacro {
             val argument = q"$params.$fieldName"
             if (macroUtils.isJsonRpcFunctionType(parameterType)) {
               maybeClient
-                  .map(client => createJsonRpcFunction[c.type](c)(client, parameterType))
+                  .map(client => getOrCreateJsonRpcFunction[c.type](c)(server, client, parameterType, argument))
                   .getOrElse(throw new UnsupportedOperationException("To use JsonRpcFunction, you need to bind the API to JsonRpcServerAndClient."))
             } else {
               argument
@@ -164,9 +171,35 @@ object JsonRpcServerMacro {
     c.Expr[(String, Handler)](q"""$methodName -> $handler""")
   }
 
+  def getOrCreateJsonRpcFunction[CONTEXT <: blackbox.Context](c: CONTEXT)(
+      server: c.Tree,
+      client: c.Tree,
+      jsonRpcFunctionType: c.Type,
+      jsonRpcFunctionMethodName: c.Tree
+  ): c.Tree = {
+    import c.universe._
+
+    val macroUtils = MacroUtils[c.type](c)
+
+    val methodNameToHandlerMap: Tree = macroUtils.getMethodNameToHandlerMap(server)
+
+    val newJsonRpcFunction = createJsonRpcFunction[c.type](c)(client, jsonRpcFunctionType, jsonRpcFunctionMethodName)
+
+    q"""
+        $methodNameToHandlerMap.get($jsonRpcFunctionMethodName)
+          .map(jsonRpcFunction => jsonRpcFunction.asInstanceOf[$jsonRpcFunctionType])
+          .getOrElse {
+            val jsonRpcFunction = $newJsonRpcFunction
+            $methodNameToHandlerMap.add($jsonRpcFunctionMethodName, jsonRpcFunction)
+            jsonRpcFunction
+          }
+        """
+  }
+
   def createJsonRpcFunction[CONTEXT <: blackbox.Context](c: CONTEXT)(
       client: c.Tree,
-      jsonRpcFunctionType: c.Type
+      jsonRpcFunctionType: c.Type,
+      jsonRpcFunctionMethodName: c.Tree
   ): c.Tree = {
     import c.universe._
 
@@ -176,12 +209,7 @@ object JsonRpcServerMacro {
     val functionTypeTypeArgs: Seq[Type] = functionType.typeArgs
     val paramTypes: Seq[Type] = functionTypeTypeArgs.init
     val returnType: Type = functionTypeTypeArgs.last
-    val function = macroUtils.createClientMethodAsFunction(
-      client,
-      "TODO: Name it",
-      paramTypes,
-      returnType
-    )
+    val function = macroUtils.createClientMethodAsFunction(client, jsonRpcFunctionMethodName, paramTypes, returnType)
 
     q"""
         new {} with JsonRpcFunction[$functionType] {
@@ -219,6 +247,7 @@ object JsonRpcServerMacro {
                 if(method.jsonrpc != Constants.JsonRpc) {
                   Left($maybeInvalidRequestErrorJson)
                 } else {
+                  println("Received " + method.method)
                   Right(method.method)
                 }
               })

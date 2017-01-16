@@ -71,7 +71,7 @@ object JsonRpcClientMacro {
 
     val function = macroUtils.createClientMethodAsFunction(
       c.prefix.tree,
-      macroUtils.getJsonRpcMethodName(apiMethod),
+      q"${macroUtils.getJsonRpcMethodName(apiMethod)}",
       paramTypes,
       apiMethod.returnType
     )
