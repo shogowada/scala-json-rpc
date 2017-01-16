@@ -3,6 +3,8 @@ package io.github.shogowada.scala.jsonrpc.utils
 import io.github.shogowada.scala.jsonrpc.JsonRpcFunction
 import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcError, JsonRpcErrorResponse, JsonRpcNotification, JsonRpcRequest}
 import io.github.shogowada.scala.jsonrpc.api.JsonRpcMethod
+import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
+import io.github.shogowada.scala.jsonrpc.server.JsonRpcServerMacro
 
 import scala.reflect.macros.blackbox
 
@@ -19,13 +21,13 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
         import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer._
         """
 
-  lazy val createUuid: c.Expr[String] = c.Expr[String](q"java.util.UUID.randomUUID.toString")
+  lazy val newUuid: c.Expr[String] = c.Expr[String](q"java.util.UUID.randomUUID.toString")
 
   def getJsonSerializer(prefix: Tree): Tree = q"$prefix.jsonSerializer"
 
   def getPromisedResponseRepository(prefix: Tree): Tree = q"$prefix.promisedResponseRepository"
 
-  def getMethodNameToHandlerMap(prefix: Tree): Tree = q"$prefix.methodNameToHandlerMap"
+  def getBindHandler(prefix: Tree): Tree = q"$prefix.bindHandler"
 
   def getSend(prefix: Tree): Tree = q"$prefix.send"
 
@@ -47,6 +49,7 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   def createClientMethodAsFunction(
       client: Tree,
+      maybeServer: Option[Tree],
       jsonRpcMethodName: Tree,
       paramTypes: Seq[Type],
       returnType: Type
@@ -57,11 +60,14 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     val jsonRpcParameters: Seq[Tree] = paramTypes
         .indices
         .map(index => {
+          val paramName = getParamName(index)
           val paramType = paramTypes(index)
           if (isJsonRpcFunctionType(paramType)) {
-            createJsonRpcFunctionParameter(paramType)
+            maybeServer
+                .map(server => getOrCreateJsonRpcFunctionParameter(client, server, paramName, paramType))
+                .getOrElse(throw new UnsupportedOperationException("To use JsonRpcFunction, you need to create an API with JsonRpcServerAndClient."))
           } else {
-            q"${getParamName(index)}"
+            q"$paramName"
           }
         })
 
@@ -106,10 +112,49 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
         """
   }
 
-  def createJsonRpcFunctionParameter(
+  private def getOrCreateJsonRpcFunctionParameter(
+      client: Tree,
+      server: Tree,
+      jsonRpcFunction: TermName,
       jsonRpcFunctionType: Type
   ): Tree = {
-    q"$createUuid"
+    val newMethodName = q"""Constants.FunctionMethodNamePrefix + $newUuid"""
+
+    val functionType: Type = getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType)
+    val returnType: Type = functionType.typeArgs.last
+
+    if (isJsonRpcNotificationMethod(returnType)) {
+      q"""
+          $newMethodName
+          """
+    } else {
+      val handler = createJsonRpcFunctionHandler(client, server, jsonRpcFunction, jsonRpcFunctionType)
+      val bindHandler = getBindHandler(server)
+      q"""
+          val methodName = $newMethodName
+          $bindHandler(methodName, $handler)
+          methodName
+          """
+    }
+  }
+
+  private def createJsonRpcFunctionHandler(
+      client: Tree,
+      server: Tree,
+      jsonRpcFunction: TermName,
+      jsonRpcFunctionType: Type
+  ): c.Expr[Handler] = {
+    val functionType: Type = getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType)
+    val paramTypes: Seq[Type] = functionType.typeArgs.init
+    val returnType: Type = functionType.typeArgs.last
+
+    JsonRpcServerMacro.createHandler[c.type](c)(
+      server,
+      Some(client),
+      q"$jsonRpcFunction.call",
+      Seq(paramTypes),
+      returnType
+    )
   }
 
   def createNotificationMethodBody(
@@ -173,7 +218,7 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
     c.Expr[returnType.type](
       q"""
-          val $requestId = Left($createUuid)
+          val $requestId = Left($newUuid)
           val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
 
           $send($requestJson).onComplete((tried: Try[Option[String]]) => tried match {

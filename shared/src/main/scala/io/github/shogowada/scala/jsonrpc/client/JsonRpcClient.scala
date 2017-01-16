@@ -39,8 +39,17 @@ object JsonRpcClient {
 object JsonRpcClientMacro {
   def createApi[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
+    val client: Tree = c.prefix.tree
+    createApiImpl[c.type, API](c)(client, None)
+  }
+
+  def createApiImpl[CONTEXT <: blackbox.Context, API: c.WeakTypeTag](c: CONTEXT)(
+      client: c.Tree,
+      maybeServer: Option[c.Tree]
+  ): c.Expr[API] = {
+    import c.universe._
     val apiType: Type = weakTypeOf[API]
-    val memberFunctions = createMemberFunctions[c.type, API](c)
+    val memberFunctions = createMemberFunctions[c.type, API](c)(client, maybeServer)
     c.Expr[API](
       q"""
           new {} with $apiType {
@@ -50,16 +59,19 @@ object JsonRpcClientMacro {
     )
   }
 
-  private def createMemberFunctions[CONTEXT <: blackbox.Context, API: c.WeakTypeTag]
-  (c: CONTEXT)
-  : Iterable[c.Tree] = {
+  private def createMemberFunctions[CONTEXT <: blackbox.Context, API: c.WeakTypeTag](c: CONTEXT)(
+      client: c.Tree,
+      maybeServer: Option[c.Tree]
+  ): Iterable[c.Tree] = {
     import c.universe._
     val apiType: Type = weakTypeOf[API]
     MacroUtils[c.type](c).getJsonRpcApiMethods(apiType)
-        .map((apiMethod: MethodSymbol) => createMemberFunction[c.type](c)(apiMethod))
+        .map((apiMethod: MethodSymbol) => createMemberFunction[c.type](c)(client, maybeServer, apiMethod))
   }
 
   private def createMemberFunction[CONTEXT <: blackbox.Context](c: CONTEXT)(
+      client: c.Tree,
+      maybeServer: Option[c.Tree],
       apiMethod: c.universe.MethodSymbol
   ): c.Tree = {
     import c.universe._
@@ -70,7 +82,8 @@ object JsonRpcClientMacro {
         .map(param => param.typeSignature)
 
     val function = macroUtils.createClientMethodAsFunction(
-      c.prefix.tree,
+      client,
+      maybeServer,
       q"${macroUtils.getJsonRpcMethodName(apiMethod)}",
       paramTypes,
       apiMethod.returnType

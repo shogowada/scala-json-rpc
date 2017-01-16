@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc
 
-import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
+import io.github.shogowada.scala.jsonrpc.client.{JsonRpcClient, JsonRpcClientMacro}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.{JsonRpcServer, JsonRpcServerMacro}
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
@@ -39,8 +39,9 @@ object JsonRpcServerAndClientMacro {
 
   def createApi[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
-    val apiType: Type = weakTypeOf[API]
-    c.Expr[API](q"${c.prefix.tree}.client.createApi[$apiType]")
+    val server = q"${c.prefix.tree}.server"
+    val client = q"${c.prefix.tree}.client"
+    JsonRpcClientMacro.createApiImpl[c.type, API](c)(client, Some(server))
   }
 
   def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Unit] = {
