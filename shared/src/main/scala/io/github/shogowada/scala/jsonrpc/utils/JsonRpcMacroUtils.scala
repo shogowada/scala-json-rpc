@@ -6,7 +6,7 @@ import io.github.shogowada.scala.jsonrpc.api.JsonRpcMethod
 
 import scala.reflect.macros.blackbox
 
-class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
+class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   import c.universe._
 
@@ -122,6 +122,6 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
   }
 }
 
-object MacroUtils {
-  def apply[CONTEXT <: blackbox.Context](c: CONTEXT) = new MacroUtils[CONTEXT](c)
+object JsonRpcMacroUtils {
+  def apply[CONTEXT <: blackbox.Context](c: CONTEXT) = new JsonRpcMacroUtils[CONTEXT](c)
 }

@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.Types.{Id, JsonSender}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
-import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
+import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.experimental.macros
@@ -65,7 +65,7 @@ object JsonRpcClientMacro {
   ): Iterable[c.Tree] = {
     import c.universe._
     val apiType: Type = weakTypeOf[API]
-    MacroUtils[c.type](c).getJsonRpcApiMethods(apiType)
+    JsonRpcMacroUtils[c.type](c).getJsonRpcApiMethods(apiType)
         .map((apiMethod: MethodSymbol) => createMemberFunction[c.type](c)(client, maybeServer, apiMethod))
   }
 
@@ -76,7 +76,7 @@ object JsonRpcClientMacro {
   ): c.Tree = {
     import c.universe._
 
-    val macroUtils = MacroUtils[c.type](c)
+    val macroUtils = JsonRpcMacroUtils[c.type](c)
     val methodClientMacroFactory = new JsonRpcMethodClientMacroFactory[c.type](c)
 
     val paramTypes: Seq[Type] = apiMethod.paramLists.flatten
@@ -111,7 +111,7 @@ object JsonRpcClientMacro {
   def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Boolean] = {
     import c.universe._
 
-    val macroUtils = MacroUtils[c.type](c)
+    val macroUtils = JsonRpcMacroUtils[c.type](c)
 
     val client = c.prefix.tree
     val jsonSerializer: Tree = q"$client.jsonSerializer"

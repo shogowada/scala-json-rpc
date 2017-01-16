@@ -3,7 +3,7 @@ package io.github.shogowada.scala.jsonrpc.server
 import io.github.shogowada.scala.jsonrpc.Models.JsonRpcError
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
-import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
+import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros
@@ -51,12 +51,12 @@ object JsonRpcServerMacro {
   ): c.Expr[Unit] = {
     import c.universe._
 
-    val macroUtils = MacroUtils[c.type](c)
+    val macroUtils = JsonRpcMacroUtils[c.type](c)
 
     val bindHandler = macroUtils.getBindHandler(server)
 
     val apiType: Type = weakTypeOf[API]
-    val methodNameToHandlerList = MacroUtils[c.type](c).getJsonRpcApiMethods(apiType)
+    val methodNameToHandlerList = JsonRpcMacroUtils[c.type](c).getJsonRpcApiMethods(apiType)
         .map((apiMember: MethodSymbol) => createMethodNameToHandler[c.type, API](c)(server, maybeClient, api, apiMember))
 
     c.Expr[Unit](
@@ -76,7 +76,7 @@ object JsonRpcServerMacro {
   ): c.Expr[(String, Handler)] = {
     import c.universe._
 
-    val macroUtils = MacroUtils[c.type](c)
+    val macroUtils = JsonRpcMacroUtils[c.type](c)
     val handlerMacroFactory = new JsonRpcHandlerMacroFactory[c.type](c)
 
     val methodName = macroUtils.getJsonRpcMethodName(method)
@@ -88,7 +88,7 @@ object JsonRpcServerMacro {
   def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Future[Option[String]]] = {
     import c.universe._
 
-    val macroUtils = MacroUtils[c.type](c)
+    val macroUtils = JsonRpcMacroUtils[c.type](c)
 
     val server = c.prefix.tree
     val jsonSerializer: Tree = q"$server.jsonSerializer"

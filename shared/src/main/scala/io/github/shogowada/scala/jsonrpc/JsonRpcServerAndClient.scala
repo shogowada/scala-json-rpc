@@ -3,7 +3,7 @@ package io.github.shogowada.scala.jsonrpc
 import io.github.shogowada.scala.jsonrpc.client.{JsonRpcClient, JsonRpcClientMacro}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.{JsonRpcServer, JsonRpcServerMacro}
-import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
+import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros
@@ -46,7 +46,7 @@ object JsonRpcServerAndClientMacro {
 
   def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Unit] = {
     import c.universe._
-    val macroUtils = MacroUtils[c.type](c)
+    val macroUtils = JsonRpcMacroUtils[c.type](c)
     val client: Tree = q"${c.prefix.tree}.client"
     val server: Tree = q"${c.prefix.tree}.server"
     val executionContext: c.Expr[ExecutionContext] = c.Expr(q"$server.executionContext")

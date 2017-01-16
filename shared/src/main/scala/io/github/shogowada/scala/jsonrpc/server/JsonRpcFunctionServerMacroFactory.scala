@@ -1,15 +1,15 @@
 package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.client.JsonRpcMethodClientMacroFactory
-import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
+import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.reflect.macros.blackbox
 
-class JsonRpcFunctionMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
+class JsonRpcFunctionServerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   import c.universe._
 
-  lazy val macroUtils = MacroUtils[c.type](c)
+  lazy val macroUtils = JsonRpcMacroUtils[c.type](c)
   lazy val methodClientMacroFactory = new JsonRpcMethodClientMacroFactory[c.type](c)
 
   def getOrCreateJsonRpcFunction(

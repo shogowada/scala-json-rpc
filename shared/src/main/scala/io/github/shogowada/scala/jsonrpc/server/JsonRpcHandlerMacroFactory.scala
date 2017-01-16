@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcError, JsonRpcRequest}
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
-import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
+import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.reflect.macros.blackbox
 
@@ -10,8 +10,8 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   import c.universe._
 
-  lazy val macroUtils = MacroUtils[c.type](c)
-  lazy val functionMacroFactory = new JsonRpcFunctionMacroFactory[c.type](c)
+  lazy val macroUtils = JsonRpcMacroUtils[c.type](c)
+  lazy val functionServerMacroFactory = new JsonRpcFunctionServerMacroFactory[c.type](c)
 
   def createHandlerFromApiMethod[API](
       server: c.Tree,
@@ -57,7 +57,7 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
       parameterTypeLists: Seq[Seq[c.Type]],
       returnType: c.Type
   ): c.Expr[Handler] = {
-    val macroUtils = MacroUtils[c.type](c)
+    val macroUtils = JsonRpcMacroUtils[c.type](c)
 
     val jsonSerializer = macroUtils.getJsonSerializer(server)
     val executionContext = macroUtils.getExecutionContext(server)
@@ -74,7 +74,7 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
             val argument = q"$params.$fieldName"
             if (macroUtils.isJsonRpcFunctionType(parameterType)) {
               maybeClient
-                  .map(client => functionMacroFactory.getOrCreateJsonRpcFunction(server, client, parameterType, argument))
+                  .map(client => functionServerMacroFactory.getOrCreateJsonRpcFunction(server, client, parameterType, argument))
                   .getOrElse(throw new UnsupportedOperationException("To use JsonRpcFunction, you need to bind the API to JsonRpcServerAndClient."))
             } else {
               argument

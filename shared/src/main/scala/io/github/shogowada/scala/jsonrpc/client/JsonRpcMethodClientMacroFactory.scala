@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcNotification, JsonRpcRequest}
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcHandlerMacroFactory
-import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
+import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.reflect.macros.blackbox
 
@@ -10,7 +10,7 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
 
   import c.universe._
 
-  lazy val macroUtils = MacroUtils[c.type](c)
+  lazy val macroUtils = JsonRpcMacroUtils[c.type](c)
   lazy val handlerMacroFactory = new JsonRpcHandlerMacroFactory[c.type](c)
 
   def createMethodClientAsFunction(
