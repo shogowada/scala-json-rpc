@@ -268,7 +268,6 @@ object JsonRpcServerMacro {
                 if(method.jsonrpc != Constants.JsonRpc) {
                   Left($maybeInvalidRequestErrorJson)
                 } else {
-                  println("Received " + method.method)
                   Right(method.method)
                 }
               })

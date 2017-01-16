@@ -118,24 +118,16 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
       jsonRpcFunction: TermName,
       jsonRpcFunctionType: Type
   ): Tree = {
-    val newMethodName = q"""Constants.FunctionMethodNamePrefix + $newUuid"""
+    val newMethodName = q"Constants.FunctionMethodNamePrefix + $newUuid"
 
-    val functionType: Type = getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType)
-    val returnType: Type = functionType.typeArgs.last
+    val bindHandler = getBindHandler(server)
+    val handler = createJsonRpcFunctionHandler(client, server, jsonRpcFunction, jsonRpcFunctionType)
 
-    if (isJsonRpcNotificationMethod(returnType)) {
-      q"""
-          $newMethodName
-          """
-    } else {
-      val handler = createJsonRpcFunctionHandler(client, server, jsonRpcFunction, jsonRpcFunctionType)
-      val bindHandler = getBindHandler(server)
-      q"""
-          val methodName = $newMethodName
-          $bindHandler(methodName, $handler)
-          methodName
-          """
-    }
+    q"""
+        val methodName = $newMethodName
+        $bindHandler(methodName, $handler)
+        methodName
+        """
   }
 
   private def createJsonRpcFunctionHandler(

@@ -6,8 +6,7 @@ import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
 import org.scalatest.{AsyncFunSpec, Matchers}
 
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 import scala.util.Success
 
 class JsonRpcServerAndClientTest extends AsyncFunSpec
@@ -30,25 +29,26 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
         def foo(bar: JsonRpcFunction[(String) => Future[String]], baz: JsonRpcFunction[(String) => Unit]): Unit
       }
 
-      val barResponses: ListBuffer[String] = ListBuffer()
-      val bazValues: ListBuffer[String] = ListBuffer()
+      val promisedA1: Promise[String] = Promise()
+      val promisedB1: Promise[String] = Promise()
+      val promisedB2: Promise[String] = Promise()
 
       class ApiImpl extends Api {
         var bar: JsonRpcFunction[(String) => Future[String]] = _
         var baz: JsonRpcFunction[(String) => Unit] = _
 
         override def foo(
-            givenBar: JsonRpcFunction[(String) => Future[String]],
-            givenBaz: JsonRpcFunction[(String) => Unit]
+            theBar: JsonRpcFunction[(String) => Future[String]],
+            theBaz: JsonRpcFunction[(String) => Unit]
         ): Unit = {
-          bar = givenBar
-          bar.call("A").onComplete {
-            case Success(response) => barResponses += response
+          bar = theBar
+          bar.call("A1").onComplete {
+            case Success(response) => promisedA1.success(response)
             case _ =>
           }
 
-          baz = givenBaz
-          baz.call("B")
+          baz = theBaz
+          baz.call("B1")
         }
       }
 
@@ -57,8 +57,16 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
 
       val apiClient = serverAndClient2.createApi[Api]
 
-      val barImpl: (String) => Future[String] = (bar: String) => Future(bar)
-      val bazImpl: (String) => Unit = (baz: String) => bazValues += baz
+      val barImpl: (String) => Future[String] = (bar: String) => {
+        Future(bar)
+      }
+      val bazImpl: (String) => Unit = (baz: String) => {
+        baz match {
+          case "B1" => promisedB1.success(baz)
+          case "B2" => promisedB2.success(baz)
+          case _ =>
+        }
+      }
 
       it("then it should create a clinet API") {
         apiClient should not be null
@@ -68,23 +76,29 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
         apiClient.foo(barImpl, bazImpl)
 
         it("then it should send the response for the request function") {
-          barResponses.toList should equal(List("A"))
+          promisedA1.future.map(a1 => a1 should equal("A1"))
         }
 
         it("then it should callback the notification function") {
-          bazValues.toList should equal(List("B"))
+          promisedB1.future.map(b1 => b1 should equal("B1"))
         }
 
         describe("when I call the functions again") {
-          apiImpl.bar.call("C")
-          apiImpl.baz.call("D")
+          val promisedA2: Promise[String] = Promise()
+
+          apiImpl.bar.call("A2").onComplete {
+            case Success(result) => promisedA2.success(result)
+            case _ =>
+          }
+
+          apiImpl.baz.call("B2")
 
           it("then it should call the request function again") {
-            barResponses.toList should equal(List("A", "C"))
+            promisedA2.future.map(a2 => a2 should equal("A2"))
           }
 
           it("then it should call the notification function again") {
-            bazValues.toList should equal(List("B", "D"))
+            promisedB2.future.map(b2 => b2 should equal("B2"))
           }
 
           describe("but if I dispose the functions") {
