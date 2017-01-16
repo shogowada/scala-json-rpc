@@ -1,5 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.server
 
+import io.github.shogowada.scala.jsonrpc.client.JsonRpcMethodClientMacroFactory
 import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
 
 import scala.reflect.macros.blackbox
@@ -7,6 +8,9 @@ import scala.reflect.macros.blackbox
 class JsonRpcFunctionMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   import c.universe._
+
+  lazy val macroUtils = MacroUtils[c.type](c)
+  lazy val methodClientMacroFactory = new JsonRpcMethodClientMacroFactory[c.type](c)
 
   def getOrCreateJsonRpcFunction(
       server: c.Tree,
@@ -27,13 +31,11 @@ class JsonRpcFunctionMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
       jsonRpcFunctionType: c.Type,
       jsonRpcFunctionMethodName: c.Tree
   ): c.Tree = {
-    val macroUtils = MacroUtils[c.type](c)
-
     val functionType: Type = macroUtils.getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType)
     val functionTypeTypeArgs: Seq[Type] = functionType.typeArgs
     val paramTypes: Seq[Type] = functionTypeTypeArgs.init
     val returnType: Type = functionTypeTypeArgs.last
-    val function = macroUtils.createClientMethodAsFunction(client, Some(server), jsonRpcFunctionMethodName, paramTypes, returnType)
+    val function = methodClientMacroFactory.createMethodClientAsFunction(client, Some(server), jsonRpcFunctionMethodName, paramTypes, returnType)
 
     q"""
         new {} with JsonRpcFunction[$functionType] {
