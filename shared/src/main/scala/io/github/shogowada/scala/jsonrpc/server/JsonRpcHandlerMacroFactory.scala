@@ -67,9 +67,9 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     val jsonRpcParameterType: Tree = macroUtils.getJsonRpcParameterType(parameterTypes)
 
     def arguments(params: TermName): Seq[Tree] = {
-      parameterTypes.indices
-          .map(index => {
-            val parameterType = parameterTypes(index)
+      parameterTypes
+          .zipWithIndex
+          .map { case (parameterType, index) =>
             val fieldName = TermName(s"_${index + 1}")
             val argument = q"$params.$fieldName"
             if (macroUtils.isJsonRpcFunctionType(parameterType)) {
@@ -79,7 +79,7 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
             } else {
               argument
             }
-          })
+          }
     }
 
     val json = TermName("json")

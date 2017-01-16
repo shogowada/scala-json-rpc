@@ -45,11 +45,11 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
       }
     }
 
-    val parameterList: Seq[Tree] = paramTypes.indices
-        .map(index => {
-          val paramType = paramTypes(index)
+    val parameterList: Seq[Tree] = paramTypes
+        .zipWithIndex
+        .map { case (paramType, index) =>
           q"${getParamName(index)}: $paramType"
-        })
+        }
 
     q"""
         (..$parameterList) => {
@@ -65,10 +65,9 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
       paramTypes: Seq[Type]
   ): Tree = {
     val jsonRpcParameters: Seq[Tree] = paramTypes
-        .indices
-        .map(index => {
+        .zipWithIndex
+        .map { case (paramType, index) =>
           val paramName = getParamName(index)
-          val paramType = paramTypes(index)
           if (macroUtils.isJsonRpcFunctionType(paramType)) {
             maybeServer
                 .map(server => getOrCreateJsonRpcFunctionParameter(client, server, paramName, paramType))
@@ -76,7 +75,7 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
           } else {
             q"$paramName"
           }
-        })
+        }
 
     if (jsonRpcParameters.size == 1) {
       val parameter = jsonRpcParameters.head
