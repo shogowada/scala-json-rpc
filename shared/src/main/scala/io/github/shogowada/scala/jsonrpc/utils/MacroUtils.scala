@@ -3,8 +3,8 @@ package io.github.shogowada.scala.jsonrpc.utils
 import io.github.shogowada.scala.jsonrpc.JsonRpcFunction
 import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcError, JsonRpcErrorResponse, JsonRpcNotification, JsonRpcRequest}
 import io.github.shogowada.scala.jsonrpc.api.JsonRpcMethod
+import io.github.shogowada.scala.jsonrpc.server.JsonRpcHandlerMacroFactory
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServerMacro
 
 import scala.reflect.macros.blackbox
 
@@ -140,7 +140,9 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     val paramTypes: Seq[Type] = functionType.typeArgs.init
     val returnType: Type = functionType.typeArgs.last
 
-    JsonRpcServerMacro.createHandler[c.type](c)(
+    val handlerMacroFactory = new JsonRpcHandlerMacroFactory[c.type](c)
+
+    handlerMacroFactory.createHandler(
       server,
       Some(client),
       q"$jsonRpcFunction.call",
