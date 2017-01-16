@@ -172,9 +172,10 @@ object JsonRpcServerMacro {
 
     val macroUtils = MacroUtils[c.type](c)
 
-    val functionType = macroUtils.getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType)
-    val paramTypes = functionType.typeArgs.init
-    val returnType = functionType.typeArgs.last
+    val functionType: Type = macroUtils.getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType)
+    val functionTypeTypeArgs: Seq[Type] = functionType.typeArgs
+    val paramTypes: Seq[Type] = functionTypeTypeArgs.init
+    val returnType: Type = functionTypeTypeArgs.last
     val function = macroUtils.createClientMethodAsFunction(
       client,
       "TODO: Name it",
@@ -187,7 +188,7 @@ object JsonRpcServerMacro {
           override val function = $function
 
           override def dispose(): Try[Unit] = {
-            throw new UnsupportedOperationException("TODO: dispose the function")
+            Try(throw new UnsupportedOperationException("TODO: dispose the function"))
           }
         }
         """
