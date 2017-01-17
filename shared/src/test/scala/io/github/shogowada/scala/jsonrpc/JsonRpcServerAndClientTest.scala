@@ -20,7 +20,7 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
   val jsonSerializer = UpickleJsonSerializer()
 
   describe("given I have 2 servers and clients") {
-    class With2ServersAndClients {
+    class TwoServersAndClients {
       val server1 = JsonRpcServer(jsonSerializer)
       val server2 = JsonRpcServer(jsonSerializer)
 
@@ -32,7 +32,7 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
     }
 
     describe("and I have an API that takes function as parameter") {
-      class WithAnApiThatTakesFunction extends With2ServersAndClients {
+      class AnApiThatTakesFunction extends TwoServersAndClients {
 
         trait Api {
           def foo(
@@ -88,12 +88,12 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
       }
 
       it("then it should create a clinet API") {
-        val fixture = new WithAnApiThatTakesFunction
+        val fixture = new AnApiThatTakesFunction
         fixture.apiClient should not be null
       }
 
       describe("when I call the method") {
-        class CallTheMethod extends WithAnApiThatTakesFunction {
+        class CallTheMethod extends AnApiThatTakesFunction {
           apiClient.foo(requestFunctionImpl, notificationFunctionImpl)
         }
 
@@ -164,7 +164,7 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
     }
 
     describe("given I have an API that takes the same function type in 2 places") {
-      class ClientApiThatTakes2Functions extends With2ServersAndClients {
+      class ClientApiThatTakes2Functions extends TwoServersAndClients {
         val promisedFoo1Function: Promise[JsonRpcFunction[() => Unit]] = Promise()
         val promisedFoo2Function: Promise[JsonRpcFunction[() => Unit]] = Promise()
 
@@ -189,13 +189,14 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
       }
 
       describe("when I call them both with the same function") {
-        it("then it should use the same function reference on the server too") {
-          val fixture = new ClientApiThatTakes2Functions
-
+        class CallThemBothWithTheSameFunction extends ClientApiThatTakes2Functions {
           val function: () => Unit = () => {}
-          fixture.client.foo1(function)
-          fixture.client.foo2(function)
+          client.foo1(function)
+          client.foo2(function)
+        }
 
+        it("then it should use the same function reference on the server too") {
+          val fixture = new CallThemBothWithTheSameFunction
           for {
             foo1Function <- fixture.promisedFoo1Function.future
             foo2Function <- fixture.promisedFoo2Function.future
@@ -204,12 +205,13 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
       }
 
       describe("when I call them both with different functions") {
+        class CallThemBothWithDifferentFunctions extends ClientApiThatTakes2Functions {
+          client.foo1(() => {})
+          client.foo2(() => {})
+        }
+
         it("then it should use differeht function references on the server too") {
-          val fixture = new ClientApiThatTakes2Functions
-
-          fixture.client.foo1(() => {})
-          fixture.client.foo2(() => {})
-
+          val fixture = new CallThemBothWithDifferentFunctions
           for {
             foo1Function <- fixture.promisedFoo1Function.future
             foo2Function <- fixture.promisedFoo2Function.future
