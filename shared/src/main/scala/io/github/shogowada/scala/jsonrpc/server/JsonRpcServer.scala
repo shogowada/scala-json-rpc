@@ -3,7 +3,7 @@ package io.github.shogowada.scala.jsonrpc.server
 import io.github.shogowada.scala.jsonrpc.JsonRpcFunction
 import io.github.shogowada.scala.jsonrpc.Models.JsonRpcError
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
+import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.RequestJsonHandler
 import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,10 +17,10 @@ class JsonRpcServer[JSON_SERIALIZER <: JsonSerializer]
 ) {
   val lock = new Object()
 
-  var methodNameToHandlerMap: Map[String, Handler] = Map()
+  var methodNameToHandlerMap: Map[String, RequestJsonHandler] = Map()
   var methodNameToJsonRpcFunctionMap: Map[String, JsonRpcFunction[_]] = Map()
 
-  def bindHandler(methodName: String, handler: Handler): Unit = {
+  def bindHandler(methodName: String, handler: RequestJsonHandler): Unit = {
     lock.synchronized(methodNameToHandlerMap = methodNameToHandlerMap + (methodName -> handler))
   }
 
@@ -48,7 +48,7 @@ class JsonRpcServer[JSON_SERIALIZER <: JsonSerializer]
 }
 
 object JsonRpcServer {
-  type Handler = (String) => Future[Option[String]]
+  type RequestJsonHandler = (String) => Future[Option[String]]
 
   def apply[JSON_SERIALIZER <: JsonSerializer](jsonSerializer: JSON_SERIALIZER)(implicit executionContext: ExecutionContext) = {
     new JsonRpcServer(jsonSerializer, executionContext)
@@ -89,7 +89,7 @@ object JsonRpcServerMacro {
       maybeClient: Option[c.Tree],
       api: c.Expr[API],
       method: c.universe.MethodSymbol
-  ): c.Expr[(String, Handler)] = {
+  ): c.Expr[(String, RequestJsonHandler)] = {
     import c.universe._
 
     val macroUtils = JsonRpcMacroUtils[c.type](c)
@@ -98,7 +98,7 @@ object JsonRpcServerMacro {
     val methodName = macroUtils.getJsonRpcMethodName(method)
     val handler = handlerMacroFactory.createHandlerFromApiMethod[API](server, maybeClient, api, method)
 
-    c.Expr[(String, Handler)](q"""$methodName -> $handler""")
+    c.Expr[(String, RequestJsonHandler)](q"""$methodName -> $handler""")
   }
 
   def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Future[Option[String]]] = {
@@ -132,7 +132,7 @@ object JsonRpcServerMacro {
           """
     )
 
-    val maybeErrorJsonOrHandler = c.Expr[Either[Option[String], Handler]](
+    val maybeErrorJsonOrHandler = c.Expr[Either[Option[String], RequestJsonHandler]](
       q"""
           $maybeErrorJsonOrMethodName
               .right.flatMap((methodName: String) => {

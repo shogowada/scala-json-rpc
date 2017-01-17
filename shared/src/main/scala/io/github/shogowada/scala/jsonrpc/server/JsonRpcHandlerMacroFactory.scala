@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcError, JsonRpcRequest}
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
+import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.RequestJsonHandler
 import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.reflect.macros.blackbox
@@ -18,7 +18,7 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
       maybeClient: Option[c.Tree],
       api: c.Expr[API],
       method: c.universe.MethodSymbol
-  ): c.Expr[Handler] = {
+  ): c.Expr[RequestJsonHandler] = {
     val parameterTypeLists: List[List[Type]] = method.asMethod.paramLists
         .map(parameters => parameters.map(parameter => parameter.typeSignature))
 
@@ -36,7 +36,7 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
       server: Tree,
       jsonRpcFunction: TermName,
       jsonRpcFunctionType: Type
-  ): c.Expr[Handler] = {
+  ): c.Expr[RequestJsonHandler] = {
     val functionType: Type = macroUtils.getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType)
     val paramTypes: Seq[Type] = functionType.typeArgs.init
     val returnType: Type = functionType.typeArgs.last
@@ -56,7 +56,7 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
       method: c.Tree,
       parameterTypeLists: Seq[Seq[c.Type]],
       returnType: c.Type
-  ): c.Expr[Handler] = {
+  ): c.Expr[RequestJsonHandler] = {
     val macroUtils = JsonRpcMacroUtils[c.type](c)
 
     val jsonSerializer = macroUtils.getJsonSerializer(server)
@@ -93,7 +93,7 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
       }
     }
 
-    def notificationHandler = c.Expr[Handler](
+    def notificationHandler = c.Expr[RequestJsonHandler](
       q"""
           ($json: String) => {
             ..${macroUtils.imports}
@@ -121,7 +121,7 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
         q"""$jsonSerializer.deserialize[JsonRpcRequest[$jsonRpcParameterType]]($json)"""
       )
 
-      c.Expr[Handler](
+      c.Expr[RequestJsonHandler](
         q"""
             ($json: String) => {
               ..${macroUtils.imports}
