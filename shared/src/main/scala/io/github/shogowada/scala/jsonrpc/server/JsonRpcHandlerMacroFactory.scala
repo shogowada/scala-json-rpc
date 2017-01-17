@@ -148,4 +148,42 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
       requestHandler
     }
   }
+
+  def createDisposeFunctionMethodHandler(
+      server: Tree
+  ): Tree = {
+    val jsonSerializer = macroUtils.getJsonSerializer(server)
+    val unbindMethod = macroUtils.getUnbindMethod(server)
+    val executionContext = macroUtils.getExecutionContext(server)
+
+    def response(id: Tree) =
+      q"""
+          JsonRpcResultResponse[Unit](
+            jsonrpc = Constants.JsonRpc,
+            id = $id,
+            result = ()
+          )
+          """
+
+    val maybeErrorJson = macroUtils.createMaybeErrorJson(
+      server,
+      c.Expr[String](q"json"),
+      c.Expr[JsonRpcError[String]](q"JsonRpcErrors.internalError")
+    )
+
+    q"""
+        (json: String) => {
+          ..${macroUtils.imports}
+          val maybeResponse: Option[String] = $jsonSerializer.deserialize[JsonRpcRequest[Tuple1[String]]](json)
+            .flatMap(request => {
+              val Tuple1(methodName) = request.params
+              $unbindMethod(methodName)
+              val response = ${response(q"request.id")}
+              $jsonSerializer.serialize(response)
+            })
+            .orElse { $maybeErrorJson }
+          Future(maybeResponse)($executionContext)
+        }
+        """
+  }
 }

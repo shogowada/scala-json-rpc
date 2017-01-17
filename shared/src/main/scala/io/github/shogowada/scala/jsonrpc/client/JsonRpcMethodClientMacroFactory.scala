@@ -95,12 +95,19 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
       jsonRpcFunction: TermName,
       jsonRpcFunctionType: Type
   ): Tree = {
+    val methodNameToHandlerMap = macroUtils.getMethodNameToHandlerMap(server)
+    val bindHandler = macroUtils.getBindHandler(server)
+
+    val disposeFunctionMethodHandler = handlerMacroFactory.createDisposeFunctionMethodHandler(server)
+
     val newMethodName = q"Constants.FunctionMethodNamePrefix + ${macroUtils.newUuid}"
 
-    val bindHandler = macroUtils.getBindHandler(server)
     val handler = handlerMacroFactory.createHandlerFromJsonRpcFunction(client, server, jsonRpcFunction, jsonRpcFunctionType)
 
     q"""
+        if (!$methodNameToHandlerMap.contains(Constants.DisposeMethodName)) {
+          $bindHandler(Constants.DisposeMethodName, $disposeFunctionMethodHandler)
+        }
         val methodName = $newMethodName
         $bindHandler(methodName, $handler)
         methodName

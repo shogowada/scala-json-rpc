@@ -37,12 +37,27 @@ class JsonRpcFunctionServerMacroFactory[CONTEXT <: blackbox.Context](val c: CONT
     val returnType: Type = functionTypeTypeArgs.last
     val function = methodClientMacroFactory.createMethodClientAsFunction(client, Some(server), jsonRpcFunctionMethodName, paramTypes, returnType)
 
+    val jsonSerializer = macroUtils.getJsonSerializer(client)
+    val send = macroUtils.getSend(client)
+
+    val disposeRequest =
+      q"""
+          JsonRpcRequest[Tuple1[String]](
+            jsonrpc = Constants.JsonRpc,
+            id = Left(${macroUtils.newUuid}),
+            method = Constants.DisposeMethodName,
+            params = Tuple1($jsonRpcFunctionMethodName)
+          )
+          """
+
+    val disposeRequestJson = q"$jsonSerializer.serialize($disposeRequest).get"
+
     q"""
         new {} with JsonRpcFunction[$functionType] {
           override val function = $function
 
           override def dispose(): Future[Unit] = {
-            Future.failed(new UnsupportedOperationException("TODO: dispose the function"))
+            $send($disposeRequestJson).map(_ => ())
           }
         }
         """

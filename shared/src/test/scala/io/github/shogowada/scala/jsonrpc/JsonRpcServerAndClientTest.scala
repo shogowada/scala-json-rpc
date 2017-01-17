@@ -127,9 +127,8 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
             }
 
             it("then calling the request function should fail") {
-              recoverToSucceededIf[JsonRpcException[String]] {
-                apiImpl.requestFunction.call("FAKE")
-              }
+              apiImpl.requestFunction.call("FAKE").failed
+                  .map(throwable => throwable.isInstanceOf[JsonRpcException[_]] should equal(true))
             }
 
             it("then calling the notification function should ignore the error") {
