@@ -17,16 +17,8 @@ class JsonRpcServer[JSON_SERIALIZER <: JsonSerializer]
 ) {
   val lock = new Object()
 
-  var methodNameToHandlerMap: Map[String, RequestJsonHandler] = Map()
+  val requestJsonHandlerRepository = new JsonRpcRequestJsonHandlerRepository
   var methodNameToJsonRpcFunctionMap: Map[String, JsonRpcFunction[_]] = Map()
-
-  def bindHandler(methodName: String, handler: RequestJsonHandler): Unit = {
-    lock.synchronized(methodNameToHandlerMap = methodNameToHandlerMap + (methodName -> handler))
-  }
-
-  def unbindMethod(methodName: String): Unit = {
-    lock.synchronized(methodNameToHandlerMap = methodNameToHandlerMap - methodName)
-  }
 
   def bindApi[API](api: API): Unit = macro JsonRpcServerMacro.bindApi[API]
 
@@ -69,22 +61,22 @@ object JsonRpcServerMacro {
 
     val macroUtils = JsonRpcMacroUtils[c.type](c)
 
-    val bindHandler = macroUtils.getBindHandler(server)
+    val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
 
     val apiType: Type = weakTypeOf[API]
-    val methodNameToHandlerList = JsonRpcMacroUtils[c.type](c).getJsonRpcApiMethods(apiType)
-        .map((apiMember: MethodSymbol) => createMethodNameToHandler[c.type, API](c)(server, maybeClient, api, apiMember))
+    val methodNameToRequestJsonHandlerList = JsonRpcMacroUtils[c.type](c).getJsonRpcApiMethods(apiType)
+        .map((apiMember: MethodSymbol) => createMethodNameToRequestJsonHandler[c.type, API](c)(server, maybeClient, api, apiMember))
 
     c.Expr[Unit](
       q"""
-          Seq(..$methodNameToHandlerList).foreach {
-            case (methodName, handler) => $bindHandler(methodName, handler)
+          Seq(..$methodNameToRequestJsonHandlerList).foreach {
+            case (methodName, handler) => $requestJsonHandlerRepository.add(methodName, handler)
           }
           """
     )
   }
 
-  private def createMethodNameToHandler[CONTEXT <: blackbox.Context, API](c: blackbox.Context)(
+  private def createMethodNameToRequestJsonHandler[CONTEXT <: blackbox.Context, API](c: blackbox.Context)(
       server: c.Tree,
       maybeClient: Option[c.Tree],
       api: c.Expr[API],
@@ -108,7 +100,7 @@ object JsonRpcServerMacro {
 
     val server = c.prefix.tree
     val jsonSerializer: Tree = q"$server.jsonSerializer"
-    val methodNameToHandlerMap: Tree = q"$server.methodNameToHandlerMap"
+    val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
     val executionContext: Tree = q"$server.executionContext"
 
     val maybeParseErrorJson: c.Expr[Option[String]] =
@@ -136,7 +128,7 @@ object JsonRpcServerMacro {
       q"""
           $maybeErrorJsonOrMethodName
               .right.flatMap((methodName: String) => {
-                $methodNameToHandlerMap.get(methodName)
+                $requestJsonHandlerRepository.get(methodName)
                   .toRight($maybeMethodNotFoundErrorJson)
               })
           """

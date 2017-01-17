@@ -95,8 +95,7 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
       jsonRpcFunction: TermName,
       jsonRpcFunctionType: Type
   ): Tree = {
-    val methodNameToHandlerMap = macroUtils.getMethodNameToHandlerMap(server)
-    val bindHandler = macroUtils.getBindHandler(server)
+    val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
 
     val jsonRpcFunctionMethodNameRepository = macroUtils.getJsonRpcFunctionMethodNameRepository(client)
 
@@ -105,12 +104,11 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
     val handler = handlerMacroFactory.createHandlerFromJsonRpcFunction(client, server, jsonRpcFunction, jsonRpcFunctionType)
 
     q"""
-        if (!$methodNameToHandlerMap.contains(Constants.DisposeMethodName)) {
-          $bindHandler(Constants.DisposeMethodName, $disposeFunctionMethodHandler)
-        }
+        $requestJsonHandlerRepository.addIfAbsent(Constants.DisposeMethodName, () => ($disposeFunctionMethodHandler))
+
         val methodName = $jsonRpcFunctionMethodNameRepository.getOrAddAndNotify(
           $jsonRpcFunction,
-          (newMethodName) => { $bindHandler(newMethodName, $handler) }
+          (newMethodName) => { $requestJsonHandlerRepository.add(newMethodName, $handler) }
         )
         methodName
         """

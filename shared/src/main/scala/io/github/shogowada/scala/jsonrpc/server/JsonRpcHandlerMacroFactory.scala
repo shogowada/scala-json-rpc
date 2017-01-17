@@ -153,7 +153,7 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
       server: Tree
   ): Tree = {
     val jsonSerializer = macroUtils.getJsonSerializer(server)
-    val unbindMethod = macroUtils.getUnbindMethod(server)
+    val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
     val executionContext = macroUtils.getExecutionContext(server)
 
     def response(id: Tree) =
@@ -177,7 +177,7 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
           val maybeResponse: Option[String] = $jsonSerializer.deserialize[JsonRpcRequest[Tuple1[String]]](json)
             .flatMap(request => {
               val Tuple1(methodName) = request.params
-              $unbindMethod(methodName)
+              $requestJsonHandlerRepository.remove(methodName)
               val response = ${response(q"request.id")}
               $jsonSerializer.serialize(response)
             })

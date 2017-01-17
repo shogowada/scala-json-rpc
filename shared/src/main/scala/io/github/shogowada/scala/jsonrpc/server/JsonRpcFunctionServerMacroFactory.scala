@@ -59,7 +59,7 @@ class JsonRpcFunctionServerMacroFactory[CONTEXT <: blackbox.Context](val c: CONT
       client: Tree,
       jsonRpcFunctionMethodName: Tree
   ): Tree = {
-    val disposeJsonRpcFunction = macroUtils.disposeJsonRpcFunction(server)
+    val disposeJsonRpcFunction = macroUtils.getDisposeJsonRpcFunction(server)
     val jsonSerializer = macroUtils.getJsonSerializer(client)
     val send = macroUtils.getSend(client)
 

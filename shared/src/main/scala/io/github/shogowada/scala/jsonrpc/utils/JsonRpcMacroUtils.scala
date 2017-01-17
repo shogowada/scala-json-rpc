@@ -28,15 +28,11 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   def getJsonRpcFunctionMethodNameRepository(prefix: Tree) = q"$prefix.jsonRpcFunctionMethodNameRepository"
 
-  def getMethodNameToHandlerMap(prefix: Tree): Tree = q"$prefix.methodNameToHandlerMap"
+  def getRequestJsonHandlerRepository(prefix: Tree): Tree = q"$prefix.requestJsonHandlerRepository"
 
   def getGetOrAddJsonRpcFunction(prefix: Tree): Tree = q"$prefix.getOrAddJsonRpcFunction"
 
-  def disposeJsonRpcFunction(prefix: Tree): Tree = q"$prefix.disposeJsonRpcFunction"
-
-  def getBindHandler(prefix: Tree): Tree = q"$prefix.bindHandler"
-
-  def getUnbindMethod(prefix: Tree): Tree = q"$prefix.unbindMethod"
+  def getDisposeJsonRpcFunction(prefix: Tree): Tree = q"$prefix.disposeJsonRpcFunction"
 
   def getSend(prefix: Tree): Tree = q"$prefix.send"
 
