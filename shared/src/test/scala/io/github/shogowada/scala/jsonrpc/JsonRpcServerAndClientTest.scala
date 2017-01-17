@@ -139,5 +139,60 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
         }
       }
     }
+
+    describe("given I have an API that takes the same function type in 2 places") {
+      trait Api {
+        def foo1(bar: JsonRpcFunction[() => Unit]): Unit
+
+        def foo2(bar: JsonRpcFunction[() => Unit]): Unit
+      }
+
+      var promisedFoo1Function: Promise[JsonRpcFunction[() => Unit]] = Promise()
+      var promisedFoo2Function: Promise[JsonRpcFunction[() => Unit]] = Promise()
+
+      class ApiImpl extends Api {
+        override def foo1(bar: JsonRpcFunction[() => Unit]): Unit = {
+          promisedFoo1Function.success(bar)
+        }
+
+        override def foo2(bar: JsonRpcFunction[() => Unit]): Unit = {
+          promisedFoo2Function.success(bar)
+        }
+      }
+
+      serverAndClient1.bindApi[Api](new ApiImpl)
+      val client = serverAndClient2.createApi[Api]
+
+      describe("when I call them both with the same function") {
+        promisedFoo1Function = Promise()
+        promisedFoo2Function = Promise()
+
+        val function: () => Unit = () => {}
+        client.foo1(function)
+        client.foo2(function)
+
+        it("then it should use the same function reference on the server too") {
+          for {
+            foo1Function <- promisedFoo1Function.future
+            foo2Function <- promisedFoo2Function.future
+          } yield foo1Function should be(foo2Function)
+        }
+      }
+
+      describe("when I call them both with different functions") {
+        promisedFoo1Function = Promise()
+        promisedFoo2Function = Promise()
+
+        client.foo1(() => {})
+        client.foo2(() => {})
+
+        it("then it should use differeht function references on the server too") {
+          for {
+            foo1Function <- promisedFoo1Function.future
+            foo2Function <- promisedFoo2Function.future
+          } yield foo1Function should not be foo2Function
+        }
+      }
+    }
   }
 }
