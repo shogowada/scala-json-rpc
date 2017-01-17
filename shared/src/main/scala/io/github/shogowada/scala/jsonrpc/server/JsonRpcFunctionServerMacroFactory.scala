@@ -37,6 +37,23 @@ class JsonRpcFunctionServerMacroFactory[CONTEXT <: blackbox.Context](val c: CONT
     val returnType: Type = functionTypeTypeArgs.last
     val function = methodClientMacroFactory.createMethodClientAsFunction(client, Some(server), jsonRpcFunctionMethodName, paramTypes, returnType)
 
+    val disposeMethodBody = createDisposeMethodBody(client, jsonRpcFunctionMethodName)
+
+    q"""
+        new {} with JsonRpcFunction[$functionType] {
+          override val function = $function
+
+          override def dispose(): Future[Unit] = {
+            $disposeMethodBody
+          }
+        }
+        """
+  }
+
+  private def createDisposeMethodBody(
+      client: Tree,
+      jsonRpcFunctionMethodName: Tree
+  ): Tree = {
     val jsonSerializer = macroUtils.getJsonSerializer(client)
     val send = macroUtils.getSend(client)
 
@@ -52,14 +69,6 @@ class JsonRpcFunctionServerMacroFactory[CONTEXT <: blackbox.Context](val c: CONT
 
     val disposeRequestJson = q"$jsonSerializer.serialize($disposeRequest).get"
 
-    q"""
-        new {} with JsonRpcFunction[$functionType] {
-          override val function = $function
-
-          override def dispose(): Future[Unit] = {
-            $send($disposeRequestJson).map(_ => ())
-          }
-        }
-        """
+    q"$send($disposeRequestJson).map(_ => ())"
   }
 }
