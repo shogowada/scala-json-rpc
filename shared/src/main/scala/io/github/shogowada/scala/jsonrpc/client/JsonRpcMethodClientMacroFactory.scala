@@ -98,20 +98,20 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
     val methodNameToHandlerMap = macroUtils.getMethodNameToHandlerMap(server)
     val bindHandler = macroUtils.getBindHandler(server)
 
+    val jsonRpcFunctionMethodNameRepository = macroUtils.getJsonRpcFunctionMethodNameRepository(client)
+
     val disposeFunctionMethodHandler = handlerMacroFactory.createDisposeFunctionMethodHandler(server)
 
-    val newMethodName = q"Constants.FunctionMethodNamePrefix + ${macroUtils.newUuid}"
-
     val handler = handlerMacroFactory.createHandlerFromJsonRpcFunction(client, server, jsonRpcFunction, jsonRpcFunctionType)
-
-    // TODO: Use the existing methodName from client.jsonRpcFunctionMethodNameRepository if it is the same function being used
 
     q"""
         if (!$methodNameToHandlerMap.contains(Constants.DisposeMethodName)) {
           $bindHandler(Constants.DisposeMethodName, $disposeFunctionMethodHandler)
         }
-        val methodName = $newMethodName
-        $bindHandler(methodName, $handler)
+        val methodName = $jsonRpcFunctionMethodNameRepository.getOrAddAndNotify(
+          $jsonRpcFunction,
+          (newMethodName) => { $bindHandler(newMethodName, $handler) }
+        )
         methodName
         """
   }

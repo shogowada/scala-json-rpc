@@ -2,21 +2,25 @@ package io.github.shogowada.scala.jsonrpc.client
 
 import java.util.UUID
 
-import io.github.shogowada.scala.jsonrpc.JsonRpcFunction
+import io.github.shogowada.scala.jsonrpc.{Constants, JsonRpcFunction}
 
 class JsonRpcFunctionMethodNameRepository {
 
-  var jsonRpcFunctionToMethodNameMap: Map[JsonRpcFunction[_], String] = Map()
+  var jsonRpcFunctionToMethodNameMap: Map[Any, String] = Map()
 
-  def getOrAdd(jsonRpcFunction: JsonRpcFunction[_]): String = this.synchronized {
-    if (!jsonRpcFunctionToMethodNameMap.contains(jsonRpcFunction)) {
-      val methodName = UUID.randomUUID().toString
-      jsonRpcFunctionToMethodNameMap = jsonRpcFunctionToMethodNameMap + (jsonRpcFunction -> methodName)
+  def getOrAddAndNotify(jsonRpcFunction: JsonRpcFunction[_], notify: (String) => Unit): String = this.synchronized {
+    val function = jsonRpcFunction.function
+    if (!jsonRpcFunctionToMethodNameMap.contains(function)) {
+      val methodName = Constants.FunctionMethodNamePrefix + UUID.randomUUID().toString
+      jsonRpcFunctionToMethodNameMap = jsonRpcFunctionToMethodNameMap + (function -> methodName)
+      notify(methodName)
+      methodName
+    } else {
+      jsonRpcFunctionToMethodNameMap(function)
     }
-    jsonRpcFunctionToMethodNameMap(jsonRpcFunction)
   }
 
   def dispose(jsonRpcFunction: JsonRpcFunction[_]): Unit = this.synchronized {
-    jsonRpcFunctionToMethodNameMap = jsonRpcFunctionToMethodNameMap - jsonRpcFunction
+    jsonRpcFunctionToMethodNameMap = jsonRpcFunctionToMethodNameMap - jsonRpcFunction.function
   }
 }

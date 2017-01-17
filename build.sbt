@@ -14,6 +14,7 @@ val commonSettings = Seq(
   name := "scala-json-rpc",
   version := "0.3.2-SNAPSHOT",
   scalaVersion := "2.12.1",
+  logBuffered in Test := false,
   licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
   homepage := Some(url("https://github.com/shogowada/scala-json-rpc")),
   publishMavenStyle := true,

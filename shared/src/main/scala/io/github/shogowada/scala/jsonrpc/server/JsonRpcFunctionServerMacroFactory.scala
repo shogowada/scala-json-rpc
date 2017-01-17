@@ -23,8 +23,9 @@ class JsonRpcFunctionServerMacroFactory[CONTEXT <: blackbox.Context](val c: CONT
     val newJsonRpcFunction = createJsonRpcFunction(server, client, jsonRpcFunctionType, jsonRpcFunctionMethodName)
 
     q"""
-        $getOrAddJsonRpcFunction($jsonRpcFunctionMethodName, () => $newJsonRpcFunction)
-          .asInstanceOf[$jsonRpcFunctionType]
+        val jsonRpcFunction = $getOrAddJsonRpcFunction($jsonRpcFunctionMethodName, () => $newJsonRpcFunction)
+            .asInstanceOf[$jsonRpcFunctionType]
+        jsonRpcFunction
         """
   }
 
