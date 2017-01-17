@@ -15,6 +15,7 @@ class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
     val executionContext: ExecutionContext
 ) {
   val promisedResponseRepository = new JsonRpcPromisedResponseRepository
+  val jsonRpcFunctionMethodNameRepository = new JsonRpcFunctionMethodNameRepository
 
   def send(json: String): Future[Option[String]] = jsonSender(json)
 

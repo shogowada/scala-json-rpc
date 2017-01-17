@@ -1,5 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.server
 
+import io.github.shogowada.scala.jsonrpc.JsonRpcFunction
 import io.github.shogowada.scala.jsonrpc.Models.JsonRpcError
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.Handler
@@ -17,6 +18,7 @@ class JsonRpcServer[JSON_SERIALIZER <: JsonSerializer]
   val lock = new Object()
 
   var methodNameToHandlerMap: Map[String, Handler] = Map()
+  var methodNameToJsonRpcFunctionMap: Map[String, JsonRpcFunction[_]] = Map()
 
   def bindHandler(methodName: String, handler: Handler): Unit = {
     lock.synchronized(methodNameToHandlerMap = methodNameToHandlerMap + (methodName -> handler))
@@ -27,6 +29,20 @@ class JsonRpcServer[JSON_SERIALIZER <: JsonSerializer]
   }
 
   def bindApi[API](api: API): Unit = macro JsonRpcServerMacro.bindApi[API]
+
+  def getOrAddJsonRpcFunction(methodName: String, jsonRpcFunctionSupplier: () => JsonRpcFunction[_]): JsonRpcFunction[_] = {
+    lock.synchronized {
+      if (!methodNameToJsonRpcFunctionMap.contains(methodName)) {
+        val jsonRpcFunction = jsonRpcFunctionSupplier()
+        methodNameToJsonRpcFunctionMap = methodNameToJsonRpcFunctionMap + (methodName -> jsonRpcFunction)
+      }
+      methodNameToJsonRpcFunctionMap(methodName)
+    }
+  }
+
+  def disposeJsonRpcFunction(methodName: String): Unit = {
+    lock.synchronized(methodNameToJsonRpcFunctionMap = methodNameToJsonRpcFunctionMap - methodName)
+  }
 
   def receive(json: String): Future[Option[String]] = macro JsonRpcServerMacro.receive
 }

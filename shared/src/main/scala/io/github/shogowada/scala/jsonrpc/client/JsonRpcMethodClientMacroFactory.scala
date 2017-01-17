@@ -104,6 +104,8 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
 
     val handler = handlerMacroFactory.createHandlerFromJsonRpcFunction(client, server, jsonRpcFunction, jsonRpcFunctionType)
 
+    // TODO: Use the existing methodName from client.jsonRpcFunctionMethodNameRepository if it is the same function being used
+
     q"""
         if (!$methodNameToHandlerMap.contains(Constants.DisposeMethodName)) {
           $bindHandler(Constants.DisposeMethodName, $disposeFunctionMethodHandler)
