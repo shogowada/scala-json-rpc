@@ -90,7 +90,7 @@ object Main extends JSApp {
 
 ## Server
 
-Here are our API implementation:
+Here is our API implementation:
 
 ```scala
 class RandomNumberSubject extends RandomNumberSubjectApi {
