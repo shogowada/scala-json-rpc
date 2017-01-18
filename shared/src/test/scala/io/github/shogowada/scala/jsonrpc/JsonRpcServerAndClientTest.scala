@@ -36,8 +36,8 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
 
         trait Api {
           def foo(
-              requestFunction: JsonRpcFunction[(String) => Future[String]],
-              notificationFunction: JsonRpcFunction[(String) => Unit]
+              requestFunction: JsonRpcFunction1[String, Future[String]],
+              notificationFunction: JsonRpcFunction1[String, Unit]
           ): Unit
         }
 
@@ -52,21 +52,21 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
         val promisedNotificationValue2: Promise[String] = Promise()
 
         class ApiImpl extends Api {
-          var requestFunction: JsonRpcFunction[(String) => Future[String]] = _
-          var notificationFunction: JsonRpcFunction[(String) => Unit] = _
+          var requestFunction: JsonRpcFunction1[String, Future[String]] = _
+          var notificationFunction: JsonRpcFunction1[String, Unit] = _
 
           override def foo(
-              theRequestFunction: JsonRpcFunction[(String) => Future[String]],
-              theNotificationFunction: JsonRpcFunction[(String) => Unit]
+              theRequestFunction: JsonRpcFunction1[String, Future[String]],
+              theNotificationFunction: JsonRpcFunction1[String, Unit]
           ): Unit = {
             requestFunction = theRequestFunction
-            requestFunction.call(requestValue1).onComplete {
+            requestFunction(requestValue1).onComplete {
               case Success(response) => promisedRequestResponse1.success(response)
               case _ =>
             }
 
             notificationFunction = theNotificationFunction
-            notificationFunction.call(notificationValue1)
+            notificationFunction(notificationValue1)
           }
         }
 
@@ -111,11 +111,11 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
 
         describe("when I call the functions again") {
           class CallTheFunctionsAgain extends CallTheMethod {
-            apiImpl.requestFunction.call(requestValue2).onComplete {
+            apiImpl.requestFunction(requestValue2).onComplete {
               case Success(result) => promisedRequestResponse2.success(result)
               case _ =>
             }
-            apiImpl.notificationFunction.call(notificationValue2)
+            apiImpl.notificationFunction(notificationValue2)
           }
 
           it("then it should call the request function again") {
@@ -150,13 +150,13 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
 
             it("then calling the request function should fail") {
               val fixture = new DisposeTheFunction
-              fixture.apiImpl.requestFunction.call("FAKE").failed
+              fixture.apiImpl.requestFunction("FAKE").failed
                   .map(throwable => throwable.isInstanceOf[JsonRpcException[_]] should equal(true))
             }
 
             it("then calling the notification function should ignore the error") {
               val fixture = new DisposeTheFunction
-              noException should be thrownBy fixture.apiImpl.notificationFunction.call("FAKE")
+              noException should be thrownBy fixture.apiImpl.notificationFunction("FAKE")
             }
           }
         }
@@ -165,21 +165,21 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
 
     describe("given I have an API that takes the same function type in 2 places") {
       class ClientApiThatTakes2Functions extends TwoServersAndClients {
-        val promisedFoo1Function: Promise[JsonRpcFunction[() => Unit]] = Promise()
-        val promisedFoo2Function: Promise[JsonRpcFunction[() => Unit]] = Promise()
+        val promisedFoo1Function: Promise[JsonRpcFunction0[Unit]] = Promise()
+        val promisedFoo2Function: Promise[JsonRpcFunction0[Unit]] = Promise()
 
         trait Api {
-          def foo1(bar: JsonRpcFunction[() => Unit]): Unit
+          def foo1(bar: JsonRpcFunction0[Unit]): Unit
 
-          def foo2(bar: JsonRpcFunction[() => Unit]): Unit
+          def foo2(bar: JsonRpcFunction0[Unit]): Unit
         }
 
         class ApiImpl extends Api {
-          override def foo1(bar: JsonRpcFunction[() => Unit]): Unit = {
+          override def foo1(bar: JsonRpcFunction0[Unit]): Unit = {
             promisedFoo1Function.success(bar)
           }
 
-          override def foo2(bar: JsonRpcFunction[() => Unit]): Unit = {
+          override def foo2(bar: JsonRpcFunction0[Unit]): Unit = {
             promisedFoo2Function.success(bar)
           }
         }

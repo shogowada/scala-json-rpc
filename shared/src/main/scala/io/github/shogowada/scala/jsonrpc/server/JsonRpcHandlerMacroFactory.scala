@@ -37,14 +37,13 @@ class JsonRpcHandlerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
       jsonRpcFunction: TermName,
       jsonRpcFunctionType: Type
   ): c.Expr[RequestJsonHandler] = {
-    val functionType: Type = macroUtils.getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType)
-    val paramTypes: Seq[Type] = functionType.typeArgs.init
-    val returnType: Type = functionType.typeArgs.last
+    val paramTypes: Seq[Type] = jsonRpcFunctionType.typeArgs.init
+    val returnType: Type = jsonRpcFunctionType.typeArgs.last
 
     createHandler(
       server,
       Some(client),
-      q"$jsonRpcFunction.call",
+      q"$jsonRpcFunction",
       Seq(paramTypes),
       returnType
     )

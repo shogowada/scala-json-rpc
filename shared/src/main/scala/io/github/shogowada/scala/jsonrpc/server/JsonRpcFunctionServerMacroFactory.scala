@@ -35,17 +35,28 @@ class JsonRpcFunctionServerMacroFactory[CONTEXT <: blackbox.Context](val c: CONT
       jsonRpcFunctionType: c.Type,
       jsonRpcFunctionMethodName: c.Tree
   ): c.Tree = {
-    val functionType: Type = macroUtils.getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType)
-    val functionTypeTypeArgs: Seq[Type] = functionType.typeArgs
-    val paramTypes: Seq[Type] = functionTypeTypeArgs.init
-    val returnType: Type = functionTypeTypeArgs.last
+    val typeArgs: Seq[Type] = jsonRpcFunctionType.typeArgs
+    val paramTypes: Seq[Type] = typeArgs.init
+    val returnType: Type = typeArgs.last
     val function = methodClientMacroFactory.createMethodClientAsFunction(client, Some(server), jsonRpcFunctionMethodName, paramTypes, returnType)
 
     val disposeMethodBody = createDisposeMethodBody(server, client, jsonRpcFunctionMethodName)
 
+    def getApplyParameterName(index: Int) = TermName(s"v$index")
+
+    val applyParameters: Seq[Tree] = paramTypes.zipWithIndex
+        .map { case (paramType, index) =>
+          val paramName = getApplyParameterName(index)
+          q"$paramName: $paramType"
+        }
+    val applyParameterNames = paramTypes.indices
+        .map(getApplyParameterName)
+
     q"""
-        new {} with JsonRpcFunction[$functionType] {
-          override val function = $function
+        new $jsonRpcFunctionType {
+          override val original = $function
+
+          override def apply(..$applyParameters) = $function(..$applyParameterNames)
 
           override def dispose(): Future[Unit] = {
             $disposeMethodBody

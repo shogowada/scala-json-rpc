@@ -9,18 +9,18 @@ class JsonRpcFunctionMethodNameRepository {
   var jsonRpcFunctionToMethodNameMap: Map[Any, String] = Map()
 
   def getOrAddAndNotify(jsonRpcFunction: JsonRpcFunction[_], notify: (String) => Unit): String = this.synchronized {
-    val function = jsonRpcFunction.function
-    if (!jsonRpcFunctionToMethodNameMap.contains(function)) {
+    val original = jsonRpcFunction.original
+    if (!jsonRpcFunctionToMethodNameMap.contains(original)) {
       val methodName = Constants.FunctionMethodNamePrefix + UUID.randomUUID().toString
-      jsonRpcFunctionToMethodNameMap = jsonRpcFunctionToMethodNameMap + (function -> methodName)
+      jsonRpcFunctionToMethodNameMap = jsonRpcFunctionToMethodNameMap + (original -> methodName)
       notify(methodName)
       methodName
     } else {
-      jsonRpcFunctionToMethodNameMap(function)
+      jsonRpcFunctionToMethodNameMap(original)
     }
   }
 
   def dispose(jsonRpcFunction: JsonRpcFunction[_]): Unit = this.synchronized {
-    jsonRpcFunctionToMethodNameMap = jsonRpcFunctionToMethodNameMap - jsonRpcFunction.function
+    jsonRpcFunctionToMethodNameMap = jsonRpcFunctionToMethodNameMap - jsonRpcFunction.original
   }
 }

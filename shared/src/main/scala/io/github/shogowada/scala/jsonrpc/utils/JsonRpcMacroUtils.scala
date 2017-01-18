@@ -81,10 +81,6 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     theType <:< getType[JsonRpcFunction[_]]
   }
 
-  def getFunctionTypeOfJsonRpcFunctionType(jsonRpcFunctionType: Type): Type = {
-    jsonRpcFunctionType.typeArgs.head
-  }
-
   def isJsonRpcNotificationMethod(returnType: Type): Boolean = {
     returnType =:= getType[Unit]
   }
