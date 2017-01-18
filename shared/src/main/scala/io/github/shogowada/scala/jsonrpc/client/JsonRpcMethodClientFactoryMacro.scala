@@ -13,7 +13,7 @@ class JsonRpcMethodClientFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEX
   lazy val macroUtils = JsonRpcMacroUtils[c.type](c)
   lazy val requestJsonHandlerFactoryMacro = new JsonRpcRequestJsonHandlerFactoryMacro[c.type](c)
 
-  def createMethodClientAsFunction(
+  def createAsFunction(
       client: Tree,
       maybeServer: Option[Tree],
       jsonRpcMethodName: Tree,

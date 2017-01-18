@@ -83,7 +83,7 @@ object JsonRpcClientMacro {
     val paramTypes: Seq[Type] = apiMethod.paramLists.flatten
         .map(param => param.typeSignature)
 
-    val function = methodClientFactoryMacro.createMethodClientAsFunction(
+    val function = methodClientFactoryMacro.createAsFunction(
       client,
       maybeServer,
       q"${macroUtils.getJsonRpcMethodName(apiMethod)}",

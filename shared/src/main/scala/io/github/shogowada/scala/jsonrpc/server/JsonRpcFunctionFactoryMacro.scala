@@ -12,7 +12,7 @@ class JsonRpcFunctionFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
   lazy val macroUtils = JsonRpcMacroUtils[c.type](c)
   lazy val methodClientFactoryMacro = new JsonRpcMethodClientFactoryMacro[c.type](c)
 
-  def getOrCreateJsonRpcFunction(
+  def getOrCreate(
       server: c.Tree,
       client: c.Tree,
       jsonRpcFunctionType: c.Type,
@@ -20,7 +20,7 @@ class JsonRpcFunctionFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
   ): c.Tree = {
     val jsonRpcFunctionRepository = macroUtils.getJsonRpcFunctionRepository(server)
 
-    val newJsonRpcFunction = createJsonRpcFunction(server, client, jsonRpcFunctionType, jsonRpcFunctionMethodName)
+    val newJsonRpcFunction = create(server, client, jsonRpcFunctionType, jsonRpcFunctionMethodName)
 
     q"""
         $jsonRpcFunctionRepository
@@ -29,7 +29,7 @@ class JsonRpcFunctionFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
         """
   }
 
-  private def createJsonRpcFunction(
+  private def create(
       server: c.Tree,
       client: c.Tree,
       jsonRpcFunctionType: c.Type,
@@ -38,7 +38,7 @@ class JsonRpcFunctionFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     val typeArgs: Seq[Type] = jsonRpcFunctionType.typeArgs
     val paramTypes: Seq[Type] = typeArgs.init
     val returnType: Type = typeArgs.last
-    val function = methodClientFactoryMacro.createMethodClientAsFunction(client, Some(server), jsonRpcFunctionMethodName, paramTypes, returnType)
+    val function = methodClientFactoryMacro.createAsFunction(client, Some(server), jsonRpcFunctionMethodName, paramTypes, returnType)
 
     val disposeMethodBody = createDisposeMethodBody(server, client, jsonRpcFunctionMethodName)
 

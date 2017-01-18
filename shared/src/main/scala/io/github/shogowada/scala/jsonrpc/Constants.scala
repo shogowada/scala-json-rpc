@@ -5,7 +5,7 @@ object Constants {
 
   final val ReservedMethodNamePrefix = "io.github.shogowada.scala.jsonrpc."
 
-  final val FunctionMethodNamePrefix = ReservedMethodNamePrefix + "transient-function."
+  final val FunctionMethodNamePrefix = ReservedMethodNamePrefix + "function."
 
   final val DisposeMethodName = ReservedMethodNamePrefix + "dispose"
 }

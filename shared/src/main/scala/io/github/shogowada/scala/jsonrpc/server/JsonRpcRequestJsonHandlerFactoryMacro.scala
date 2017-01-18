@@ -73,7 +73,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
             val argument = q"$params.$fieldName"
             if (macroUtils.isJsonRpcFunctionType(parameterType)) {
               maybeClient
-                  .map(client => jsonRpcFunctionFactoryMacro.getOrCreateJsonRpcFunction(server, client, parameterType, argument))
+                  .map(client => jsonRpcFunctionFactoryMacro.getOrCreate(server, client, parameterType, argument))
                   .getOrElse(throw new UnsupportedOperationException("To use JsonRpcFunction, you need to bind the API to JsonRpcServerAndClient."))
             } else {
               argument
