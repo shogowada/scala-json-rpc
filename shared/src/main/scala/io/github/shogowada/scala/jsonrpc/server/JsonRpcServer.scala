@@ -71,7 +71,7 @@ object JsonRpcServerMacro {
     val requestJsonHandlerFactoryMacro = new JsonRpcRequestJsonHandlerFactoryMacro[c.type](c)
 
     val methodName = macroUtils.getJsonRpcMethodName(method)
-    val handler = requestJsonHandlerFactoryMacro.createHandlerFromApiMethod[API](server, maybeClient, api, method)
+    val handler = requestJsonHandlerFactoryMacro.createFromApiMethod[API](server, maybeClient, api, method)
 
     c.Expr[(String, RequestJsonHandler)](q"""$methodName -> $handler""")
   }

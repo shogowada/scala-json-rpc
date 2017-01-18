@@ -13,7 +13,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
   lazy val macroUtils = JsonRpcMacroUtils[c.type](c)
   lazy val jsonRpcFunctionFactoryMacro = new JsonRpcFunctionFactoryMacro[c.type](c)
 
-  def createHandlerFromApiMethod[API](
+  def createFromApiMethod[API](
       server: c.Tree,
       maybeClient: Option[c.Tree],
       api: c.Expr[API],
@@ -22,7 +22,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
     val parameterTypeLists: List[List[Type]] = method.asMethod.paramLists
         .map(parameters => parameters.map(parameter => parameter.typeSignature))
 
-    createHandler(
+    create(
       server,
       maybeClient,
       q"$api.$method",
@@ -31,7 +31,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
     )
   }
 
-  def createHandlerFromJsonRpcFunction(
+  def createFromJsonRpcFunction(
       client: Tree,
       server: Tree,
       jsonRpcFunction: TermName,
@@ -40,7 +40,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
     val paramTypes: Seq[Type] = jsonRpcFunctionType.typeArgs.init
     val returnType: Type = jsonRpcFunctionType.typeArgs.last
 
-    createHandler(
+    create(
       server,
       Some(client),
       q"$jsonRpcFunction",
@@ -49,7 +49,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
     )
   }
 
-  private def createHandler(
+  private def create(
       server: c.Tree,
       maybeClient: Option[c.Tree],
       method: c.Tree,
@@ -149,9 +149,11 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
   }
 
   def createDisposeFunctionMethodHandler(
-      server: Tree
+      server: Tree,
+      client: Tree
   ): Tree = {
     val jsonSerializer = macroUtils.getJsonSerializer(server)
+    val jsonRpcFunctionMethodNameRepository = macroUtils.getJsonRpcFunctionMethodNameRepository(client)
     val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
     val executionContext = macroUtils.getExecutionContext(server)
 
@@ -176,6 +178,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
           val maybeResponse: Option[String] = $jsonSerializer.deserialize[JsonRpcRequest[Tuple1[String]]](json)
             .flatMap(request => {
               val Tuple1(methodName) = request.params
+              $jsonRpcFunctionMethodNameRepository.remove(methodName)
               $requestJsonHandlerRepository.remove(methodName)
               val response = ${response(q"request.id")}
               $jsonSerializer.serialize(response)

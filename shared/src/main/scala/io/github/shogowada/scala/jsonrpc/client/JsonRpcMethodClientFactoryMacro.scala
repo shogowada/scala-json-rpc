@@ -99,9 +99,9 @@ class JsonRpcMethodClientFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEX
 
     val jsonRpcFunctionMethodNameRepository = macroUtils.getJsonRpcFunctionMethodNameRepository(client)
 
-    val disposeFunctionMethodHandler = requestJsonHandlerFactoryMacro.createDisposeFunctionMethodHandler(server)
+    val disposeFunctionMethodHandler = requestJsonHandlerFactoryMacro.createDisposeFunctionMethodHandler(server, client)
 
-    val handler = requestJsonHandlerFactoryMacro.createHandlerFromJsonRpcFunction(client, server, jsonRpcFunction, jsonRpcFunctionType)
+    val handler = requestJsonHandlerFactoryMacro.createFromJsonRpcFunction(client, server, jsonRpcFunction, jsonRpcFunctionType)
 
     q"""
         $requestJsonHandlerRepository.addIfAbsent(Constants.DisposeMethodName, () => ($disposeFunctionMethodHandler))
