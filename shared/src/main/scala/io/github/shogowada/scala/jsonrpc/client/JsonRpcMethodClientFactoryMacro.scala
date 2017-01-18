@@ -1,17 +1,17 @@
 package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcNotification, JsonRpcRequest}
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcHandlerMacroFactory
+import io.github.shogowada.scala.jsonrpc.server.JsonRpcRequestJsonHandlerFactoryMacro
 import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.reflect.macros.blackbox
 
-class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
+class JsonRpcMethodClientFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   import c.universe._
 
   lazy val macroUtils = JsonRpcMacroUtils[c.type](c)
-  lazy val handlerMacroFactory = new JsonRpcHandlerMacroFactory[c.type](c)
+  lazy val requestJsonHandlerFactoryMacro = new JsonRpcRequestJsonHandlerFactoryMacro[c.type](c)
 
   def createMethodClientAsFunction(
       client: Tree,
@@ -99,9 +99,9 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
 
     val jsonRpcFunctionMethodNameRepository = macroUtils.getJsonRpcFunctionMethodNameRepository(client)
 
-    val disposeFunctionMethodHandler = handlerMacroFactory.createDisposeFunctionMethodHandler(server)
+    val disposeFunctionMethodHandler = requestJsonHandlerFactoryMacro.createDisposeFunctionMethodHandler(server)
 
-    val handler = handlerMacroFactory.createHandlerFromJsonRpcFunction(client, server, jsonRpcFunction, jsonRpcFunctionType)
+    val handler = requestJsonHandlerFactoryMacro.createHandlerFromJsonRpcFunction(client, server, jsonRpcFunction, jsonRpcFunctionType)
 
     q"""
         $requestJsonHandlerRepository.addIfAbsent(Constants.DisposeMethodName, () => ($disposeFunctionMethodHandler))

@@ -1,16 +1,16 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.client.JsonRpcMethodClientMacroFactory
+import io.github.shogowada.scala.jsonrpc.client.JsonRpcMethodClientFactoryMacro
 import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.reflect.macros.blackbox
 
-class JsonRpcFunctionServerMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEXT) {
+class JsonRpcFunctionFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   import c.universe._
 
   lazy val macroUtils = JsonRpcMacroUtils[c.type](c)
-  lazy val methodClientMacroFactory = new JsonRpcMethodClientMacroFactory[c.type](c)
+  lazy val methodClientFactoryMacro = new JsonRpcMethodClientFactoryMacro[c.type](c)
 
   def getOrCreateJsonRpcFunction(
       server: c.Tree,
@@ -38,7 +38,7 @@ class JsonRpcFunctionServerMacroFactory[CONTEXT <: blackbox.Context](val c: CONT
     val typeArgs: Seq[Type] = jsonRpcFunctionType.typeArgs
     val paramTypes: Seq[Type] = typeArgs.init
     val returnType: Type = typeArgs.last
-    val function = methodClientMacroFactory.createMethodClientAsFunction(client, Some(server), jsonRpcFunctionMethodName, paramTypes, returnType)
+    val function = methodClientFactoryMacro.createMethodClientAsFunction(client, Some(server), jsonRpcFunctionMethodName, paramTypes, returnType)
 
     val disposeMethodBody = createDisposeMethodBody(server, client, jsonRpcFunctionMethodName)
 
