@@ -18,14 +18,14 @@ class JsonRpcFunctionServerMacroFactory[CONTEXT <: blackbox.Context](val c: CONT
       jsonRpcFunctionType: c.Type,
       jsonRpcFunctionMethodName: c.Tree
   ): c.Tree = {
-    val getOrAddJsonRpcFunction = macroUtils.getGetOrAddJsonRpcFunction(server)
+    val jsonRpcFunctionRepository = macroUtils.getJsonRpcFunctionRepository(server)
 
     val newJsonRpcFunction = createJsonRpcFunction(server, client, jsonRpcFunctionType, jsonRpcFunctionMethodName)
 
     q"""
-        val jsonRpcFunction = $getOrAddJsonRpcFunction($jsonRpcFunctionMethodName, () => $newJsonRpcFunction)
+        $jsonRpcFunctionRepository
+            .getOrAdd($jsonRpcFunctionMethodName, () => $newJsonRpcFunction)
             .asInstanceOf[$jsonRpcFunctionType]
-        jsonRpcFunction
         """
   }
 
@@ -59,7 +59,7 @@ class JsonRpcFunctionServerMacroFactory[CONTEXT <: blackbox.Context](val c: CONT
       client: Tree,
       jsonRpcFunctionMethodName: Tree
   ): Tree = {
-    val disposeJsonRpcFunction = macroUtils.getDisposeJsonRpcFunction(server)
+    val jsonRpcFunctionRepository = macroUtils.getJsonRpcFunctionRepository(server)
     val jsonSerializer = macroUtils.getJsonSerializer(client)
     val send = macroUtils.getSend(client)
 
@@ -76,7 +76,7 @@ class JsonRpcFunctionServerMacroFactory[CONTEXT <: blackbox.Context](val c: CONT
     val disposeRequestJson = q"$jsonSerializer.serialize($disposeRequest).get"
 
     q"""
-        $disposeJsonRpcFunction($jsonRpcFunctionMethodName)
+        $jsonRpcFunctionRepository.remove($jsonRpcFunctionMethodName)
         $send($disposeRequestJson).map(_ => ())
         """
   }
