@@ -178,7 +178,11 @@ class JsonRpcMethodClientMacroFactory[CONTEXT <: blackbox.Context](val c: CONTEX
 
           $send($requestJson).onComplete((tried: Try[Option[String]]) => tried match {
             case Success(Some(responseJson: String)) => $receive(responseJson)
-            case Failure(throwable) => $promisedResponse.failure(throwable)
+            case Failure(throwable) => {
+              $promisedResponseRepository
+                  .getAndRemove($requestId)
+                  .foreach(promisedResponse => promisedResponse.failure(throwable))
+            }
             case _ =>
           })($executionContext)
 
