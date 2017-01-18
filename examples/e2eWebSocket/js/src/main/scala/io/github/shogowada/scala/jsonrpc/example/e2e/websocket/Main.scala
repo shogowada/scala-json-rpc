@@ -8,38 +8,34 @@ import org.scalajs.dom
 import org.scalajs.dom.WebSocket
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 import scala.scalajs.js.JSApp
-import scala.util.{Success, Try}
+import scala.util.Try
 
 object Main extends JSApp {
   override def main(): Unit = {
     val webSocket = new dom.WebSocket("ws://localhost:8080/jsonrpc")
 
-    val jsonRpcServerAndClient = createJsonRpcServerAndClient(webSocket)
+    var jsonRpcServerAndClient: JsonRpcServerAndClient[UpickleJsonSerializer] = null
+
+    webSocket.onopen = (_: dom.Event) => {
+      jsonRpcServerAndClient = createJsonRpcServerAndClient(webSocket)
+
+      val subjectApi = jsonRpcServerAndClient.createApi[RandomNumberSubjectApi]
+
+      subjectApi.register((randomNumber: Int) => {
+        println(randomNumber)
+        Future() // Making sure server knows if it was successful
+      })
+    }
 
     webSocket.onmessage = (messageEvent: dom.MessageEvent) => {
       val message = messageEvent.data.toString
       jsonRpcServerAndClient.receive(message)
     }
 
-    val promisedClientId: Promise[String] = Promise()
-    jsonRpcServerAndClient.bindApi[ClientApi](new ClientApiImpl(promisedClientId))
-    jsonRpcServerAndClient.bindApi[RandomNumberObserverApi](new RandomNumberObserverApiImpl)
-
-    webSocket.onopen = (_: dom.Event) => {
-      val clientIdFactoryApi = jsonRpcServerAndClient.createApi[ClientIdFactoryApi]
-      val futureClientId: Future[String] = clientIdFactoryApi.create() // Wait until connection is open to use client APIs
-
-      val subjectApi = jsonRpcServerAndClient.createApi[RandomNumberSubjectApi]
-
-      futureClientId.onComplete {
-        case Success(id) => {
-          promisedClientId.success(id)
-          subjectApi.register(id)
-        }
-        case _ =>
-      }
+    webSocket.onclose = (_: dom.CloseEvent) => {
+      jsonRpcServerAndClient = null
     }
   }
 

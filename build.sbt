@@ -90,9 +90,6 @@ lazy val JettyVersion = "9.+"
 
 lazy val exampleCommonSettings = Seq(
   name += "-example",
-  libraryDependencies ++= Seq(
-    "com.softwaremill.macwire" %% "macros" % "2.+"
-  ),
   publishArtifact := false
 )
 

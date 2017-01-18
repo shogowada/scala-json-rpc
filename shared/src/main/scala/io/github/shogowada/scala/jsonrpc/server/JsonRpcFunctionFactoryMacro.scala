@@ -3,6 +3,7 @@ package io.github.shogowada.scala.jsonrpc.server
 import io.github.shogowada.scala.jsonrpc.client.JsonRpcMethodClientFactoryMacro
 import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
+import scala.concurrent.Future
 import scala.reflect.macros.blackbox
 
 class JsonRpcFunctionFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
@@ -40,7 +41,7 @@ class JsonRpcFunctionFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     val returnType: Type = typeArgs.last
     val function = methodClientFactoryMacro.createAsFunction(client, Some(server), jsonRpcFunctionMethodName, paramTypes, returnType)
 
-    val disposeMethodBody = createDisposeMethodBody(server, client, jsonRpcFunctionMethodName)
+    val disposeMethod = createDisposeMethod(server, client, jsonRpcFunctionMethodName)
 
     def getApplyParameterName(index: Int) = TermName(s"v$index")
 
@@ -58,37 +59,31 @@ class JsonRpcFunctionFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
           override def apply(..$applyParameters) = $function(..$applyParameterNames)
 
-          override def dispose(): Future[Unit] = {
-            $disposeMethodBody
-          }
+          $disposeMethod
         }
         """
   }
 
-  private def createDisposeMethodBody(
+  private def createDisposeMethod(
       server: Tree,
       client: Tree,
       jsonRpcFunctionMethodName: Tree
   ): Tree = {
     val jsonRpcFunctionRepository = macroUtils.getJsonRpcFunctionRepository(server)
-    val jsonSerializer = macroUtils.getJsonSerializer(client)
-    val send = macroUtils.getSend(client)
 
-    val disposeRequest =
-      q"""
-          JsonRpcRequest[Tuple1[String]](
-            jsonrpc = Constants.JsonRpc,
-            id = Left(${macroUtils.newUuid}),
-            method = Constants.DisposeMethodName,
-            params = Tuple1($jsonRpcFunctionMethodName)
-          )
-          """
-
-    val disposeRequestJson = q"$jsonSerializer.serialize($disposeRequest).get"
+    val disposeClient = methodClientFactoryMacro.createAsFunction(
+      client,
+      Some(server),
+      q"Constants.DisposeMethodName",
+      Seq(macroUtils.getType[String]),
+      macroUtils.getType[Future[Unit]]
+    )
 
     q"""
-        $jsonRpcFunctionRepository.remove($jsonRpcFunctionMethodName)
-        $send($disposeRequestJson).map(_ => ())
+        override def dispose(): Future[Unit] = {
+          $jsonRpcFunctionRepository.remove($jsonRpcFunctionMethodName)
+          $disposeClient($jsonRpcFunctionMethodName)
+        }
         """
   }
 }
