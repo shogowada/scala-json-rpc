@@ -24,11 +24,9 @@ class RandomNumberSubject extends RandomNumberSubjectApi {
 
   private def notifyObservers(randomNumber: Int): Unit = {
     registeredObservers.foreach(observer => {
-      println(s"Sending $randomNumber to ${observer.hashCode()}")
       observer(randomNumber)
           .failed // Probably the connection is lost
           .foreach(_ => unregister(observer))
-      println(s"Sent $randomNumber to ${observer.hashCode()}")
     })
   }
 
