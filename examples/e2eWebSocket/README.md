@@ -51,10 +51,8 @@ object Main extends JSApp {
   override def main(): Unit = {
     val webSocket = new dom.WebSocket("ws://localhost:8080/jsonrpc")
 
-    var jsonRpcServerAndClient: JsonRpcServerAndClient[UpickleJsonSerializer] = null
-
     webSocket.onopen = (_: dom.Event) => {
-      jsonRpcServerAndClient = createJsonRpcServerAndClient(webSocket)
+      var jsonRpcServerAndClient = createJsonRpcServerAndClient(webSocket)
 
       val subjectApi = jsonRpcServerAndClient.createApi[RandomNumberSubjectApi]
 
@@ -63,11 +61,11 @@ object Main extends JSApp {
         println(randomNumber)
         Future() // Making sure server knows if it was successful
       })
-    }
 
-    webSocket.onmessage = (messageEvent: dom.MessageEvent) => {
-      val message = messageEvent.data.toString
-      jsonRpcServerAndClient.receive(message)
+      webSocket.onmessage = (messageEvent: dom.MessageEvent) => {
+        val message = messageEvent.data.toString
+        jsonRpcServerAndClient.receive(message)
+      }
     }
   }
 
