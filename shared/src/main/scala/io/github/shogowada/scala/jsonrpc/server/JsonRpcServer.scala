@@ -32,7 +32,16 @@ object JsonRpcServer {
 
 object JsonRpcServerMacro {
   def bindApi[API: c.WeakTypeTag](c: blackbox.Context)(api: c.Expr[API]): c.Expr[Unit] = {
-    bindApiImpl[c.type, API](c)(c.prefix.tree, None, api)
+    import c.universe._
+    val macroUtils = JsonRpcMacroUtils[c.type](c)
+    val (serverDefinition, server) = macroUtils.prefixDefinitionAndReference
+    val bind = bindApiImpl[c.type, API](c)(server, None, api)
+    c.Expr[Unit](
+      q"""
+          $serverDefinition
+          $bind
+          """
+    )
   }
 
   def bindApiImpl[CONTEXT <: blackbox.Context, API: c.WeakTypeTag](c: CONTEXT)(
@@ -81,10 +90,10 @@ object JsonRpcServerMacro {
 
     val macroUtils = JsonRpcMacroUtils[c.type](c)
 
-    val server = c.prefix.tree
-    val jsonSerializer: Tree = q"$server.jsonSerializer"
+    val (serverDefinition, server) = macroUtils.prefixDefinitionAndReference
+    val jsonSerializer: Tree = macroUtils.getJsonSerializer(server)
     val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
-    val executionContext: Tree = q"$server.executionContext"
+    val executionContext: Tree = macroUtils.getExecutionContext(server)
 
     val maybeParseErrorJson: c.Expr[Option[String]] =
       macroUtils.createMaybeErrorJson(server, json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.parseError"))
@@ -129,6 +138,7 @@ object JsonRpcServerMacro {
     c.Expr(
       q"""
           ..${macroUtils.imports}
+          $serverDefinition
           $futureMaybeJson
           """
     )
