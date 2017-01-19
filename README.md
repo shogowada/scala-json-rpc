@@ -20,6 +20,7 @@ It supports the following features:
 - Respond [standard JSON-RPC error](http://www.jsonrpc.org/specification#error_object)
 - [Define custom JSON serialization](/examples/customJsonSerialization)
 - [Define custom JSON-RPC method name](/examples/customMethodName)
+- [Pass function as parameter](/examples/jsonRpcFunction) :tada:
 
 We have the following example projects for common use cases:
 

@@ -1,15 +1,17 @@
 package io.github.shogowada.scala.jsonrpc.utils
 
+import io.github.shogowada.scala.jsonrpc.JsonRpcFunction
 import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcError, JsonRpcErrorResponse}
 import io.github.shogowada.scala.jsonrpc.api.JsonRpcMethod
 
+import scala.concurrent.Future
 import scala.reflect.macros.blackbox
 
-class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
+class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   import c.universe._
 
-  val imports =
+  lazy val imports =
     q"""
         import scala.concurrent.Future
         import scala.util._
@@ -18,9 +20,25 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
         import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer._
         """
 
-  def getApiMethods
-  (apiType: Type)
-  : Iterable[MethodSymbol] = {
+  lazy val newUuid: c.Expr[String] = c.Expr[String](q"java.util.UUID.randomUUID.toString")
+
+  def getJsonSerializer(prefix: Tree): Tree = q"$prefix.jsonSerializer"
+
+  def getPromisedResponseRepository(prefix: Tree): Tree = q"$prefix.promisedResponseRepository"
+
+  def getJsonRpcFunctionMethodNameRepository(prefix: Tree) = q"$prefix.jsonRpcFunctionMethodNameRepository"
+
+  def getRequestJsonHandlerRepository(prefix: Tree): Tree = q"$prefix.requestJsonHandlerRepository"
+
+  def getJsonRpcFunctionRepository(prefix: Tree) = q"$prefix.jsonRpcFunctionRepository"
+
+  def getSend(prefix: Tree): Tree = q"$prefix.send"
+
+  def getReceive(prefix: Tree): Tree = q"$prefix.receive"
+
+  def getExecutionContext(prefix: Tree): Tree = q"$prefix.executionContext"
+
+  def getJsonRpcApiMethods(apiType: Type): Iterable[MethodSymbol] = {
     apiType.decls
         .filter((apiMember: Symbol) => isJsonRpcMethod(apiMember))
         .map((apiMember: Symbol) => apiMember.asMethod)
@@ -30,7 +48,7 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     method.isMethod && method.isPublic && !method.isConstructor
   }
 
-  def getMethodName(method: MethodSymbol): String = {
+  def getJsonRpcMethodName(method: MethodSymbol): String = {
     val maybeCustomMethodName: Option[String] = method.annotations
         .find(annotation => annotation.tree.tpe =:= typeOf[JsonRpcMethod])
         .map(annotation => annotation.tree.children.tail.head match {
@@ -39,11 +57,9 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     maybeCustomMethodName.getOrElse(method.fullName)
   }
 
-  def getParameterType(method: MethodSymbol): Tree = {
-    val parameterLists: List[List[Symbol]] = method.asMethod.paramLists
-    val parameterTypes: Iterable[Type] = parameterLists
-        .flatten
-        .map((param: Symbol) => param.typeSignature)
+  def getJsonRpcParameterType(paramTypes: Seq[Type]): Tree = {
+    val parameterTypes: Iterable[Type] = paramTypes
+        .map(mapSingleJsonRpcParameterType)
 
     if (parameterTypes.size == 1) {
       val parameterType = parameterTypes.head
@@ -53,21 +69,37 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     }
   }
 
-  def isNotificationMethod(method: MethodSymbol): Boolean = {
-    val returnType: Type = method.returnType
+  private def mapSingleJsonRpcParameterType(paramType: Type): Type = {
+    if (isJsonRpcFunctionType(paramType)) {
+      getType[String]
+    } else {
+      paramType
+    }
+  }
+
+  def isJsonRpcFunctionType(theType: Type): Boolean = {
+    theType <:< getType[JsonRpcFunction]
+  }
+
+  def isJsonRpcNotificationMethod(returnType: Type): Boolean = {
     returnType =:= getType[Unit]
+  }
+
+  def isJsonRpcRequestMethod(returnType: Type): Boolean = {
+    returnType <:< getType[Future[_]]
   }
 
   def getType[T: c.TypeTag]: Type = {
     typeOf[T]
   }
 
-  def createMaybeErrorJson
-  (json: c.Expr[String], jsonRpcError: c.Expr[JsonRpcError[String]])
-  : c.Expr[Option[String]] = {
-    import c.universe._
+  def createMaybeErrorJson(
+      server: c.Tree,
+      json: c.Expr[String],
+      jsonRpcError: c.Expr[JsonRpcError[String]]
+  ): c.Expr[Option[String]] = {
 
-    val jsonSerializer: Tree = q"${c.prefix.tree}.jsonSerializer"
+    val jsonSerializer: Tree = q"$server.jsonSerializer"
 
     val error = (id: TermName) => c.Expr[JsonRpcErrorResponse[String]](
       q"""
@@ -95,6 +127,6 @@ class MacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
   }
 }
 
-object MacroUtils {
-  def apply[CONTEXT <: blackbox.Context](c: CONTEXT) = new MacroUtils[CONTEXT](c)
+object JsonRpcMacroUtils {
+  def apply[CONTEXT <: blackbox.Context](c: CONTEXT) = new JsonRpcMacroUtils[CONTEXT](c)
 }
