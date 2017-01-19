@@ -1,6 +1,6 @@
 # Passing function as parameter
 
-You can pass functions as parameter by using `JsonRpcFunction` with `JsonRpcServerAndClient`. This is useful if you want callbacks from server.
+You can pass functions as parameter by using `JsonRpcFunction` with `JsonRpcServerAndClient`.
 
 - [Create JsonRpcServerAndClient](#create-jsonrpcserverandclient)
 - [Create API that takes JsonRpcFunction as parameter](#create-api-that-takes-jsonrpcfunction-as-parameter)
@@ -45,7 +45,7 @@ trait UuidSubjectApi {
 
 Internally, `JsonRpcFuncion` is just another JSON-RPC client, so just like an API method, **you need to return either `Unit` or `Future`**.
 
-The `UuidSubjectApi.unregister` works because **if the same function reference is used on client side, it will be the same function reference on server side too**.
+The `UuidSubjectApi.unregister` works because **if the same function reference is passed from client, it will be the same function reference on server too**.
 
 ## Implement server
 
@@ -53,7 +53,7 @@ The `UuidSubjectApi.unregister` works because **if the same function reference i
 class EchoApiImpl extends EchoApi {
   override def echo(message: String, callback: JsonRpcFunction1[String, Unit]): Unit = {
     callback(message)
-    callback.dispose() // Dispose the function when you no longer need it
+    callback.dispose() // Dispose the function when you no longer use it.
   }
 }
 
@@ -76,7 +76,7 @@ class UuidSubjectApiImpl extends UuidSubjectApi {
   
   override def unregister(observer: JsonRpcFunction1[String, Future[Unit]]): Unit = this.synchronized {
     observers = observers - observer
-    observer.dispose() // We no longer need it.
+    observer.dispose() // We no longer use it.
   }
 }
 
@@ -85,7 +85,7 @@ serverAndClient.bindApi[EchoApi](new EchoApiImpl)
 serverAndClient.bindApi[UuidSubjectApi](new UuidSubjectApiImpl)
 ```
 
-You can use the `JsonRpcFunction` just like regular function except **you need to explicitly dispose the function when you no longer need it**. This is so that both server and client can dispose relative mappings.
+You can use the `JsonRpcFunction` just like regular function except **you need to explicitly dispose the function when you no longer use it**. This is so that both server and client can dispose relative mappings.
 
 ## Implement client
 
@@ -123,7 +123,7 @@ When you invoke an `foo` function from client, passing your function as `bar`, i
 ```json
 {
   "jsonrpc": "2.0",
-  "id": "<UUID>",
+  "id": "<request ID>",
   "method": "FooApi.foo",
   "params": ["<generated.universally.unique.method.name.for.the.bar.function>"]
 }
@@ -134,7 +134,7 @@ When server receives it, it will create a JSON-RPC client for the given method, 
 ```json
 {
   "jsonrpc": "2.0",
-  "id": "<UUID>",
+  "id": "<request ID>",
   "method": "<generated.universally.unique.method.name.for.the.bar.function>",
   "params": ["<whatever passed to the bar function>"]
 }
@@ -150,7 +150,7 @@ We also have an end to end example using WebSocket. Please refer to [its example
 
 - You can pass functions as parameter by using `JsonRpcFunctionN` type.
 - To use function as parameter, you need to use `JsonRpcServerAndClient`.
-- Invoking `JsonRpcFunction` sends just another JSON-RPC request.
-    - Your function need to return either `Unit` or `Future`.
-- If you pass the same function reference on client side, it will be the same function reference on server side too.
-- :exclamation: **You need to manually dispose the function when you no longer need it.**
+- Invoking the function sends just another JSON-RPC request.
+    - Your function needs to return either `Unit` or `Future` just like API methods.
+- If you pass the same function reference from client, it will be the same function reference on server too.
+- :exclamation: **You need to manually dispose the function when you no longer use it.**
