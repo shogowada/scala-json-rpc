@@ -2,13 +2,13 @@
 
 You can pass functions as parameter by using `JsonRpcFunction` with `JsonRpcServerAndClient`. This is useful if you want callbacks from server.
 
-- [Create JsonRpcServerAndClient](#CreateJsonRpcServerAndClient)
-- [Create API that takes JsonRpcFunction as parameter](#Create API that takes JsonRpcFunction as parameter)
-- [Implement server]()
-- [Implement client]()
-- [But how is it working? I thought it's JSON-RPC library!]()
-- [End to end example over WebSocket]()
-- [Summary]()
+- [Create JsonRpcServerAndClient](#create-jsonrpcserverandclient)
+- [Create API that takes JsonRpcFunction as parameter](#create-api-that-takes-jsonrpcfunction-as-parameter)
+- [Implement server](#implement-server)
+- [Implement client](#implement-client)
+- [But how is it working? I thought it's JSON-RPC library!](#but-how-is-it-working-i-thought-its-json-rpc-library)
+- [End to end example over WebSocket](#end-to-end-example-over-websocket)
+- [Summary](#summary)
 
 ## Create JsonRpcServerAndClient
 
