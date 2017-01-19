@@ -1,9 +1,9 @@
 package io.github.shogowada.scala.jsonrpc
 
-import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
+import io.github.shogowada.scala.jsonrpc.client.{JsonRpcClient, JsonRpcClientMacro}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
-import io.github.shogowada.scala.jsonrpc.utils.MacroUtils
+import io.github.shogowada.scala.jsonrpc.server.{JsonRpcServer, JsonRpcServerMacro}
+import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros
@@ -33,19 +33,20 @@ object JsonRpcServerAndClientMacro {
   def bindApi[API: c.WeakTypeTag](c: blackbox.Context)(api: c.Expr[API]): c.Expr[Unit] = {
     import c.universe._
     val server = q"${c.prefix.tree}.server"
-    val apiType: Type = weakTypeOf[API]
-    c.Expr[Unit](q"$server.bindApi[$apiType]($api)")
+    val client = q"${c.prefix.tree}.client"
+    JsonRpcServerMacro.bindApiImpl[c.type, API](c)(server, Some(client), api)
   }
 
   def createApi[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
-    val apiType: Type = weakTypeOf[API]
-    c.Expr[API](q"${c.prefix.tree}.client.createApi[$apiType]")
+    val server = q"${c.prefix.tree}.server"
+    val client = q"${c.prefix.tree}.client"
+    JsonRpcClientMacro.createApiImpl[c.type, API](c)(client, Some(server))
   }
 
   def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Unit] = {
     import c.universe._
-    val macroUtils = MacroUtils[c.type](c)
+    val macroUtils = JsonRpcMacroUtils[c.type](c)
     val client: Tree = q"${c.prefix.tree}.client"
     val server: Tree = q"${c.prefix.tree}.server"
     val executionContext: c.Expr[ExecutionContext] = c.Expr(q"$server.executionContext")

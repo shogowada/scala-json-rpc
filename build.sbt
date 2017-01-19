@@ -1,4 +1,4 @@
-crossScalaVersions := Seq("2.11.8", "2.12.1")
+crossScalaVersions := Seq("2.12.1")
 
 publishTo := {
   val nexus = "https://oss.sonatype.org/"
@@ -12,8 +12,9 @@ publishArtifact := false
 val commonSettings = Seq(
   organization := "io.github.shogowada",
   name := "scala-json-rpc",
-  version := "0.3.2-SNAPSHOT",
+  version := "0.4.0-SNAPSHOT",
   scalaVersion := "2.12.1",
+  logBuffered in Test := false,
   licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
   homepage := Some(url("https://github.com/shogowada/scala-json-rpc")),
   publishMavenStyle := true,
@@ -89,9 +90,6 @@ lazy val JettyVersion = "9.+"
 
 lazy val exampleCommonSettings = Seq(
   name += "-example",
-  libraryDependencies ++= Seq(
-    "com.softwaremill.macwire" %% "macros" % "2.+"
-  ),
   publishArtifact := false
 )
 
