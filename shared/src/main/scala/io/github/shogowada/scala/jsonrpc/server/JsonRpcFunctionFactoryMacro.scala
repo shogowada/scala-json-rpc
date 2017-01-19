@@ -55,7 +55,7 @@ class JsonRpcFunctionFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
     q"""
         new $jsonRpcFunctionType {
-          override val original = $function
+          override val identifier = $function
 
           override def apply(..$applyParameters) = $function(..$applyParameterNames)
 

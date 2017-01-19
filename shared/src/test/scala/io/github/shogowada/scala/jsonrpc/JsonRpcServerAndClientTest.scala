@@ -87,7 +87,7 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
         }
       }
 
-      it("then it should create a clinet API") {
+      it("then it should create a client API") {
         val fixture = new AnApiThatTakesFunction
         fixture.apiClient should not be null
       }

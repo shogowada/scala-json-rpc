@@ -1,4 +1,4 @@
-crossScalaVersions := Seq("2.11.8", "2.12.1")
+crossScalaVersions := Seq("2.12.1")
 
 publishTo := {
   val nexus = "https://oss.sonatype.org/"
