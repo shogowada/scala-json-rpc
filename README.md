@@ -10,8 +10,8 @@ The library has no opinion about how the string should be passed between server 
 
 |Component|SBT|Scala Version|Scala JS Version|
 |---|---|---|---|
-|scala-json-rpc|```"io.github.shogowada" %%% "scala-json-rpc" % "0.4.1"```|2.12|0.6|
-|[scala-json-rpc-upickle-json-serializer](/upickle-json-serializer)|```"io.github.shogowada" %%% "scala-json-rpc-upickle-json-serializer" % "0.4.1"```|2.12|0.6|
+|scala-json-rpc|```"io.github.shogowada" %%% "scala-json-rpc" % "0.4.2"```|2.12|0.6|
+|[scala-json-rpc-upickle-json-serializer](/upickle-json-serializer)|```"io.github.shogowada" %%% "scala-json-rpc-upickle-json-serializer" % "0.4.2"```|2.12|0.6|
 
 It supports the following features:
 
