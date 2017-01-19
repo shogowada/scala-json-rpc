@@ -129,7 +129,7 @@ When you invoke an `foo` function from client, passing your function as `bar`, i
 }
 ```
 
-When server receives it, it will create a JSON-RPC client for the given method, then pass it to the API implementation. So when server invokes `bar`, it will send another JSON-RPC request to the client.
+When server receives it, it will create a JSON-RPC client for the given method, then pass it to the API implementation as `bar` function. So when server invokes `bar`, it will send another JSON-RPC request to the client.
 
 ```json
 {
