@@ -150,7 +150,7 @@ We also have an end to end example using WebSocket. Please refer to [its example
 
 - You can pass functions as parameter by using `JsonRpcFunctionN` type.
 - To use function as parameter, you need to use `JsonRpcServerAndClient`.
-- `JsonRpcFunction` is just another JSON-RPC request.
+- Invoking `JsonRpcFunction` sends just another JSON-RPC request.
     - Your function need to return either `Unit` or `Future`.
 - If you pass the same function reference on client side, it will be the same function reference on server side too.
 - :exclamation: **You need to manually dispose the function when you no longer need it.**
