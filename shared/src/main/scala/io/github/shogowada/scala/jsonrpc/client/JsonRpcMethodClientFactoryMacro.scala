@@ -96,7 +96,6 @@ class JsonRpcMethodClientFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEX
       jsonRpcFunctionType: Type
   ): Tree = {
     val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
-
     val jsonRpcFunctionMethodNameRepository = macroUtils.getJsonRpcFunctionMethodNameRepository(client)
 
     val disposeFunctionMethodHandler = requestJsonHandlerFactoryMacro.createDisposeFunctionMethodHandler(server, client)

@@ -38,6 +38,22 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   def getExecutionContext(prefix: Tree): Tree = q"$prefix.executionContext"
 
+  def prefixDefinitionAndReference: (Tree, Tree) = {
+    // We do this instead of using c.prefix.tree directly to make sure the reference
+    // used at the point of macro expansion will always be used for the macro.
+    // For example, if you have the following code
+    //
+    // server.bindApi[Api]
+    // server = null
+    //
+    // then the API bound will break because its c.prefix.tree is now changed to null.
+    val prefixTermName = TermName(c.freshName())
+    (
+        q"val $prefixTermName = ${c.prefix.tree}",
+        q"$prefixTermName"
+    )
+  }
+
   def getJsonRpcApiMethods(apiType: Type): Iterable[MethodSymbol] = {
     apiType.decls
         .filter((apiMember: Symbol) => isJsonRpcMethod(apiMember))

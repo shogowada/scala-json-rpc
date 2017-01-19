@@ -32,27 +32,45 @@ object JsonRpcServerAndClient {
 object JsonRpcServerAndClientMacro {
   def bindApi[API: c.WeakTypeTag](c: blackbox.Context)(api: c.Expr[API]): c.Expr[Unit] = {
     import c.universe._
-    val server = q"${c.prefix.tree}.server"
-    val client = q"${c.prefix.tree}.client"
-    JsonRpcServerMacro.bindApiImpl[c.type, API](c)(server, Some(client), api)
+    val macroUtils = JsonRpcMacroUtils[c.type](c)
+    val (serverAndClientDefinition, serverAndClient) = macroUtils.prefixDefinitionAndReference
+    val server = q"$serverAndClient.server"
+    val client = q"$serverAndClient.client"
+    val bindApi = JsonRpcServerMacro.bindApiImpl[c.type, API](c)(server, Some(client), api)
+    c.Expr[Unit](
+      q"""
+          $serverAndClientDefinition
+          $bindApi
+          """
+    )
   }
 
   def createApi[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
-    val server = q"${c.prefix.tree}.server"
-    val client = q"${c.prefix.tree}.client"
-    JsonRpcClientMacro.createApiImpl[c.type, API](c)(client, Some(server))
+    val macroUtils = JsonRpcMacroUtils[c.type](c)
+    val (serverAndClientDefinition, serverAndClient) = macroUtils.prefixDefinitionAndReference
+    val server = q"$serverAndClient.server"
+    val client = q"$serverAndClient.client"
+    val createApi = JsonRpcClientMacro.createApiImpl[c.type, API](c)(client, Some(server))
+    c.Expr[API](
+      q"""
+          $serverAndClientDefinition
+          $createApi
+          """
+    )
   }
 
   def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Unit] = {
     import c.universe._
     val macroUtils = JsonRpcMacroUtils[c.type](c)
-    val client: Tree = q"${c.prefix.tree}.client"
-    val server: Tree = q"${c.prefix.tree}.server"
+    val (serverAndClientDefinition, serverAndClient) = macroUtils.prefixDefinitionAndReference
+    val server: Tree = q"$serverAndClient.server"
+    val client: Tree = q"$serverAndClient.client"
     val executionContext: c.Expr[ExecutionContext] = c.Expr(q"$server.executionContext")
     c.Expr[Unit](
       q"""
           ..${macroUtils.imports}
+          $serverAndClientDefinition
           val wasJsonRpcResponse: Boolean = $client.receive($json)
           if (!wasJsonRpcResponse) {
             $server.receive($json)

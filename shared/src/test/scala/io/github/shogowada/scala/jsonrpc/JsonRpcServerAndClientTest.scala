@@ -27,8 +27,8 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
       val client1 = JsonRpcClient(jsonSerializer, (json: String) => server2.receive(json))
       val client2 = JsonRpcClient(jsonSerializer, (json: String) => server1.receive(json))
 
-      val serverAndClient1 = JsonRpcServerAndClient(server1, client1)
-      val serverAndClient2 = JsonRpcServerAndClient(server2, client2)
+      var serverAndClient1 = JsonRpcServerAndClient(server1, client1)
+      var serverAndClient2 = JsonRpcServerAndClient(server2, client2)
     }
 
     describe("and I have an API that takes function as parameter") {
@@ -210,13 +210,39 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
           client.foo2(() => {})
         }
 
-        it("then it should use differeht function references on the server too") {
+        it("then it should use different function references on the server too") {
           val fixture = new CallThemBothWithDifferentFunctions
           for {
             foo1Function <- fixture.promisedFoo1Function.future
             foo2Function <- fixture.promisedFoo2Function.future
           } yield foo1Function should not be foo2Function
         }
+      }
+    }
+
+    describe("and I changed the reference to servers and clients") {
+      class IChangedTheReference extends TwoServersAndClients {
+
+        trait Api {
+          def foo(): Future[String]
+        }
+
+        class ApiImpl extends Api {
+          override def foo(): Future[String] = {
+            Future("foo")
+          }
+        }
+
+        serverAndClient1.bindApi[Api](new ApiImpl)
+        val api = serverAndClient2.createApi[Api]
+
+        serverAndClient1 = null
+        serverAndClient2 = null
+      }
+
+      it("but the APIs should still work") {
+        val fixture = new IChangedTheReference
+        fixture.api.foo().map(result => result should equal("foo"))
       }
     }
   }

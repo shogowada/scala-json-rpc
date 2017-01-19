@@ -40,8 +40,15 @@ object JsonRpcClient {
 object JsonRpcClientMacro {
   def createApi[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
-    val client: Tree = c.prefix.tree
-    createApiImpl[c.type, API](c)(client, None)
+    val macroUtils = JsonRpcMacroUtils[c.type](c)
+    val (clientDefinition, client) = macroUtils.prefixDefinitionAndReference
+    val api = createApiImpl[c.type, API](c)(client, None)
+    c.Expr[API](
+      q"""
+          $clientDefinition
+          $api
+          """
+    )
   }
 
   def createApiImpl[CONTEXT <: blackbox.Context, API: c.WeakTypeTag](c: CONTEXT)(
@@ -114,7 +121,7 @@ object JsonRpcClientMacro {
 
     val macroUtils = JsonRpcMacroUtils[c.type](c)
 
-    val client = c.prefix.tree
+    val (clientDefinition, client) = macroUtils.prefixDefinitionAndReference
     val jsonSerializer: Tree = q"$client.jsonSerializer"
     val promisedResponseRepository: Tree = q"$client.promisedResponseRepository"
 
@@ -136,6 +143,7 @@ object JsonRpcClientMacro {
     c.Expr[Boolean](
       q"""
           ..${macroUtils.imports}
+          $clientDefinition
           $maybePromisedResponse
               .map(promisedResponse => {
                 promisedResponse.success($json)
