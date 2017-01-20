@@ -178,26 +178,13 @@ For `JsonRpcServer` to work, you need to define:
 We will cover those in the following sections, but here is a piece of code to give you a general idea of how `JsonRpcServer` works.
 
 ```scala
-class FooRepositoryApiImpl extends FooRepositoryApi {
-  var foos: Set[Foo] = Set()
-
-  def add(foo: Foo): Future[Unit] = this.synchronized {
-    foos = foos + foo
-    Future()
-  }
-
-  def remove(foo: Foo): Future[Unit] = this.synchronized {
-    foos = foos - foo
-    Future()
-  }
-
-  def getAll(): Future[Set[Foo]] = {
-    Future(foos)
-  }
-}
-
 val jsonSerializer = new MyJsonSerializer()
 val jsonRpcServer = JsonRpcServer(jsonSerializer)
+
+class FooRepositoryApiImpl extends FooRepositoryApi {
+  // Implement FooRepositoryApi
+  // ...
+}
 
 val fooRepositoryApi = new FooRepositoryApiImpl
 jsonRpcServer.bindApi[FooRepositoryApi](fooRepositoryApi)
