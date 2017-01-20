@@ -108,7 +108,7 @@ If you want to define your own logic, make sure the following requirements are m
 
 - Serialize/deserialize ```Left[String, BigDecimal]``` as JSON string.
 - Serialize/deserialize ```Right[String, BigDecimal]``` as JSON number.
-- Serialize/deserialize ```Some[JsonRpcError]``` as JSON object representing [```JsonRpcError```](https://github.com/shogowada/scala-json-rpc/blob/0e4fd3d86a4aaaa4689621e119b654dd98e55170/shared/src/main/scala/io/github/shogowada/scala/jsonrpc/Models.scala#L42-L47).
+- Serialize/deserialize ```Some[JsonRpcError]``` as [JSON-RPC error object](http://www.jsonrpc.org/specification#error_object).
 - Serialize/deserialize ```None[JsonRpcError]``` as JSON null.
 
 ## JSON-RPC client
