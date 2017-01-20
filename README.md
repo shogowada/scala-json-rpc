@@ -8,10 +8,9 @@ If you don't know what JSON-RPC is, don't worry. Using this library, you can ach
 
 The library has no opinion about how the string should be passed between server and client, so you can achieve RPC over [HTTP](examples/e2e), [WebSocket](examples/e2eWebSocket), TCP socket, or whatever, as long as it is capable of passing strings.
 
-|Component|SBT|Scala Version|Scala JS Version|
-|---|---|---|---|
-|scala-json-rpc|```"io.github.shogowada" %%% "scala-json-rpc" % "0.4.2"```|2.12|0.6|
-|[scala-json-rpc-upickle-json-serializer](/upickle-json-serializer)|```"io.github.shogowada" %%% "scala-json-rpc-upickle-json-serializer" % "0.4.2"```|2.12|0.6|
+|SBT|Scala Version|Scala JS Version|
+|---|---|---|
+|```"io.github.shogowada" %%% "scala-json-rpc" % "0.4.2"```|2.12|0.6|
 
 It supports the following features:
 
