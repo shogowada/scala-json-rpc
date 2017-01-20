@@ -20,7 +20,10 @@ class EchoApiImpl extends EchoApi {
 }
 
 class LoggerApiImpl extends LoggerApi {
+  lazy val logRepository = JsonRpcModule.logRepository
+
   override def log(message: String): Unit = {
+    logRepository.add(message)
     println(message) // It logs the message
   }
 }

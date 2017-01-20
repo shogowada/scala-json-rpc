@@ -9,7 +9,9 @@ import org.scalatra.servlet.ScalatraListener
 object Main {
 
   def main(args: Array[String]): Unit = {
-    val port = 8080
+    val port = System.getProperty("port", "8080").toInt
+    println(s"Running server at port $port")
+
     val server = new Server(port)
 
     val context = new WebAppContext()
