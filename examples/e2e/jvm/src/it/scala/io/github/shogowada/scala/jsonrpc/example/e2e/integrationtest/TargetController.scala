@@ -5,6 +5,8 @@ import java.net.ServerSocket
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.impl.client.HttpClientBuilder
 
+import scala.util.Try
+
 object TargetController {
 
   lazy val port = freePort()
@@ -18,7 +20,7 @@ object TargetController {
     localPort
   }
 
-  lazy val target = startProcess(jarLocation, port)
+  val target = startProcess(jarLocation, port)
 
   private def startProcess(jarLocation: String, port: Int): Process = {
     val process = new ProcessBuilder(
@@ -35,13 +37,16 @@ object TargetController {
         .map(_ => {
           Thread.sleep(1000)
           val client = HttpClientBuilder.create().build()
-          val response = client.execute(new HttpGet(s"$url/logs"))
-          val code = response.getStatusLine.getStatusCode
-          response.close()
+          val maybeCode = Try {
+            val response = client.execute(new HttpGet(s"$url/logs"))
+            val code = response.getStatusLine.getStatusCode
+            response.close()
+            code
+          }.toOption
           client.close()
-          code
+          maybeCode
         })
-        .filter(code => code == 200)
+        .filter(code => code.contains(200))
         .head
   }
 
