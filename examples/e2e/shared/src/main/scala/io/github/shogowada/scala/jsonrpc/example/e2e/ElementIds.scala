@@ -9,4 +9,9 @@ object ElementIds {
 
   val EchoText = "echo-text"
   val EchoEchoedText = "echo-echoed-text"
+
+  val LoggerLogText = "logger-log-text"
+  val LoggerLog = "logger-log"
+  val LoggerGetLogs = "logger-get-logs"
+  val LoggerLogs = "logger-logs"
 }

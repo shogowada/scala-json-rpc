@@ -14,4 +14,6 @@ trait EchoApi {
 
 trait LoggerApi {
   def log(message: String): Unit
+
+  def getAllLogs(): Future[Seq[String]]
 }

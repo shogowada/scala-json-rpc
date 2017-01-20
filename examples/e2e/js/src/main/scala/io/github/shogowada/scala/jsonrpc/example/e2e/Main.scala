@@ -13,7 +13,8 @@ import scala.scalajs.js.JSApp
 
 class App(
     calculatorApi: CalculatorApi,
-    echoApi: EchoApi
+    echoApi: EchoApi,
+    loggerApi: LoggerApi
 ) extends StatelessReactClassSpec {
 
   case class Props()
@@ -21,7 +22,8 @@ class App(
   override def render() = {
     <.div()(
       new Calculator(calculatorApi)(Calculator.Props()),
-      new Echo(echoApi)(Echo.Props())
+      new Echo(echoApi)(Echo.Props()),
+      new Logger(loggerApi)(Logger.Props())
     )
   }
 }
@@ -48,11 +50,7 @@ object Main extends JSApp {
     val echoApi = client.createApi[EchoApi]
     val loggerApi = client.createApi[LoggerApi]
 
-    loggerApi.log("This is the beginning of my example.")
-
-    loggerApi.log("This is the end of my example.")
-
     val mountNode = dom.document.getElementById("mount-node")
-    ReactDOM.render(new App(calculatorApi, echoApi), mountNode)
+    ReactDOM.render(new App(calculatorApi, echoApi, loggerApi), mountNode)
   }
 }

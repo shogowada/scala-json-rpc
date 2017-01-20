@@ -20,10 +20,14 @@ class EchoApiImpl extends EchoApi {
 }
 
 class LoggerApiImpl extends LoggerApi {
-  lazy val logRepository = JsonRpcModule.logRepository
+  var logs: Seq[String] = Seq()
 
-  override def log(message: String): Unit = {
-    logRepository.add(message)
+  override def log(message: String): Unit = this.synchronized {
+    logs = logs :+ message
     println(message) // It logs the message
+  }
+
+  override def getAllLogs(): Future[Seq[String]] = {
+    Future(logs)
   }
 }
