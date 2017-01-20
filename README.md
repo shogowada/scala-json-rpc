@@ -17,7 +17,7 @@ It supports the following features:
 - [Send/receive JSON-RPC request](#shared-contract)
 - [Send/receive JSON-RPC notification](#shared-contract)
 - Respond [standard JSON-RPC error](http://www.jsonrpc.org/specification#error_object)
-- [Define custom JSON serialization](/examples/customJsonSerialization)
+- [Define custom JSON serialization](#shared-json-serialization-and-deserialization-logic)
 - [Define custom JSON-RPC method name](/examples/customMethodName)
 - [Pass function as parameter](/examples/jsonRpcFunction) :tada:
 
@@ -70,7 +70,7 @@ trait FooRepositoryApi {
 
 If your method returns `Future[_]`, it will be JSON-RPC request, meaning you get response from server.
 
-It needs to return `Future[_]` because, by definition, RPC happens remotely, meaning:
+It needs to return `Future[_]` because RPC happens remotely, meaning:
 
 - you will get response in the future.
 - your RPC might fail, in which case the `Future[_]` should fail.
@@ -91,12 +91,25 @@ You also want to make sure that your server and client serializes and deserializ
 
 ```scala
 class MyJsonSerializer extends JsonSerializer {
-  def serialize[T](value: T): Option[String] = ??? // Serialize the value into JSON or return None
-  def deserialize[T](json: String): Option[T] = ??? // Deserialize the JSON into value or return None
+  def serialize[T](value: T): Option[String] = {
+    // Serialize the value into JSON or return None
+    // ...
+  }
+  def deserialize[T](json: String): Option[T] = {
+    // Deserialize the JSON into value or return None
+    // ...
+  }
 }
 ```
 
-If you just want it to work, you can also use `UpickleJsonSerializer`. See [its README page](/upickle-json-serializer) for details.
+If you just want it to work, you can use `UpickleJsonSerializer` which already implements `JsonSerializer` using [upickle](http://www.lihaoyi.com/upickle-pprint/upickle/) under the hood. See [its README page](/upickle-json-serializer) for details.
+
+If you want to define your own logic, make sure the following requirements are met:
+
+- Serialize/deserialize ```Left[String, BigDecimal]``` as JSON string.
+- Serialize/deserialize ```Right[String, BigDecimal]``` as JSON number.
+- Serialize/deserialize ```Some[JsonRpcError]``` as JSON object representing [```JsonRpcError```](https://github.com/shogowada/scala-json-rpc/blob/0e4fd3d86a4aaaa4689621e119b654dd98e55170/shared/src/main/scala/io/github/shogowada/scala/jsonrpc/Models.scala#L42-L47).
+- Serialize/deserialize ```None[JsonRpcError]``` as JSON null.
 
 ## JSON-RPC client
 
