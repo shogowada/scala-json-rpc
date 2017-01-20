@@ -1,23 +1,5 @@
-# scala-json-rpc
+// TODO: Migrate them to this page
 
-Make communication between your server and client as easy as making function calls!
-
-scala-json-rpc is a [Remove Procedure Call (RPC)](remote procedure call) library for Scala JVM/JS following [JSON-RPC 2.0](http://www.jsonrpc.org/specification) spec. **It has no dependency** and should fit into any of your Scala JVM/JS application.
-
-If you don't know what JSON-RPC is, don't worry. Using this library, you can achieve RPC without knowing much details; all you have to do is to make sure generated string is passed to server and client.
-
-The library has no opinion about how the string should be passed between server and client, so you can achieve RPC over [HTTP](examples/e2e), [WebSocket](examples/e2eWebSocket), TCP socket, or whatever, as long as it is capable of passing strings.
-
-|SBT|Scala Version|Scala JS Version|
-|---|---|---|
-|```"io.github.shogowada" %%% "scala-json-rpc" % "0.4.2"```|2.12|0.6|
-
-It supports the following features:
-
-- [Send/receive JSON-RPC request](#shared-contract)
-- [Send/receive JSON-RPC notification](#shared-contract)
-- Respond [standard JSON-RPC error](http://www.jsonrpc.org/specification#error_object)
-- [Define custom JSON serialization](#shared-json-serialization-and-deserialization-logic)
 - [Define custom JSON-RPC method name](/examples/customMethodName)
 - [Pass function as parameter](/examples/jsonRpcFunction) :tada:
 
@@ -33,7 +15,9 @@ It should already serve you well as a RPC library, but it still does not fully s
 - Send/receive custom JSON-RPC error
 - Define custom JSON-RPC request ID
 
-# Tutorial
+# scala-json-rpc
+
+Make communication between your server and client as easy as making function calls!
 
 [JSON-RPC](http://www.jsonrpc.org) defines a specification of Remote Procedure Call (RPC) in JSON format. This means that you can achieve RPC between your components as long as they are capable of:
 
@@ -49,6 +33,14 @@ It should already serve you well as a RPC library, but it still does not fully s
 ```
 
 scala-json-rpc honors the JSON-RPC 2.0 spec, so using scala-json-rpc, you can also achieve RPC as long as you meet the above 2 requirements.
+
+## Dependency
+
+|SBT|Scala Version|Scala JS Version|
+|---|---|---|
+|```"io.github.shogowada" %%% "scala-json-rpc" % "0.4.2"```|2.12|0.6|
+
+scala-json-rpc has **no external dependency**, so it should fit into any of your Scala JVM & JS appliations.
 
 ## Shared code between server and client
 
@@ -255,6 +247,12 @@ jsonRpcServer.receive(String).onComplete {
 
 ### Receiving request JSON from client
 
+// TODO: Coming soon
+
 ### Sending response JSON to client
 
+// TODO: Coming soon
+
 ## JSON-RPC server and client
+
+// TODO: Coming soon
