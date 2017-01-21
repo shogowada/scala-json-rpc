@@ -1,5 +1,10 @@
 # Basic
 
+- [Shared code between server and client](#shared-code-between-server-and-client)
+- [JSON-RPC client](#json-rpc-client)
+- [JSON-RPC server](#json-rpc-server)
+- [JSON-RPC server and client](#json-rpc-server-and-client)
+
 ## Shared code between server and client
 
 ### Shared contract
