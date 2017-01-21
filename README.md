@@ -38,8 +38,8 @@ trait FooSubjectApi {
 
 |Platform|SBT|Scala Version|Scala JS Version|
 |---|---|---|---|
-|JVM|```"io.github.shogowada" %% "scala-json-rpc" % "0.4.2"```|2.12||
-|JS|```"io.github.shogowada" %%% "scala-json-rpc" % "0.4.2"```|2.12|0.6|
+|JVM|```"io.github.shogowada" %% "scala-json-rpc" % "0.4.1"```|2.12||
+|JS|```"io.github.shogowada" %%% "scala-json-rpc" % "0.4.1"```|2.12|0.6|
 
 scala-json-rpc has **no external dependency**, so it should fit into any of your Scala JVM & JS applications.
 
