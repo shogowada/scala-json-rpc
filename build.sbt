@@ -113,6 +113,8 @@ lazy val exampleJsCommonSettings = Seq(
   )
 )
 
+// HTTP example
+
 lazy val exampleE2e = (crossProject in file("examples/e2e"))
     .settings(commonSettings: _*)
     .settings(exampleCommonSettings: _*)
@@ -136,12 +138,16 @@ lazy val exampleE2eJvm = exampleE2e.jvm
         s"-DjarLocation=${assembly.value}"
       )
     )
+    .dependsOn(exampleTestUtils % "it")
+
 lazy val exampleE2eJs = exampleE2e.js
     .enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin)
     .disablePlugins(AssemblyPlugin)
     .settings(exampleJsCommonSettings: _*)
 
-lazy val exampleE2eWebSocket = (crossProject in file("examples/e2eWebSocket"))
+// WebSocket example
+
+lazy val exampleE2eWebSocket = (crossProject in file("examples/e2e-web-socket"))
     .settings(commonSettings: _*)
     .settings(exampleCommonSettings: _*)
     .settings(
@@ -168,7 +174,22 @@ lazy val exampleE2eWebSocketJvm = exampleE2eWebSocket.jvm
         s"-DjarLocation=${assembly.value}"
       )
     )
+    .dependsOn(exampleTestUtils % "it")
+
 lazy val exampleE2eWebSocketJs = exampleE2eWebSocket.js
     .enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin)
     .disablePlugins(AssemblyPlugin)
     .settings(exampleJsCommonSettings: _*)
+
+// Test Utils
+
+lazy val exampleTestUtils = (project in file("examples/test-utils"))
+    .disablePlugins(AssemblyPlugin)
+    .settings(commonSettings: _*)
+    .settings(exampleCommonSettings: _*)
+    .settings(
+      name += "-test-utils",
+      libraryDependencies ++= Seq(
+        "org.apache.httpcomponents" % "httpclient" % "4.+"
+      )
+    )

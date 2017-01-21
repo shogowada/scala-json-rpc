@@ -1,4 +1,4 @@
-package io.github.shogowada.scala.jsonrpc.example.e2e.integrationtest
+package io.github.shogowada.scala.jsonrpc.example.test.utils
 
 import java.net.ServerSocket
 
@@ -7,7 +7,7 @@ import org.apache.http.impl.client.HttpClientBuilder
 
 import scala.util.Try
 
-object TargetController {
+trait Target {
 
   lazy val port = freePort()
   lazy val url = s"http://localhost:$port"
