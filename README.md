@@ -35,15 +35,18 @@ JSON-RPC defines a specification of RPC in JSON format. This means that you can 
 
 ## Dependency
 
-|SBT|Scala Version|Scala JS Version|
-|---|---|---|
-|```"io.github.shogowada" %%% "scala-json-rpc" % "0.4.2"```|2.12|0.6|
+|Platform|SBT|Scala Version|Scala JS Version|
+|---|---|---|---|
+|JVM|```"io.github.shogowada" %% "scala-json-rpc" % "0.4.2"```|2.12||
+|JS|```"io.github.shogowada" %%% "scala-json-rpc" % "0.4.2"```|2.12|0.6|
 
-scala-json-rpc has **no external dependency**, so it should fit into any of your Scala JVM & JS appliations.
+scala-json-rpc has **no external dependency**, so it should fit into any of your Scala JVM & JS applications.
 
-## Shared code between server and client
+## Tutorial
 
-### Shared contract
+### Shared code between server and client
+
+#### Shared contract
 
 In scala-json-rpc, your shared contract between server and client is called API. API is a trait defining your methods that you want to call remotely.
 
@@ -76,7 +79,22 @@ trait FooRepositoryApi {
 }
 ```
 
-### Shared JSON serialization and deserialization logic
+You can also give custom JSON-RPC method name to API method by using `@JsonRpcMethod` annotation.
+
+```scala
+trait FooRepositoryApi {
+  @JsonRpcMethod(name = "addFoo")
+  def add(foo: Foo): Future[Unit]
+
+  @JsonRpcMethod(name = "removeFoo")
+  def remove(foo: Foo): Future[Unit]
+
+  @JsonRpcMethod(name = "getAllFoos")
+  def getAll(): Future[Set[Foo]]
+}
+```
+
+#### Shared JSON serialization and deserialization logic
 
 You also want to make sure that your server and client serializes and deserializes JSON in the same way. You can define your JSON serialization and deserialization logic by extending `JsonSerializer` trait.
 
@@ -102,7 +120,7 @@ If you want to define your own logic, make sure the following requirements are m
 - Serialize/deserialize ```Some[JsonRpcError]``` as [JSON-RPC error object](http://www.jsonrpc.org/specification#error_object).
 - Serialize/deserialize ```None[JsonRpcError]``` as JSON null.
 
-## JSON-RPC client
+### JSON-RPC client
 
 To initiate RPCs, you can use `JsonRpcClient` class. The class's responsibility is to:
 
@@ -136,7 +154,7 @@ fooRepositoryApi.add(fooA).onComplete {
 }
 ```
 
-### Sending request JSON to server
+#### Sending request JSON to server
 
 Your `JsonRpcClient` needs to know how to send JSON to server so that when you call your API method, it knows how to complete the RPC. You can define the logic as `JsonSender` function.
 
@@ -168,7 +186,7 @@ val jsonSender: (String) => Future[Option[String]] = (json: String) => {
 }
 ```
 
-### Receiving request JSON from server
+#### Receiving request JSON from server
 
 If you are returning `Future(Some(responseJson))` from your `JsonSender` for all of your requests, it completes the receiving part, so you don't need to worry about this section. This is common if you are using HTTP to send request to server.
 
@@ -200,7 +218,7 @@ def start(jsonRpcWebSocketUrl: String): JsonRpcClient[MyJsonSerializer] {
 }
 ```
 
-## JSON-RPC server
+### JSON-RPC server
 
 To handle RPCs, you can use `JsonRpcServer`. The class's responsibility is to:
 
@@ -244,7 +262,7 @@ jsonRpcServer.receive(String).onComplete {
 }
 ```
 
-### Receiving request JSON from client and sending its response JSON
+#### Receiving request JSON from client and sending its response JSON
 
 To receive request JSON from client, you can use `receive` method. The method optionally returns response JSON as `Future[Option[String]]`.
 
@@ -277,7 +295,7 @@ def onWebSocketText(text: String) {
 }
 ```
 
-## JSON-RPC server and client
+### JSON-RPC server and client
 
 If you want to achieve RPC bidirectionally, you need to have both `JsonRpcServer` and `JsonRpcClient`.
 
@@ -302,7 +320,12 @@ or use `createApi[API]` to create an API client:
 val fooRepisitoryApi = jsonRpcServerAndClient.createApi[FooRepositoryApi]
 ```
 
-### Passing function as parameter
+You can receive request JSON and send response JSON by using `receive`. The method can also take care of sending response JSON because it already has access to your `JsonSender` given to `JsonRpcClient`.
 
-// TODO Migrate it from here
-- [Pass function as parameter](/examples/jsonRpcFunction) :tada:
+```scala
+jsonRpcServerAndClient.receive(requestOrResponseJson)
+```
+
+#### Passing function as parameter
+
+Using `JsonRpcServerAndClient`, you can pass function as API method parameter. See [its example page](/examples/jsonRpcFunction) for details.
