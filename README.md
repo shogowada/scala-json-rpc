@@ -37,7 +37,7 @@ scala-json-rpc has **no external dependency**, so it should fit into any of your
 - [Unidirectional JSON-RPC from Scala JS to Scala JVM over HTTP](/examples/e2e)
 - [Bidirectional JSON-RPC between Scals JS and Scala JVM over WebSocket](/examples/e2eWebSocket)
 
-## Limitations
+## TODOs
 
 It should already serve you well as a RPC library, but it still does not fully support JSON-RPC spec yet. Here are list of known JSON-RPC features that's not supported yet.
 
