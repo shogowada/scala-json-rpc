@@ -97,7 +97,7 @@ fooRepositoryApi.getAll().onComplete {
   case _ =>
 }
 
-def onResponseJsonReceived(responseJson: String) {
+def onResponseJsonReceived(responseJson: String): Unit = {
   client.receive(responseJson)
 }
 ```
