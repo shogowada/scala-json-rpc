@@ -17,20 +17,88 @@ JSON-RPC defines a specification of RPC in JSON format. This means that you can 
 +--------+                          +--------+
 ```
 
+## Quick look
+
+### Shared between server and client
+
 Using scala-json-rpc, your server and client can communicate over statically typed interfaces like below:
 
 ```scala
-trait CalculatorApi {
-  def add(lhs: Int, rhs: Int): Future[Int]
-}
-
 trait LoggerApi {
   def log(message: String): Unit
 }
 
-trait FooSubjectApi {
-  def register(observer: JsonRpcFunction1[Foo, Future[Unit]]): Future[Unit]
-  def unregister(observer: JsonRpcFunction1[Foo, Future[Unit]]): Future[Unit]
+case class Foo(id: String)
+
+trait FooRepositoryApi {
+  def add(foo: Foo): Future[Unit]
+  def remove(foo: Foo): Future[Unit]
+  def getAll(): Future[Set[Foo]]
+}
+```
+
+### Server
+
+```scala
+class LoggerApiImpl extends LoggerApi {
+  override def log(message: String): Unit = println(message)
+}
+
+class FooRepositoryApiImpl extends FooRepositoryApi {
+  var foos: Set[Foo] = Set()
+
+  override def add(foo: Foo): Future[Unit] = this.synchronized {
+    foos = foos + foo
+    Future() // Acknowledge
+  }
+
+  override def remove(foo: Foo): Future[Unit] = this.synchronized {
+    foos = foos - foo
+    Future() // Acknowledge
+  }
+
+  override def getAll(): Future[Set[Foo]] = {
+    Future(foos)
+  }
+}
+
+val jsonSerializer = // ...
+val server = jsonRpcServer(jsonSerializer)
+server.bindApi[LoggerApi](new LoggerApiImpl)
+server.bindApi[FooRepositoryApi](new FooRepositoryApiImpl)
+
+def onReceivedRequest(requestJson: String): Unit = {
+  server.receive(requestJson).onComplete {
+    case Success(Some(responseJson: String)) => sendResponseJsonToClient(responseJson)
+    case _ =>
+  }
+}
+```
+
+### Client
+
+```scala
+val jsonSerializer = // ...
+val jsonSender = // ...
+val client = JsonRpcClient(jsonSerializer, jsonSender)
+
+val loggerApi = client.createApi[LoggerApi]
+val fooRepositoryApi = client.createApi[FooRepositoryApi]
+
+loggerApi.log("Hello, World!")
+    
+fooRepositoryApi.add(Foo("A"))
+fooRepositoryApi.add(Foo("B"))
+
+fooRepositoryApi.remove(Foo("A"))
+
+fooRepositoryApi.getAll().onComplete {
+  case Success(foos: Set[Foo]) => println(s"Received all the foos: $foos")
+  case _ =>
+}
+
+def onResponseJsonReceived(responseJson: String) {
+  client.receive(responseJson)
 }
 ```
 
