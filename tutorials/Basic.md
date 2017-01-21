@@ -1,8 +1,13 @@
 # Basic
 
 - [Shared code between server and client](#shared-code-between-server-and-client)
+    - [Shared contract](#shared-contract)
+    - [Shared JSON serialization and deserialization logic](#shared-json-serialization-and-deserialization-logic)
 - [JSON-RPC client](#json-rpc-client)
+    - [Sending request JSON to server](#sending-request-json-to-server)
+    - [Receiving request JSON from server](#receiving-request-json-from-server)
 - [JSON-RPC server](#json-rpc-server)
+    - [Receiving request JSON from client and sending its response JSON](#receiving-request-json-from-client-and-sending-its-response-json)
 - [JSON-RPC server and client](#json-rpc-server-and-client)
 
 ## Shared code between server and client
