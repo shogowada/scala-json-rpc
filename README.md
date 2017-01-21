@@ -67,7 +67,7 @@ val server = jsonRpcServer(jsonSerializer)
 server.bindApi[LoggerApi](new LoggerApiImpl)
 server.bindApi[FooRepositoryApi](new FooRepositoryApiImpl)
 
-def onReceivedRequest(requestJson: String): Unit = {
+def onRequestJsonReceived(requestJson: String): Unit = {
   server.receive(requestJson).onComplete {
     case Success(Some(responseJson: String)) => sendResponseJsonToClient(responseJson)
     case _ =>
