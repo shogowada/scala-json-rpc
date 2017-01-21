@@ -7,7 +7,6 @@ You can pass functions as parameter by using `JsonRpcFunction` with `JsonRpcServ
 - [Implement server](#implement-server)
 - [Implement client](#implement-client)
 - [But how is it working? I thought it's JSON-RPC library!](#but-how-is-it-working-i-thought-its-json-rpc-library)
-- [End to end example over WebSocket](#end-to-end-example-over-websocket)
 - [Summary](#summary)
 
 ## Create JsonRpcServerAndClient
@@ -153,10 +152,6 @@ When server receives it, it will create a JSON-RPC client for the given method, 
 ```
 
 Knowing this rule, you can use these APIs with JSON-RPC client & server on different technology stack too.
-
-## End to end example over WebSocket
-
-We also have an end to end example using WebSocket. Please refer to [its example page](../e2eWebSocket).
 
 ## Summary
 
