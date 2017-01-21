@@ -7,27 +7,38 @@ You can pass functions as parameter by using `JsonRpcFunction` with `JsonRpcServ
 - [Implement server](#implement-server)
 - [Implement client](#implement-client)
 - [But how is it working? I thought it's JSON-RPC library!](#but-how-is-it-working-i-thought-its-json-rpc-library)
-- [End to end example over WebSocket](#end-to-end-example-over-websocket)
 - [Summary](#summary)
 
 ## Create JsonRpcServerAndClient
+
+For function as parameter to work, you need bidirectional communication because when calling the function on sever, it calls the remote procedure (the function as parameter) of client. So both ends need to be `JsonRpcServerAndClient`.
+
+```
++--------+                           +--------+
+| Client | ---[JSON-RPC request]---> | Server |
+|        | <--[JSON-RPC response]--- |        |
+|  And   |                           |  And   |
+|        | <--[function call]------- |        |
+| Server | ---[function response]--> | Client |
++--------+                           +--------+
+```
 
 To create `JsonRpcServerAndClient`, you need to create a server and a client first like you normally would.
 
 ```scala
 val jsonSerializer = new MyJsonSerializer()
 val jsonSender: (String) => Future[Option[String]] = {
-  // ... Implement JSON sender
+  // Implement JSON sender
+  // ...
 }
-val jsonRpcServer: JsonRpcServer[MyJsonSerializer] = JsonRpcServer(jsonSerializer)
-val jsonRpcClient: JsonRpcClient[MyJsonSerializer] = JsonRpcClient(jsonSerializer, jsonSender)
+val jsonRpcServer = JsonRpcServer(jsonSerializer)
+val jsonRpcClient = JsonRpcClient(jsonSerializer, jsonSender)
 ```
 
 Then, you can create `JsonRpcServerAndClient` using the server and the client.
 
 ```scala
-val jsonRpcServerAndClient: JsonRpcServerAndClient[MyJsonSerializer] =
-    JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
+val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
 ```
 
 ## Create API that takes JsonRpcFunction as parameter
@@ -59,7 +70,7 @@ class EchoApiImpl extends EchoApi {
 
 class UuidSubjectApiImpl extends UuidSubjectApi {
   var observers: Set[JsonRpcFunction1[String, Future[Unit]]] = Set()
-  
+
   // ... Set timer so that we will invoke the following method periodically.
   def notify() {
     val uuid = UUID.randomUUID().toString
@@ -73,7 +84,7 @@ class UuidSubjectApiImpl extends UuidSubjectApi {
   override def register(observer: JsonRpcFunction1[String, Future[Unit]]): Unit = this.synchronized {
     observers = observers + observer
   }
-  
+
   override def unregister(observer: JsonRpcFunction1[String, Future[Unit]]): Unit = this.synchronized {
     observers = observers - observer
     observer.dispose() // We no longer use it.
@@ -125,7 +136,7 @@ When you invoke an `foo` function from client, passing your function as `bar`, i
   "jsonrpc": "2.0",
   "id": "<request ID>",
   "method": "FooApi.foo",
-  "params": ["<generated.universally.unique.method.name.for.the.bar.function>"]
+  "params": ["<method.name.for.the.bar.function>"]
 }
 ```
 
@@ -135,16 +146,12 @@ When server receives it, it will create a JSON-RPC client for the given method, 
 {
   "jsonrpc": "2.0",
   "id": "<request ID>",
-  "method": "<generated.universally.unique.method.name.for.the.bar.function>",
+  "method": "<method.name.for.the.bar.function>",
   "params": ["<whatever passed to the bar function>"]
 }
 ```
 
 Knowing this rule, you can use these APIs with JSON-RPC client & server on different technology stack too.
-
-## End to end example over WebSocket
-
-We also have an end to end example using WebSocket. Please refer to [its example page](../e2eWebSocket).
 
 ## Summary
 
