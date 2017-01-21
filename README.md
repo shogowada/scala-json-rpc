@@ -1,7 +1,6 @@
 // TODO: Migrate them to this page
 
 - [Define custom JSON-RPC method name](/examples/customMethodName)
-- [Pass function as parameter](/examples/jsonRpcFunction) :tada:
 
 We have the following example projects for common use cases:
 
@@ -173,7 +172,7 @@ val jsonSender: (String) => Future[Option[String]] = (json: String) => {
 
 If you are returning `Future(Some(responseJson))` from your `JsonSender` for all of your requests, it completes the receiving part, so you don't need to worry about this section. This is common if you are using HTTP to send request to server.
 
-If it is not feasible to return response from `JsonSender`, you can let it always return `Future(None)`, and receive it explicitly by using `receive(String)` method of your `JsonRpcClient`. This is common if you are using WebSocket or TCP socket to send request to server.
+If it is not feasible to return response from `JsonSender`, you can let it always return `Future(None)`, and receive it explicitly by using `receive` method of your `JsonRpcClient`. This is common if you are using WebSocket or TCP socket to send request to server.
 
 For example, if you are using WebSocket to send and receive JSON-RPC messages, your code might look like this:
 
@@ -245,14 +244,65 @@ jsonRpcServer.receive(String).onComplete {
 }
 ```
 
-### Receiving request JSON from client
+### Receiving request JSON from client and sending its response JSON
 
-// TODO: Coming soon
+To receive request JSON from client, you can use `receive` method. The method optionally returns response JSON as `Future[Option[String]]`.
 
-### Sending response JSON to client
+|Return value|Description|
+|---|---|
+|`Future(Some(responseJson: String))`|Either JSON-RPC request suceeded or failed. `responseJson` can be either JSON-RPC response or error.|
+|`Future(None)`|Either JSON-RPC notification succeeded or failed. It has nothing to respond because it was JSON-RPC notification.|
+|`Failure(throwable: Throwable)`|None of above.|
 
-// TODO: Coming soon
+If you are using HTTP to take requests, your code might look like this:
+
+```scala
+post("/jsonrpc") {
+  jsonRpcServer.receive(request.body).map {
+    case Some(responseJson: String) => Ok(responseJson) // 200 status
+    case None => NoContent() // 204 status
+  }
+}
+```
+
+Or, if you are using WebSocket, it might look like this:
+
+```scala
+def onWebSocketText(text: String) {
+  jsonRpcServer.receive(text).onComplete {
+    case Success(Some(responseJson: String)) => webSocketSession.send(responseJson)
+    case Success(None) => // Do nothing
+    case Failure(throwable) => // Handle error
+  }
+}
+```
 
 ## JSON-RPC server and client
 
-// TODO: Coming soon
+If you want to achieve RPC bidirectionally, you need to have both `JsonRpcServer` and `JsonRpcClient`.
+
+Because this is such a common use case, we also have `JsonRpcServerAndClient`. You can create `JsonRpcServerAndClient` instance by using `JsonRpcServer` and `JsonRpcClient` instances.
+
+```scala
+val jsonRpcServer = JsonRpcServer(/* ... */)
+val jsonRpcClient = JsonRpcClient(/* ... */)
+
+val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
+```
+
+Just as how it looks like, you think of `JsonRpcServerAndClient` as `JsonRpcServer` and `JsonRpcClient` combined. You can still bind your API implementation using `bindApi[API](api: API)` method:
+
+```scala
+jsonRpcServerAndClient.bindApi[FooRepositoryApi](new FooRepositoryApiImpl)
+```
+
+or use `createApi[API]` to create an API client:
+
+```scala
+val fooRepisitoryApi = jsonRpcServerAndClient.createApi[FooRepositoryApi]
+```
+
+### Passing function as parameter
+
+// TODO Migrate it from here
+- [Pass function as parameter](/examples/jsonRpcFunction) :tada:
