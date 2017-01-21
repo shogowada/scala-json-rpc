@@ -12,7 +12,7 @@ publishArtifact := false
 val commonSettings = Seq(
   organization := "io.github.shogowada",
   name := "scala-json-rpc",
-  version := "0.4.1",
+  version := "0.4.2-SNAPSHOT",
   scalaVersion := "2.12.1",
   logBuffered in Test := false,
   licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
@@ -99,14 +99,16 @@ lazy val exampleJvmCommonSettings = Seq(
   managedClasspath in Runtime += (packageBin in Assets).value,
   libraryDependencies ++= Seq(
     "org.eclipse.jetty" % "jetty-webapp" % JettyVersion,
+    "org.scalatra" %% "scalatra" % "2.5.+",
 
-    "org.scalatra" %% "scalatra" % "2.5.+"
+    "org.seleniumhq.selenium" % "selenium-java" % "2.+" % "it",
+    "org.scalatest" %% "scalatest" % "3.+" % "it"
   )
 )
 
 lazy val exampleJsCommonSettings = Seq(
-  persistLauncher := true,
   libraryDependencies ++= Seq(
+    "io.github.shogowada" %%% "scalajs-reactjs" % "0.4.+",
     "org.scala-js" %%% "scalajs-dom" % "0.9.+"
   )
 )
@@ -120,17 +122,22 @@ lazy val exampleE2e = (crossProject in file("examples/e2e"))
     .dependsOn(core, upickleJsonSerializer)
 
 lazy val exampleE2eJvm = exampleE2e.jvm
-    .enablePlugins(SbtWeb)
+    .enablePlugins(SbtWeb, WebScalaJSBundlerPlugin)
+    .configs(IntegrationTest)
     .settings(exampleJvmCommonSettings: _*)
+    .settings(Defaults.itSettings: _*)
     .settings(
       scalaJSProjects := Seq(exampleE2eJs),
       unmanagedResourceDirectories in Assets ++= Seq(
         (baseDirectory in exampleE2eJs).value / "src" / "main" / "public"
       ),
-      mainClass := Option("io.github.shogowada.scala.jsonrpc.example.e2e.Main")
+      (fork in IntegrationTest) := true,
+      (javaOptions in IntegrationTest) ++= Seq(
+        s"-DjarLocation=${assembly.value}"
+      )
     )
 lazy val exampleE2eJs = exampleE2e.js
-    .enablePlugins(ScalaJSPlugin)
+    .enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin)
     .disablePlugins(AssemblyPlugin)
     .settings(exampleJsCommonSettings: _*)
 
@@ -143,8 +150,10 @@ lazy val exampleE2eWebSocket = (crossProject in file("examples/e2eWebSocket"))
     .dependsOn(core, upickleJsonSerializer)
 
 lazy val exampleE2eWebSocketJvm = exampleE2eWebSocket.jvm
-    .enablePlugins(SbtWeb)
+    .enablePlugins(SbtWeb, WebScalaJSBundlerPlugin)
+    .configs(IntegrationTest)
     .settings(exampleJvmCommonSettings: _*)
+    .settings(Defaults.itSettings: _*)
     .settings(
       scalaJSProjects := Seq(exampleE2eWebSocketJs),
       unmanagedResourceDirectories in Assets ++= Seq(
@@ -153,9 +162,13 @@ lazy val exampleE2eWebSocketJvm = exampleE2eWebSocket.jvm
       libraryDependencies ++= Seq(
         "org.eclipse.jetty.websocket" % "websocket-api" % JettyVersion,
         "org.eclipse.jetty.websocket" % "websocket-server" % JettyVersion
+      ),
+      (fork in IntegrationTest) := true,
+      (javaOptions in IntegrationTest) ++= Seq(
+        s"-DjarLocation=${assembly.value}"
       )
     )
 lazy val exampleE2eWebSocketJs = exampleE2eWebSocket.js
-    .enablePlugins(ScalaJSPlugin)
+    .enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin)
     .disablePlugins(AssemblyPlugin)
     .settings(exampleJsCommonSettings: _*)

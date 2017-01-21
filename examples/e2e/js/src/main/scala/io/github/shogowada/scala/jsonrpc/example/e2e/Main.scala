@@ -2,12 +2,31 @@ package io.github.shogowada.scala.jsonrpc.example.e2e
 
 import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
+import io.github.shogowada.scalajs.reactjs.ReactDOM
+import io.github.shogowada.scalajs.reactjs.VirtualDOM._
+import io.github.shogowada.scalajs.reactjs.classes.specs.StatelessReactClassSpec
 import org.scalajs.dom
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.scalajs.js.JSApp
-import scala.util.Success
+
+class App(
+    calculatorApi: CalculatorApi,
+    echoApi: EchoApi,
+    loggerApi: LoggerApi
+) extends StatelessReactClassSpec {
+
+  case class Props()
+
+  override def render() = {
+    <.div()(
+      new Calculator(calculatorApi)(Calculator.Props()),
+      new Echo(echoApi)(Echo.Props()),
+      new Logger(loggerApi)(Logger.Props())
+    )
+  }
+}
 
 object Main extends JSApp {
   override def main(): Unit = {
@@ -31,23 +50,7 @@ object Main extends JSApp {
     val echoApi = client.createApi[EchoApi]
     val loggerApi = client.createApi[LoggerApi]
 
-    loggerApi.log("This is the beginning of my example.")
-
-    calculatorApi.add(1, 2).onComplete {
-      case Success(result) => println(s"1 + 2 = $result")
-      case _ =>
-    }
-
-    calculatorApi.subtract(1, 2).onComplete {
-      case Success(result) => println(s"1 - 2 = $result")
-      case _ =>
-    }
-
-    echoApi.echo("Hello, World!").onComplete {
-      case Success(result) => println(s"""You said "$result"""")
-      case _ =>
-    }
-
-    loggerApi.log("This is the end of my example.")
+    val mountNode = dom.document.getElementById("mount-node")
+    ReactDOM.render(new App(calculatorApi, echoApi, loggerApi), mountNode)
   }
 }
