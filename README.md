@@ -17,6 +17,23 @@ JSON-RPC defines a specification of RPC in JSON format. This means that you can 
 +--------+                          +--------+
 ```
 
+Using scala-json-rpc, your server and client can communicate over statically typed interfaces like below:
+
+```scala
+trait CalculatorApi {
+  def add(lhs: Int, rhs: Int): Future[Int]
+}
+
+trait LoggerApi {
+  def log(message: String): Unit
+}
+
+trait FooSubjectApi {
+  def register(observer: JsonRpcFunction1[Foo, Future[Unit]]): Future[Unit]
+  def unregister(observer: JsonRpcFunction1[Foo, Future[Unit]]): Future[Unit]
+}
+```
+
 ## Dependency
 
 |Platform|SBT|Scala Version|Scala JS Version|
