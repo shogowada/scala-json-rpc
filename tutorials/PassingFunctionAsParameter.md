@@ -136,7 +136,7 @@ When you invoke an `foo` function from client, passing your function as `bar`, i
   "jsonrpc": "2.0",
   "id": "<request ID>",
   "method": "FooApi.foo",
-  "params": ["<generated.universally.unique.method.name.for.the.bar.function>"]
+  "params": ["<method.name.for.the.bar.function>"]
 }
 ```
 
@@ -146,7 +146,7 @@ When server receives it, it will create a JSON-RPC client for the given method, 
 {
   "jsonrpc": "2.0",
   "id": "<request ID>",
-  "method": "<generated.universally.unique.method.name.for.the.bar.function>",
+  "method": "<method.name.for.the.bar.function>",
   "params": ["<whatever passed to the bar function>"]
 }
 ```
