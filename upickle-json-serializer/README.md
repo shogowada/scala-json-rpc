@@ -1,8 +1,9 @@
 # upickle-json-serializer
 
-|SBT|Scala Version|Scala JS Version|
-|---|---|---|
-|```"io.github.shogowada" %%% "scala-json-rpc-upickle-json-serializer" % "0.4.2"```|2.12|0.6|
+|Platform|SBT|Scala Version|Scala JS Version|
+|---|---|---|---|
+|JVM|```"io.github.shogowada" %% "scala-json-rpc-upickle-json-serializer" % "0.4.2"```|2.12||
+|JS|```"io.github.shogowada" %%% "scala-json-rpc-upickle-json-serializer" % "0.4.2"```|2.12|0.6|
 
 You can use upickle-json-serializer to use upickle as your ```JsonSerializer```.
 
