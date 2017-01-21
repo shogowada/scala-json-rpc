@@ -1,19 +1,3 @@
-// TODO: Migrate them to this page
-
-- [Define custom JSON-RPC method name](/examples/customMethodName)
-
-We have the following example projects for common use cases:
-
-- [Unidirectional JSON-RPC from Scala JS to Scala JVM over HTTP](examples/e2e)
-- [Bidirectional JSON-RPC between Scals JS and Scala JVM over WebSocket](examples/e2eWebSocket)
-
-It should already serve you well as a RPC library, but it still does not fully support JSON-RPC spec yet. Here are list of known JSON-RPC features that's not supported yet.
-
-- Send/receive named parameter
-    - Define custom parameter name
-- Send/receive custom JSON-RPC error
-- Define custom JSON-RPC request ID
-
 # scala-json-rpc
 
 Make communication between your server and client as easy as making function calls!
@@ -46,8 +30,18 @@ scala-json-rpc has **no external dependency**, so it should fit into any of your
 
 - [Basic](/tutorials/Basic.md)
 - [Custom JSON-RPC method name](/tutorials/CustomJsonRpcMethodName.md)
-- [Passing function as parameter](/tutorials/PassingFunctionAsParameter.md)
+- [Passing function as parameter](/tutorials/PassingFunctionAsParameter.md) :tada:
 
-#### Passing function as parameter
+## Examples
 
-Using `JsonRpcServerAndClient`, you can pass function as API method parameter. See [its example page](/examples/jsonRpcFunction) for details.
+- [Unidirectional JSON-RPC from Scala JS to Scala JVM over HTTP](/examples/e2e)
+- [Bidirectional JSON-RPC between Scals JS and Scala JVM over WebSocket](/examples/e2eWebSocket)
+
+## Limitations
+
+It should already serve you well as a RPC library, but it still does not fully support JSON-RPC spec yet. Here are list of known JSON-RPC features that's not supported yet.
+
+- Send/receive named parameter
+    - Define custom parameter name
+- Send/receive custom JSON-RPC error
+- Define custom JSON-RPC request ID
