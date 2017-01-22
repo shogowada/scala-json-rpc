@@ -1,6 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
 import io.github.shogowada.scala.jsonrpc.JsonRpcServerAndClient
+import io.github.shogowada.scala.jsonrpc.Types.JsonSender
 import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
@@ -14,24 +15,25 @@ import scala.util.Try
 
 object Main extends JSApp {
   override def main(): Unit = {
-    val webSocket = new dom.WebSocket("ws://localhost:8080/jsonrpc")
+    val webSocket = new dom.WebSocket(webSocketUrl)
 
     webSocket.onopen = (_: dom.Event) => {
-      var jsonRpcServerAndClient = createJsonRpcServerAndClient(webSocket)
-
-      val subjectApi = jsonRpcServerAndClient.createApi[RandomNumberSubjectApi]
-
-      // It can implicitly convert Function1[Int, Unit] to JsonRpcFunction1[Int, Unit].
-      subjectApi.register((randomNumber: Int) => {
-        println(randomNumber)
-        Future() // Making sure server knows if it was successful
-      })
+      val jsonRpcServerAndClient = createJsonRpcServerAndClient(webSocket)
 
       webSocket.onmessage = (messageEvent: dom.MessageEvent) => {
         val message = messageEvent.data.toString
-        jsonRpcServerAndClient.receive(message)
+        jsonRpcServerAndClient.receiveAndSend(message)
       }
     }
+  }
+
+  private lazy val webSocketUrl: String = {
+    val location = dom.window.location
+    val protocol = location.protocol match {
+      case "http" => "ws"
+      case "https" => "wss"
+    }
+    s"$protocol://${location.host}/jsonrpc"
   }
 
   private def createJsonRpcServerAndClient(webSocket: WebSocket): JsonRpcServerAndClient[UpickleJsonSerializer] = {
@@ -39,7 +41,7 @@ object Main extends JSApp {
 
     val jsonRpcServer = JsonRpcServer(jsonSerializer)
 
-    val jsonSender: (String) => Future[Option[String]] = (json: String) => {
+    val jsonSender: JsonSender = (json: String) => {
       Try(webSocket.send(json)).fold(
         throwable => Future.failed(throwable),
         _ => Future(None)

@@ -5,7 +5,7 @@ import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.{JsonRpcServer, JsonRpcServerMacro}
 import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
@@ -13,13 +13,11 @@ class JsonRpcServerAndClient[JSON_SERIALIZER <: JsonSerializer](
     val server: JsonRpcServer[JSON_SERIALIZER],
     val client: JsonRpcClient[JSON_SERIALIZER]
 ) {
-  def send(json: String): Future[Option[String]] = client.send(json)
-
   def bindApi[API](api: API): Unit = macro JsonRpcServerAndClientMacro.bindApi[API]
 
   def createApi[API]: API = macro JsonRpcServerAndClientMacro.createApi[API]
 
-  def receive(json: String): Unit = macro JsonRpcServerAndClientMacro.receive
+  def receiveAndSend(json: String): Unit = macro JsonRpcServerAndClientMacro.receiveAndSend
 }
 
 object JsonRpcServerAndClient {
@@ -60,7 +58,7 @@ object JsonRpcServerAndClientMacro {
     )
   }
 
-  def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Unit] = {
+  def receiveAndSend(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Unit] = {
     import c.universe._
     val macroUtils = JsonRpcMacroUtils[c.type](c)
     val (serverAndClientDefinition, serverAndClient) = macroUtils.prefixDefinitionAndReference

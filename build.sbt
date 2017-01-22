@@ -108,7 +108,7 @@ lazy val exampleJvmCommonSettings = Seq(
 
 lazy val exampleJsCommonSettings = Seq(
   libraryDependencies ++= Seq(
-    "io.github.shogowada" %%% "scalajs-reactjs" % "0.4.+",
+    "io.github.shogowada" %%% "scalajs-reactjs" % "0.5.+",
     "org.scala-js" %%% "scalajs-dom" % "0.9.+"
   )
 )
