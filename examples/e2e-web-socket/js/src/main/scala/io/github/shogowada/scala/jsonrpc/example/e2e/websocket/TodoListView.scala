@@ -7,6 +7,7 @@ import io.github.shogowada.scalajs.reactjs.events.InputFormSyntheticEvent
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
+import scala.util.Success
 
 object TodoView {
 
@@ -67,12 +68,11 @@ object TodoListView {
 
   case class Props()
 
-  case class State(todos: Seq[Todo])
+  case class State(ready: Boolean, todos: Seq[Todo])
 
 }
 
 class TodoListView(
-    futureTodoEventSubjectApi: Future[TodoEventSubjectApi],
     futureTodoRepositoryApi: Future[TodoRepositoryApi]
 ) extends ReactClassSpec {
 
@@ -81,20 +81,25 @@ class TodoListView(
   override type Props = TodoListView.Props
   override type State = TodoListView.State
 
-  override def getInitialState() = State(Seq())
+  override def getInitialState() = State(ready = false, Seq())
 
   val promisedObserverId: Promise[String] = Promise()
 
   override def componentDidMount(): Unit = {
-    val futureObserverId = futureTodoEventSubjectApi
+    val futureObserverId = futureTodoRepositoryApi
         .flatMap(api => api.register(onTodoEvent(_)))
+
+    futureObserverId.onComplete {
+      case Success(_) => setState(_.copy(ready = true))
+      case _ =>
+    }
 
     promisedObserverId.completeWith(futureObserverId)
   }
 
   override def componentWillUnmount(): Unit = {
     promisedObserverId.future.foreach(observerId => {
-      futureTodoEventSubjectApi.foreach(api => api.unregister(observerId))
+      futureTodoRepositoryApi.foreach(api => api.unregister(observerId))
     })
   }
 
@@ -117,6 +122,12 @@ class TodoListView(
   override def render(): ReactElement = {
     <.div()(
       <.h2()("TODO List"),
+      <.div(^.id := ElementIds.Ready)(
+        state.ready match {
+          case true => "Ready!"
+          case _ => "Not ready yet..."
+        }
+      ),
       <.ul()(
         state.todos.map(todo => {
           new TodoView()(TodoView.Props(todo, onRemove = onRemoveTodo))

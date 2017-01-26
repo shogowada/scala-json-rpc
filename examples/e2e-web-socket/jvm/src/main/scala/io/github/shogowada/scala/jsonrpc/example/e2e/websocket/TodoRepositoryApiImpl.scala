@@ -7,17 +7,16 @@ import io.github.shogowada.scala.jsonrpc.JsonRpcFunction1
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class TodoRepository(
-    todoEventSubject: TodoEventSubject
-) extends TodoRepositoryApi {
+class TodoRepositoryApiImpl extends TodoRepositoryApi {
 
   var todos: Seq[Todo] = Seq()
+  var observersById: Map[String, JsonRpcFunction1[TodoEvent, Future[Unit]]] = Map()
 
   override def add(description: String): Future[Todo] = this.synchronized {
     val todo = Todo(id = UUID.randomUUID().toString, description)
     todos = todos :+ todo
 
-    todoEventSubject.notify(TodoEvent(todo, TodoEventTypes.Add))
+    notify(TodoEvent(todo, TodoEventTypes.Add))
 
     Future(todo)
   }
@@ -27,24 +26,18 @@ class TodoRepository(
     if (index >= 0) {
       val todo = todos(index)
       todos = todos.patch(index, Seq(), 1)
-      todoEventSubject.notify(TodoEvent(todo, TodoEventTypes.Remove))
+      notify(TodoEvent(todo, TodoEventTypes.Remove))
     }
     Future()
-  }
-}
-
-class TodoEventSubject extends TodoEventSubjectApi {
-  var observersById: Map[String, JsonRpcFunction1[TodoEvent, Future[Unit]]] = Map()
-
-  def notify(todoEvent: TodoEvent): Unit = {
-    observersById.foreach {
-      case (id, observer) => observer(todoEvent).failed.foreach(_ => unregister(id))
-    }
   }
 
   override def register(observer: JsonRpcFunction1[TodoEvent, Future[Unit]]): Future[String] = this.synchronized {
     val id = UUID.randomUUID().toString
     observersById = observersById + (id -> observer)
+
+    todos.map(todo => TodoEvent(todo, TodoEventTypes.Add))
+        .foreach(todoEvent => notify(id, observer, todoEvent))
+
     Future(id)
   }
 
@@ -54,5 +47,17 @@ class TodoEventSubject extends TodoEventSubjectApi {
       observer.dispose()
     })
     Future()
+  }
+
+  private def notify(todoEvent: TodoEvent): Unit = {
+    observersById.foreach {
+      case (id, observer) => notify(id, observer, todoEvent)
+    }
+  }
+
+  private def notify(observerId: String, observer: JsonRpcFunction1[TodoEvent, Future[Unit]], todoEvent: TodoEvent): Unit = {
+    observer(todoEvent)
+        .failed // Probably connection is lost.
+        .foreach(_ => unregister(observerId))
   }
 }

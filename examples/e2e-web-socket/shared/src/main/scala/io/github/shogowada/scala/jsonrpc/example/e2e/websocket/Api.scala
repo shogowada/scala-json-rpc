@@ -6,12 +6,6 @@ import scala.concurrent.Future
 
 case class Todo(id: String, description: String)
 
-trait TodoRepositoryApi {
-  def add(description: String): Future[Todo]
-
-  def remove(id: String): Future[Unit]
-}
-
 object TodoEventTypes {
 
   val Add = "Add"
@@ -21,8 +15,13 @@ object TodoEventTypes {
 
 case class TodoEvent(todo: Todo, eventType: String)
 
-trait TodoEventSubjectApi {
+trait TodoRepositoryApi {
+  def add(description: String): Future[Todo]
+
+  def remove(id: String): Future[Unit]
+
   def register(observer: JsonRpcFunction1[TodoEvent, Future[Unit]]): Future[String]
 
   def unregister(observerId: String): Future[Unit]
 }
+
