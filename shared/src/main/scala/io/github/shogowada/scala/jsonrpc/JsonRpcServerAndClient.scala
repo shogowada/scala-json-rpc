@@ -13,6 +13,8 @@ class JsonRpcServerAndClient[JSON_SERIALIZER <: JsonSerializer](
     val server: JsonRpcServer[JSON_SERIALIZER],
     val client: JsonRpcClient[JSON_SERIALIZER]
 ) {
+  def send(json: String): Unit = client.send(json)
+
   def bindApi[API](api: API): Unit = macro JsonRpcServerAndClientMacro.bindApi[API]
 
   def createApi[API]: API = macro JsonRpcServerAndClientMacro.createApi[API]

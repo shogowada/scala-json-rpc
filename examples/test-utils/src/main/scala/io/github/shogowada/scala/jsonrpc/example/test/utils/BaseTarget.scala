@@ -7,11 +7,13 @@ import org.apache.http.impl.client.HttpClientBuilder
 
 import scala.util.Try
 
-trait Target {
+trait BaseTarget {
 
   lazy val port = freePort()
   lazy val url = s"http://localhost:$port"
   lazy val jarLocation = System.getProperty("jarLocation")
+
+  def healthCheckUrl = url
 
   def freePort(): Int = {
     val server = new ServerSocket(0)
@@ -20,16 +22,10 @@ trait Target {
     localPort
   }
 
-  val target = startProcess(jarLocation, port)
-
   private def startProcess(jarLocation: String, port: Int): Process = {
-    val process = new ProcessBuilder(
+    new ProcessBuilder(
       "java", s"-Dport=$port", "-jar", jarLocation
     ).start()
-
-    waitUntilReady()
-
-    process
   }
 
   private def waitUntilReady(): Unit = {
@@ -38,7 +34,7 @@ trait Target {
           Thread.sleep(1000)
           val client = HttpClientBuilder.create().build()
           val maybeCode = Try {
-            val response = client.execute(new HttpGet(s"$url/logs"))
+            val response = client.execute(new HttpGet(healthCheckUrl))
             val code = response.getStatusLine.getStatusCode
             response.close()
             code
@@ -50,9 +46,13 @@ trait Target {
         .head
   }
 
+  val target = startProcess(jarLocation, port)
+
   Runtime.getRuntime.addShutdownHook(new Thread() {
     override def run(): Unit = {
       target.destroy()
     }
   })
+
+  waitUntilReady()
 }

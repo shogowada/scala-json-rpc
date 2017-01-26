@@ -1,45 +1,68 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
+import java.io.IOException
+
 import io.github.shogowada.scala.jsonrpc.JsonRpcServerAndClient
 import io.github.shogowada.scala.jsonrpc.Types.JsonSender
 import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
+import io.github.shogowada.scalajs.reactjs.ReactDOM
 import org.scalajs.dom
 import org.scalajs.dom.WebSocket
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 import scala.scalajs.js.JSApp
 import scala.util.Try
 
 object Main extends JSApp {
   override def main(): Unit = {
-    val webSocket = new dom.WebSocket(webSocketUrl)
+    val futureServerAndClient = createFutureServerAndClient(createWebSocketUrl)
 
-    webSocket.onopen = (_: dom.Event) => {
-      val jsonRpcServerAndClient = createJsonRpcServerAndClient(webSocket)
-
-      webSocket.onmessage = (messageEvent: dom.MessageEvent) => {
-        val message = messageEvent.data.toString
-        jsonRpcServerAndClient.receiveAndSend(message)
-      }
-    }
+    val mountNode = dom.document.getElementById("mount-node")
+    ReactDOM.render(new TodoListView(
+      futureServerAndClient.map(_.createApi[TodoEventSubjectApi]),
+      futureServerAndClient.map(_.createApi[TodoRepositoryApi])
+    )(TodoListView.Props()), mountNode)
   }
 
-  private lazy val webSocketUrl: String = {
+  private def createWebSocketUrl: String = {
     val location = dom.window.location
     val protocol = location.protocol match {
-      case "http" => "ws"
-      case "https" => "wss"
+      case "http:" => "ws"
+      case "https:" => "wss"
     }
     s"$protocol://${location.host}/jsonrpc"
   }
 
-  private def createJsonRpcServerAndClient(webSocket: WebSocket): JsonRpcServerAndClient[UpickleJsonSerializer] = {
+  private def createFutureServerAndClient(webSocketUrl: String): Future[JsonRpcServerAndClient[UpickleJsonSerializer]] = {
+    val promisedJsonRpcServerAndClient: Promise[JsonRpcServerAndClient[UpickleJsonSerializer]] = Promise()
+
+    val webSocket = new dom.WebSocket(webSocketUrl)
+
+    webSocket.onopen = (_: dom.Event) => {
+      val serverAndClient = createServerAndClient(webSocket)
+
+      webSocket.onmessage = (messageEvent: dom.MessageEvent) => {
+        val message = messageEvent.data.toString
+        serverAndClient.receiveAndSend(message)
+      }
+
+      promisedJsonRpcServerAndClient.success(serverAndClient)
+    }
+
+    webSocket.onerror = (event: dom.ErrorEvent) => {
+      promisedJsonRpcServerAndClient.failure(new IOException(event.message))
+    }
+
+    promisedJsonRpcServerAndClient.future
+  }
+
+  private def createServerAndClient(webSocket: WebSocket): JsonRpcServerAndClient[UpickleJsonSerializer] = {
     val jsonSerializer = UpickleJsonSerializer()
 
-    val jsonRpcServer = JsonRpcServer(jsonSerializer)
+    val server = JsonRpcServer(jsonSerializer)
 
     val jsonSender: JsonSender = (json: String) => {
       Try(webSocket.send(json)).fold(
@@ -47,8 +70,8 @@ object Main extends JSApp {
         _ => Future(None)
       )
     }
-    val jsonRpcClient = JsonRpcClient(jsonSerializer, jsonSender)
+    val client = JsonRpcClient(jsonSerializer, jsonSender)
 
-    JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
+    JsonRpcServerAndClient(server, client)
   }
 }

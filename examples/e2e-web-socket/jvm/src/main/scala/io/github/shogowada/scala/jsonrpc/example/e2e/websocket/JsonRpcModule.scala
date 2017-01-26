@@ -6,12 +6,12 @@ import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 object JsonRpcModule {
 
   lazy val todoEventSubject = new TodoEventSubject
   lazy val todoRepository = new TodoRepository(todoEventSubject)
-
-  lazy val randomNumberSubject = new RandomNumberSubject
 
   lazy val jsonSerializer = UpickleJsonSerializer()
 

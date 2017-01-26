@@ -4,6 +4,7 @@ import java.util.UUID
 
 import io.github.shogowada.scala.jsonrpc.JsonRpcFunction1
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class TodoRepository(
@@ -16,7 +17,7 @@ class TodoRepository(
     val todo = Todo(id = UUID.randomUUID().toString, description)
     todos = todos :+ todo
 
-    todoEventSubject.notify(TodoEvent(todo, TodoEventType.Add))
+    todoEventSubject.notify(TodoEvent(todo, TodoEventTypes.Add))
 
     Future(todo)
   }
@@ -26,7 +27,7 @@ class TodoRepository(
     if (index >= 0) {
       val todo = todos(index)
       todos = todos.patch(index, Seq(), 1)
-      todoEventSubject.notify(TodoEvent(todo, TodoEventType.Remove))
+      todoEventSubject.notify(TodoEvent(todo, TodoEventTypes.Remove))
     }
     Future()
   }

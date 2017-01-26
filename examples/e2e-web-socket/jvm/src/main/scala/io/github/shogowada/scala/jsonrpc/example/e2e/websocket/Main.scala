@@ -7,7 +7,7 @@ import org.eclipse.jetty.webapp.WebAppContext
 
 object Main {
   def main(args: Array[String]): Unit = {
-    val port = 8080
+    val port = System.getProperty("port", "8080").toInt
     val server = new Server(port)
 
     val context = new WebAppContext()
@@ -21,9 +21,6 @@ object Main {
     context.addServlet(classOf[JsonRpcWebSocketServlet], "/jsonrpc")
 
     server.setHandler(context)
-
-    val randomNumberSubject = JsonRpcModule.randomNumberSubject
-    randomNumberSubject.start()
 
     server.start()
     server.join()
