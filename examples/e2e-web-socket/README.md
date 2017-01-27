@@ -20,10 +20,10 @@ Because this is such a common use case, we have an API called `JsonRpcServerAndC
 
 ```scala
 val serverAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
-serverAndClient.receive(json)
+serverAndClient.receiveAndSend(json)
 ```
 
-`jsonRpcServerAndClient.receive` makes sure to:
+`jsonRpcServerAndClient.receiveAndSend` makes sure to:
 
 - handle the given JSON using the client first then the server second.
 - send the response if present using the client's `send` method.
@@ -33,10 +33,23 @@ serverAndClient.receive(json)
 We define the following API for this example:
 
 ```scala
-trait RandomNumberSubjectApi {
-  def register(observer: JsonRpcFunction1[Int, Future[Unit]]): Unit
+case class Todo(id: String, description: String)
 
-  def unregister(observer: JsonRpcFunction1[Int, Future[Unit]]): Unit
+object TodoEventTypes {
+  val Add = "Add"
+  val Remove = "Remove"
+}
+
+case class TodoEvent(todo: Todo, eventType: String)
+
+trait TodoRepositoryApi {
+  def add(description: String): Future[Todo]
+
+  def remove(id: String): Future[Unit]
+
+  def register(observer: JsonRpcFunction1[TodoEvent, Future[Unit]]): Future[String]
+
+  def unregister(observerId: String): Future[Unit]
 }
 ```
 
@@ -49,40 +62,72 @@ Here is how client communicates with server:
 ```scala
 object Main extends JSApp {
   override def main(): Unit = {
-    val webSocket = new dom.WebSocket("ws://localhost:8080/jsonrpc")
+    val futureWebSocket = createFutureWebSocket()
+    val serverAndClient = createServerAndClient(futureWebSocket)
 
-    webSocket.onopen = (_: dom.Event) => {
-      var jsonRpcServerAndClient = createJsonRpcServerAndClient(webSocket)
-
-      val subjectApi = jsonRpcServerAndClient.createApi[RandomNumberSubjectApi]
-
-      // It can implicitly convert Function1[Int, Unit] to JsonRpcFunction1[Int, Unit].
-      subjectApi.register((randomNumber: Int) => {
-        println(randomNumber)
-        Future() // Making sure server knows if it was successful
-      })
-
-      webSocket.onmessage = (messageEvent: dom.MessageEvent) => {
-        val message = messageEvent.data.toString
-        jsonRpcServerAndClient.receive(message)
-      }
-    }
+    val mountNode = dom.document.getElementById("mount-node")
+    ReactDOM.render(
+      new TodoListView(
+        serverAndClient.createApi[TodoRepositoryApi]
+      )(TodoListView.Props()),
+      mountNode
+    )
   }
 
-  private def createJsonRpcServerAndClient(webSocket: WebSocket): JsonRpcServerAndClient[UpickleJsonSerializer] = {
+  private def createFutureWebSocket(): Future[WebSocket] = {
+    val promisedWebSocket: Promise[WebSocket] = Promise()
+    val webSocket = new dom.WebSocket(webSocketUrl)
+
+    webSocket.onopen = (_: dom.Event) => {
+      promisedWebSocket.success(webSocket)
+    }
+
+    webSocket.onerror = (event: dom.ErrorEvent) => {
+      promisedWebSocket.failure(new IOException(event.message))
+    }
+
+    promisedWebSocket.future
+  }
+
+  private def webSocketUrl: String = {
+    val location = dom.window.location
+    val protocol = location.protocol match {
+      case "http:" => "ws:"
+      case "https:" => "wss:"
+    }
+    s"$protocol//${location.host}/jsonrpc"
+  }
+
+  private def createServerAndClient(futureWebSocket: Future[WebSocket]): JsonRpcServerAndClient[UpickleJsonSerializer] = {
     val jsonSerializer = UpickleJsonSerializer()
 
-    val jsonRpcServer = JsonRpcServer(jsonSerializer)
+    val server = JsonRpcServer(jsonSerializer)
 
-    val jsonSender: (String) => Future[Option[String]] = (json: String) => {
-      Try(webSocket.send(json)).fold(
-        throwable => Future.failed(throwable),
-        _ => Future(None)
-      )
+    val jsonSender: JsonSender = (json: String) => {
+      futureWebSocket
+          .map(webSocket => Try(webSocket.send(json)))
+          .flatMap(tried => tried.fold(
+            throwable => Future.failed(throwable),
+            _ => Future(None)
+          ))
     }
-    val jsonRpcClient = JsonRpcClient(jsonSerializer, jsonSender)
+    val client = JsonRpcClient(jsonSerializer, jsonSender)
 
-    JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
+    val serverAndClient = JsonRpcServerAndClient(server, client)
+
+    futureWebSocket.foreach(webSocket => {
+      webSocket.onmessage = (event: dom.MessageEvent) => {
+        val message = event.data.toString
+        serverAndClient.receiveAndSend(message).onComplete {
+          case Failure(throwable) => {
+            println("Failed to send response", throwable)
+          }
+          case _ =>
+        }
+      }
+    })
+
+    serverAndClient
   }
 }
 ```
@@ -92,38 +137,58 @@ object Main extends JSApp {
 Here is our API implementation:
 
 ```scala
-class RandomNumberSubject extends RandomNumberSubjectApi {
-  private var registeredObservers: Set[JsonRpcFunction1[Int, Future[Unit]]] = Set()
+class TodoRepositoryApiImpl extends TodoRepositoryApi {
 
-  def start(): Unit = {
-    // Once started, it will generate and notify random numbers to registered observers every second.
-    val threadPoolExecutor = new ScheduledThreadPoolExecutor(1)
-    val executor = new Runnable {
-      override def run() = {
-        val randomNumber = (Math.random() * 100.0).toInt
-        notifyObservers(randomNumber)
-      }
+  var todos: Seq[Todo] = Seq()
+  var observersById: Map[String, JsonRpcFunction1[TodoEvent, Future[Unit]]] = Map()
+
+  override def add(description: String): Future[Todo] = this.synchronized {
+    val todo = Todo(id = UUID.randomUUID().toString, description)
+    todos = todos :+ todo
+
+    notify(TodoEvent(todo, TodoEventTypes.Add))
+
+    Future(todo)
+  }
+
+  override def remove(id: String): Future[Unit] = this.synchronized {
+    val index = todos.indexWhere(todo => todo.id == id)
+    if (index >= 0) {
+      val todo = todos(index)
+      todos = todos.patch(index, Seq(), 1)
+      notify(TodoEvent(todo, TodoEventTypes.Remove))
     }
-    threadPoolExecutor.scheduleAtFixedRate(executor, 1, 1, TimeUnit.SECONDS)
+    Future()
   }
 
-  private def notifyObservers(randomNumber: Int): Unit = {
-    registeredObservers.foreach(observer => {
-      observer(randomNumber)
-          .failed // Probably the connection is lost
-          .foreach(_ => unregister(observer))
+  override def register(observer: JsonRpcFunction1[TodoEvent, Future[Unit]]): Future[String] = this.synchronized {
+    val id = UUID.randomUUID().toString
+    observersById = observersById + (id -> observer)
+
+    todos.map(todo => TodoEvent(todo, TodoEventTypes.Add))
+        .foreach(todoEvent => notify(id, observer, todoEvent))
+
+    Future(id)
+  }
+
+  override def unregister(observerId: String): Future[Unit] = this.synchronized {
+    observersById.get(observerId).foreach(observer => {
+      observersById = observersById - observerId
+      observer.dispose()
     })
+    Future()
   }
 
-  override def register(observer: JsonRpcFunction1[Int, Future[Unit]]): Unit = {
-    println(s"Registering observer ${observer.hashCode()}")
-    this.synchronized(registeredObservers = registeredObservers + observer)
+  private def notify(todoEvent: TodoEvent): Unit = {
+    observersById.foreach {
+      case (id, observer) => notify(id, observer, todoEvent)
+    }
   }
 
-  override def unregister(observer: JsonRpcFunction1[Int, Future[Unit]]): Unit = {
-    println(s"Unregistering observer ${observer.hashCode()}")
-    this.synchronized(registeredObservers = registeredObservers - observer)
-    observer.dispose()
+  private def notify(observerId: String, observer: JsonRpcFunction1[TodoEvent, Future[Unit]], todoEvent: TodoEvent): Unit = {
+    observer(todoEvent)
+        .failed // Probably connection is lost.
+        .foreach(_ => unregister(observerId))
   }
 }
 ```
@@ -131,13 +196,30 @@ class RandomNumberSubject extends RandomNumberSubjectApi {
 Here is our WebSocket implementation:
 
 ```scala
+object JsonRpcModule {
+
+  lazy val todoRepositoryApi = new TodoRepositoryApiImpl
+
+  lazy val jsonSerializer = UpickleJsonSerializer()
+
+  def createJsonRpcServerAndClient(jsonSender: JsonSender): JsonRpcServerAndClient[UpickleJsonSerializer] = {
+    val server = JsonRpcServer(jsonSerializer)
+    val client = JsonRpcClient(jsonSerializer, jsonSender)
+    val serverAndClient = JsonRpcServerAndClient(server, client)
+
+    serverAndClient.bindApi[TodoRepositoryApi](todoRepositoryApi)
+
+    serverAndClient
+  }
+}
+
 class JsonRpcWebSocket extends WebSocketAdapter {
   private var serverAndClient: JsonRpcServerAndClient[UpickleJsonSerializer] = _
 
   override def onWebSocketConnect(session: Session): Unit = {
     super.onWebSocketConnect(session)
 
-    val jsonSender: (String) => Future[Option[String]] = (json: String) => {
+    val jsonSender: JsonSender = (json: String) => {
       Try(session.getRemote.sendString(json)).fold(
         throwable => Future.failed(throwable),
         _ => Future(None)
@@ -147,16 +229,11 @@ class JsonRpcWebSocket extends WebSocketAdapter {
     // Create an independent server and client for each WebSocket session.
     // This is to make sure we clean up all the caches (e.g. promised response, etc)
     // on each WebSocket session.
-    val jsonSerializer = JsonRpcModule.jsonSerializer
-    val server = JsonRpcServer(jsonSerializer)
-    val client = JsonRpcClient(jsonSerializer, jsonSender)
-    serverAndClient = JsonRpcServerAndClient(server, client)
-
-    serverAndClient.bindApi[RandomNumberSubjectApi](JsonRpcModule.randomNumberSubject)
+    serverAndClient = JsonRpcModule.createJsonRpcServerAndClient(jsonSender)
   }
 
   override def onWebSocketText(message: String): Unit = {
-    serverAndClient.receive(message)
+    serverAndClient.receiveAndSend(message)
   }
 }
 ```
