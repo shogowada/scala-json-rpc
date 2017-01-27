@@ -11,7 +11,7 @@ class LoggerTest extends path.FreeSpec
     with Firefox {
 
   "given I am on logger page" - {
-    go to TargetController.url
+    go to Target.url
 
     "when I log something" - {
       val log = "Ah, looks like something happened?"

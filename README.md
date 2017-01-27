@@ -86,7 +86,7 @@ val loggerApi = client.createApi[LoggerApi]
 val fooRepositoryApi = client.createApi[FooRepositoryApi]
 
 loggerApi.log("Hello, World!")
-    
+
 fooRepositoryApi.add(Foo("A"))
 fooRepositoryApi.add(Foo("B"))
 
@@ -106,21 +106,21 @@ def onResponseJsonReceived(responseJson: String): Unit = {
 
 |Platform|SBT|Scala Version|Scala JS Version|
 |---|---|---|---|
-|JVM|```"io.github.shogowada" %% "scala-json-rpc" % "0.4.1"```|2.12||
-|JS|```"io.github.shogowada" %%% "scala-json-rpc" % "0.4.1"```|2.12|0.6|
+|JVM|```"io.github.shogowada" %% "scala-json-rpc" % "0.5.0"```|2.12||
+|JS|```"io.github.shogowada" %%% "scala-json-rpc" % "0.5.0"```|2.12|0.6.14+|
 
 scala-json-rpc has **no external dependency**, so it should fit into any of your Scala JVM & JS applications.
 
 ## Tutorials
 
-- [Basic](/tutorials/Basic.md)
-- [Custom JSON-RPC method name](/tutorials/CustomJsonRpcMethodName.md)
-- [Passing function as parameter](/tutorials/PassingFunctionAsParameter.md) :tada:
+- [Basic](/tutorials/basic.md)
+- [Custom JSON-RPC method name](/tutorials/custom-json-rpc-method-name.md)
+- [Passing function as parameter](/tutorials/passing-function-as-parameter.md) :tada:
 
 ## Examples
 
 - [Unidirectional JSON-RPC from Scala JS to Scala JVM over HTTP](/examples/e2e)
-- [Bidirectional JSON-RPC between Scals JS and Scala JVM over WebSocket](/examples/e2eWebSocket)
+- [Bidirectional JSON-RPC between Scals JS and Scala JVM over WebSocket](/examples/e2e-web-socket)
 
 ## TODOs
 

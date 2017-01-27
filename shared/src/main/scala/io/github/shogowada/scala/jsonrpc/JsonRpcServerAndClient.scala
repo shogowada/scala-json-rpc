@@ -19,7 +19,7 @@ class JsonRpcServerAndClient[JSON_SERIALIZER <: JsonSerializer](
 
   def createApi[API]: API = macro JsonRpcServerAndClientMacro.createApi[API]
 
-  def receive(json: String): Unit = macro JsonRpcServerAndClientMacro.receive
+  def receiveAndSend(json: String): Future[Unit] = macro JsonRpcServerAndClientMacro.receiveAndSend
 }
 
 object JsonRpcServerAndClient {
@@ -60,25 +60,39 @@ object JsonRpcServerAndClientMacro {
     )
   }
 
-  def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Unit] = {
+  def receiveAndSend(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Future[Unit]] = {
     import c.universe._
     val macroUtils = JsonRpcMacroUtils[c.type](c)
     val (serverAndClientDefinition, serverAndClient) = macroUtils.prefixDefinitionAndReference
     val server: Tree = q"$serverAndClient.server"
     val client: Tree = q"$serverAndClient.client"
     val executionContext: c.Expr[ExecutionContext] = c.Expr(q"$server.executionContext")
-    c.Expr[Unit](
+    c.Expr[Future[Unit]](
       q"""
           ..${macroUtils.imports}
           $serverAndClientDefinition
-          val wasJsonRpcResponse: Boolean = $client.receive($json)
-          if (!wasJsonRpcResponse) {
-            $server.receive($json)
-              .onComplete((tried: Try[Option[String]]) => tried match {
-                case Success(Some(responseJson: String)) => $client.send(responseJson)
-                case _ =>
-              })($executionContext)
+          def receiveAndSend(json: String): Future[Unit] = {
+            val wasJsonRpcResponse: Boolean = $client.receive(json)
+            if (!wasJsonRpcResponse) {
+              $server.receive(json)
+                .flatMap((maybeResponseJsonFromUs: Option[String]) => {
+                  maybeResponseJsonFromUs match {
+                    case Some(responseJsonFromUs) => $client.send(responseJsonFromUs)
+                    case None => Future(None)($executionContext)
+                  }
+                })($executionContext)
+                .flatMap((maybeResponseJsonFromThem: Option[String]) => {
+                  maybeResponseJsonFromThem match {
+                    case Some(responseJsonFromThem) => receiveAndSend(responseJsonFromThem)
+                    case None => Future(None)($executionContext)
+                  }
+                })($executionContext)
+                .map(_ => ())
+            } else {
+              Future()($executionContext)
+            }
           }
+          receiveAndSend($json)
           """
     )
   }

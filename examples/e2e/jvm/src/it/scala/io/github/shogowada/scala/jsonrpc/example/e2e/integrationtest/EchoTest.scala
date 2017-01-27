@@ -11,7 +11,7 @@ class EchoTest extends path.FreeSpec
     with Firefox {
 
   "given I am on the echo page" - {
-    go to TargetController.url
+    go to Target.url
 
     "when I typed in something" - {
       val text = "Hello, server!"
