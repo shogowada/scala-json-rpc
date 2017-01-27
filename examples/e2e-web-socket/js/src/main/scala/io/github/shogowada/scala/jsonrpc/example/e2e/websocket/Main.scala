@@ -18,7 +18,8 @@ import scala.util.{Failure, Try}
 
 object Main extends JSApp {
   override def main(): Unit = {
-    val serverAndClient = createServerAndClient(createWebSocketUrl)
+    val futureWebSocket = createFutureWebSocket()
+    val serverAndClient = createServerAndClient(futureWebSocket)
 
     val mountNode = dom.document.getElementById("mount-node")
     ReactDOM.render(
@@ -29,24 +30,7 @@ object Main extends JSApp {
     )
   }
 
-  private def createWebSocketUrl: String = {
-    val location = dom.window.location
-    val protocol = location.protocol match {
-      case "http:" => "ws:"
-      case "https:" => "wss:"
-    }
-    s"$protocol//${location.host}/jsonrpc"
-  }
-
-  private def createServerAndClient(webSocketUrl: String): JsonRpcServerAndClient[UpickleJsonSerializer] = {
-    val futureWebSocket: Future[WebSocket] = createFutureWebSocket(webSocketUrl)
-
-    val serverAndClient = createServerAndClient(futureWebSocket)
-
-    serverAndClient
-  }
-
-  private def createFutureWebSocket(webSocketUrl: String): Future[WebSocket] = {
+  private def createFutureWebSocket(): Future[WebSocket] = {
     val promisedWebSocket: Promise[WebSocket] = Promise()
     val webSocket = new dom.WebSocket(webSocketUrl)
 
@@ -59,6 +43,15 @@ object Main extends JSApp {
     }
 
     promisedWebSocket.future
+  }
+
+  private def webSocketUrl: String = {
+    val location = dom.window.location
+    val protocol = location.protocol match {
+      case "http:" => "ws:"
+      case "https:" => "wss:"
+    }
+    s"$protocol//${location.host}/jsonrpc"
   }
 
   private def createServerAndClient(futureWebSocket: Future[WebSocket]): JsonRpcServerAndClient[UpickleJsonSerializer] = {
