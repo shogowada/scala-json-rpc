@@ -58,7 +58,7 @@ class Calculator(calculatorApi: CalculatorApi) extends ReactClassSpec {
       <.div(^.id := ElementIds.CalculatorSubtracted)(
         s"${state.lhs} - ${state.rhs} = ${state.subtracted.getOrElse("?")}"
       )
-    )
+    ).asReactElement
   }
 
   private val onChange = () => {
@@ -78,14 +78,14 @@ class Calculator(calculatorApi: CalculatorApi) extends ReactClassSpec {
 
     calculatorApi.add(lhs, rhs).onComplete {
       case Success(added) if lhs == state.lhs && rhs == state.rhs => {
-        setState(state.copy(added = Some(added)))
+        setState(_.copy(added = Some(added)))
       }
       case _ =>
     }
 
     calculatorApi.subtract(lhs, rhs).onComplete {
       case Success(subtracted) if lhs == state.lhs && rhs == state.rhs => {
-        setState(state.copy(subtracted = Some(subtracted)))
+        setState(_.copy(subtracted = Some(subtracted)))
       }
       case _ =>
     }

@@ -86,7 +86,7 @@ val loggerApi = client.createApi[LoggerApi]
 val fooRepositoryApi = client.createApi[FooRepositoryApi]
 
 loggerApi.log("Hello, World!")
-    
+
 fooRepositoryApi.add(Foo("A"))
 fooRepositoryApi.add(Foo("B"))
 
@@ -120,7 +120,7 @@ scala-json-rpc has **no external dependency**, so it should fit into any of your
 ## Examples
 
 - [Unidirectional JSON-RPC from Scala JS to Scala JVM over HTTP](/examples/e2e)
-- [Bidirectional JSON-RPC between Scals JS and Scala JVM over WebSocket](/examples/e2eWebSocket)
+- [Bidirectional JSON-RPC between Scals JS and Scala JVM over WebSocket](/examples/e2e-web-socket)
 
 ## TODOs
 
