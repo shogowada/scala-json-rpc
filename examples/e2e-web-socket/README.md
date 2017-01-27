@@ -53,7 +53,7 @@ trait TodoRepositoryApi {
 }
 ```
 
-Note that we are using `JsonRpcFunction1` to callback the client. For more details about `JsonRpcFunction`, please see [its example page](../../tutorials/PassingFunctionAsParameter.md).
+Note that we are using `JsonRpcFunction1` to callback the client. For more details about `JsonRpcFunction`, please see [its tutorial page](../../tutorials/passing-function-as-parameter.md).
 
 ## Scala JS (browser)
 
