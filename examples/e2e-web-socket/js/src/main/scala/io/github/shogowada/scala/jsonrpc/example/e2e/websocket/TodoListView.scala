@@ -73,7 +73,7 @@ object TodoListView {
 }
 
 class TodoListView(
-    futureTodoRepositoryApi: Future[TodoRepositoryApi]
+    todoRepositoryApi: TodoRepositoryApi
 ) extends ReactClassSpec {
 
   import TodoListView._
@@ -86,8 +86,7 @@ class TodoListView(
   val promisedObserverId: Promise[String] = Promise()
 
   override def componentDidMount(): Unit = {
-    val futureObserverId = futureTodoRepositoryApi
-        .flatMap(api => api.register(onTodoEvent(_)))
+    val futureObserverId = todoRepositoryApi.register(onTodoEvent(_))
 
     futureObserverId.onComplete {
       case Success(_) => setState(_.copy(ready = true))
@@ -99,7 +98,7 @@ class TodoListView(
 
   override def componentWillUnmount(): Unit = {
     promisedObserverId.future.foreach(observerId => {
-      futureTodoRepositoryApi.foreach(api => api.unregister(observerId))
+      todoRepositoryApi.unregister(observerId)
     })
   }
 
@@ -138,10 +137,10 @@ class TodoListView(
   }
 
   private val onAddTodo = (description: String) => {
-    futureTodoRepositoryApi.foreach(api => api.add(description))
-  }
+    todoRepositoryApi.add(description)
+  }: Unit
 
   private val onRemoveTodo = (todo: Todo) => {
-    futureTodoRepositoryApi.foreach(api => api.remove(todo.id))
-  }
+    todoRepositoryApi.remove(todo.id)
+  }: Unit
 }
