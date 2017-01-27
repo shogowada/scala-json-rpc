@@ -1,6 +1,8 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e.websocket.integrationtest
 
 import io.github.shogowada.scala.jsonrpc.example.e2e.websocket.ElementIds
+import org.openqa.selenium.support.ui.{ExpectedCondition, ExpectedConditions, WebDriverWait}
+import org.openqa.selenium.{By, WebDriver}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.selenium.Firefox
 import org.scalatest.{Matchers, path}
@@ -10,14 +12,14 @@ class TodoListTest extends path.FreeSpec
     with Eventually
     with Matchers {
 
+  def waitFor[T](condition: ExpectedCondition[T])(implicit webDriver: WebDriver): T = {
+    new WebDriverWait(webDriver, 3).until[T](condition)
+  }
+
   "given I am on TODO list" - {
     go to Target.url
 
-    "then it should say it is ready" in {
-      eventually {
-        find(id(ElementIds.Ready)).get.text should equal("Ready!")
-      }
-    }
+    waitFor(ExpectedConditions.textToBe(By.id(ElementIds.Ready), "Ready!"))
 
     clearTodos()
 
