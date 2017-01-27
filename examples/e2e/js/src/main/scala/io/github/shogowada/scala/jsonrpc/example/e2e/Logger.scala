@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc.example.e2e
 
 import io.github.shogowada.scalajs.reactjs.VirtualDOM._
 import io.github.shogowada.scalajs.reactjs.classes.specs.ReactClassSpec
-import io.github.shogowada.scalajs.reactjs.events.{InputElementSyntheticEvent, SyntheticEvent}
+import io.github.shogowada.scalajs.reactjs.events.{InputFormSyntheticEvent, SyntheticEvent}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
@@ -48,13 +48,13 @@ class Logger(loggerApi: LoggerApi) extends ReactClassSpec {
           <.div()(log)
         })
       )
-    )
+    ).asReactElement
   }
 
-  private val onChange = (event: InputElementSyntheticEvent) => {
+  private val onChange = (event: InputFormSyntheticEvent) => {
     val log = event.target.value
 
-    setState(state.copy(log = log))
+    setState(_.copy(log = log))
   }
 
   private val onLog = (event: SyntheticEvent) => {
@@ -62,14 +62,14 @@ class Logger(loggerApi: LoggerApi) extends ReactClassSpec {
 
     loggerApi.log(state.log)
 
-    setState(state.copy(log = ""))
+    setState(_.copy(log = ""))
   }
 
   private val onGetLogs = (event: SyntheticEvent) => {
     event.preventDefault()
 
     loggerApi.getAllLogs().onComplete {
-      case Success(logs) => setState(state.copy(logs = logs))
+      case Success(logs) => setState(_.copy(logs = logs))
       case _ =>
     }
   }

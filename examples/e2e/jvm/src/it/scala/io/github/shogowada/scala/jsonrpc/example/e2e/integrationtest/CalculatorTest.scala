@@ -11,7 +11,7 @@ class CalculatorTest extends path.FreeSpec
     with Firefox {
 
   "given I am on the calculator page" - {
-    go to TargetController.url
+    go to Target.url
 
     "then it should display the page" in {
       eventually {
