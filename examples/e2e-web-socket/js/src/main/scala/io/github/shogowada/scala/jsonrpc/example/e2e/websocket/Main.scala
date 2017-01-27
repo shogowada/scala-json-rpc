@@ -14,25 +14,28 @@ import org.scalajs.dom.WebSocket
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.scalajs.js.JSApp
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 object Main extends JSApp {
   override def main(): Unit = {
     val serverAndClient = createServerAndClient(createWebSocketUrl)
 
     val mountNode = dom.document.getElementById("mount-node")
-    ReactDOM.render(new TodoListView(
-      serverAndClient.createApi[TodoRepositoryApi]
-    )(TodoListView.Props()), mountNode)
+    ReactDOM.render(
+      new TodoListView(
+        serverAndClient.createApi[TodoRepositoryApi]
+      )(TodoListView.Props()),
+      mountNode
+    )
   }
 
   private def createWebSocketUrl: String = {
     val location = dom.window.location
     val protocol = location.protocol match {
-      case "http:" => "ws"
-      case "https:" => "wss"
+      case "http:" => "ws:"
+      case "https:" => "wss:"
     }
-    s"$protocol://${location.host}/jsonrpc"
+    s"$protocol//${location.host}/jsonrpc"
   }
 
   private def createServerAndClient(webSocketUrl: String): JsonRpcServerAndClient[UpickleJsonSerializer] = {
@@ -78,7 +81,12 @@ object Main extends JSApp {
     futureWebSocket.foreach(webSocket => {
       webSocket.onmessage = (event: dom.MessageEvent) => {
         val message = event.data.toString
-        serverAndClient.receiveAndSend(message)
+        serverAndClient.receiveAndSend(message).onComplete {
+          case Failure(throwable) => {
+            println("Failed to send response", throwable)
+          }
+          case _ =>
+        }
       }
     })
 

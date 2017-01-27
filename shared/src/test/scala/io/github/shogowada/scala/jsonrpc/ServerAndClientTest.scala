@@ -9,7 +9,7 @@ import org.scalatest.{AsyncFunSpec, Matchers}
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
-class ClientAndServerTest extends AsyncFunSpec
+class ServerAndClientTest extends AsyncFunSpec
     with Matchers {
 
   override implicit def executionContext = ExecutionContext.Implicits.global
