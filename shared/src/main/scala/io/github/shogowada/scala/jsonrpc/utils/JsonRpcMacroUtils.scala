@@ -93,6 +93,14 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     }
   }
 
+  def getJsonRpcResultType(resultType: Type): Type = {
+    if (isJsonRpcFunctionType(resultType)) {
+      getType[String]
+    } else {
+      resultType
+    }
+  }
+
   def isJsonRpcFunctionType(theType: Type): Boolean = {
     theType <:< getType[JsonRpcFunction]
   }

@@ -46,7 +46,8 @@ lazy val core = (crossProject in file("."))
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 
-        "org.scalatest" %%% "scalatest" % "3.+" % "test"
+        "org.scalamock" %%% "scalamock-scalatest-support" % "[3.5,4.0[" % Test,
+        "org.scalatest" %%% "scalatest" % "3.+" % Test
       ),
       publishArtifact := true
     )
