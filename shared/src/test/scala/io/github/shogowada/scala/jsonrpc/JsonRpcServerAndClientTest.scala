@@ -200,6 +200,21 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
             fixture.futureDisposeAcknowledgement
                 .map(_ => succeed)
           }
+
+          describe("and I try to use the function") {
+            class TryToUseTheFunction extends DisposeTheFunction {
+              val futureFooAfterDisposal: Future[String] = futureDisposeAcknowledgement
+                  .flatMap(_ => futureFunction)
+                  .flatMap(function => function())
+            }
+
+            it("then it should fail") {
+              val fixture = new TryToUseTheFunction
+              fixture.futureFooAfterDisposal
+                  .failed
+                  .map(_ => succeed)
+            }
+          }
         }
       }
     }
