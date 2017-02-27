@@ -73,7 +73,7 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     maybeCustomMethodName.getOrElse(method.fullName)
   }
 
-  def getJsonRpcParameterType(paramTypes: Seq[Type]): Tree = {
+  def getJsonRpcParameterType(paramTypes: Seq[c.Type]): Tree = {
     val parameterTypes: Iterable[Type] = paramTypes
         .map(mapSingleJsonRpcParameterType)
 
@@ -90,6 +90,14 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
       getType[String]
     } else {
       paramType
+    }
+  }
+
+  def getJsonRpcResultType(resultType: Type): Type = {
+    if (isJsonRpcFunctionType(resultType)) {
+      getType[String]
+    } else {
+      resultType
     }
   }
 

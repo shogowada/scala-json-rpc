@@ -1,12 +1,11 @@
-package io.github.shogowada.scala.jsonrpc.server
+package io.github.shogowada.scala.jsonrpc.client
 
-import io.github.shogowada.scala.jsonrpc.client.JsonRpcMethodClientFactoryMacro
 import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.concurrent.Future
 import scala.reflect.macros.blackbox
 
-class JsonRpcFunctionFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
+class JsonRpcFunctionClientFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   import c.universe._
 
