@@ -67,19 +67,21 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
       maybeServer: Option[Tree],
       paramTypes: Seq[Type]
   ): Tree = {
+    def createJsonRpcParameter(paramType: Type, index: Int): Tree = {
+      val paramName = getParamName(index)
+      if (macroUtils.isJsonRpcFunctionType(paramType)) {
+        val jsonRpcFunctionMethodName: c.Expr[String] = maybeServer
+            .map(server => jsonRpcFunctionServerFactoryMacro.getOrCreate(client, server, paramName, paramType))
+            .getOrElse(throw new UnsupportedOperationException("To use JsonRpcFunction, you need to create an API with JsonRpcServerAndClient."))
+        q"$jsonRpcFunctionMethodName"
+      } else {
+        q"$paramName"
+      }
+    }
+
     val jsonRpcParameters: Seq[Tree] = paramTypes
         .zipWithIndex
-        .map { case (paramType, index) =>
-          val paramName = getParamName(index)
-          if (macroUtils.isJsonRpcFunctionType(paramType)) {
-            val jsonRpcFunctionMethodName: c.Expr[String] = maybeServer
-                .map(server => jsonRpcFunctionServerFactoryMacro.getOrCreate(client, server, paramName, paramType))
-                .getOrElse(throw new UnsupportedOperationException("To use JsonRpcFunction, you need to create an API with JsonRpcServerAndClient."))
-            q"$jsonRpcFunctionMethodName"
-          } else {
-            q"$paramName"
-          }
-        }
+        .map { case (paramType, index) => createJsonRpcParameter(paramType, index) }
 
     if (jsonRpcParameters.size == 1) {
       val parameter = jsonRpcParameters.head
@@ -133,7 +135,6 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
     val executionContext = macroUtils.getExecutionContext(client)
 
     val resultType: Type = returnType.typeArgs.head
-    val jsonRpcResultType: Type = macroUtils.getJsonRpcResultType(resultType)
 
     val requestId = TermName("requestId")
 
@@ -152,18 +153,15 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
 
     val promisedResponse = TermName("promisedResponse")
 
-    def mapResult(resultResponse: TermName): Tree = {
-      val result = q"$resultResponse.result"
-      if (macroUtils.isJsonRpcFunctionType(resultType)) {
-        maybeServer
-            .map(server => jsonRpcFunctionClientFactoryMacro.getOrCreate(server, client, resultType, q"$result"))
-            .getOrElse {
-              throw new UnsupportedOperationException("To create an API returning JsonRpcFunction, you need to create the API with JsonRpcServerAndClient.")
-            }
-      } else {
-        result
-      }
+    def createSendJsonFailureHandler(throwable: TermName): Tree = {
+      q"""
+          $promisedResponseRepository
+              .getAndRemove($requestId)
+              .foreach(promisedResponse => promisedResponse.failure($throwable))
+          """
     }
+
+    def responseJsonHandler(json: TermName): Tree = createResponseJsonHandler(client, maybeServer, resultType, json)
 
     c.Expr[returnType.type](
       q"""
@@ -172,24 +170,45 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
 
           $send($requestJson).onComplete((tried: Try[Option[String]]) => tried match {
             case Success(Some(responseJson: String)) => $receive(responseJson)
-            case Failure(throwable) => {
-              $promisedResponseRepository
-                  .getAndRemove($requestId)
-                  .foreach(promisedResponse => promisedResponse.failure(throwable))
-            }
+            case Failure(throwable) => ${createSendJsonFailureHandler(TermName("throwable"))}
             case _ =>
           })($executionContext)
 
           $promisedResponse.future
-              .map((json: String) => {
-                $jsonSerializer.deserialize[JsonRpcResultResponse[$jsonRpcResultType]](json)
-                    .map(resultResponse => ${mapResult(TermName("resultResponse"))})
-                    .getOrElse {
-                      val maybeResponse = $jsonSerializer.deserialize[JsonRpcErrorResponse[String]](json)
-                      throw new JsonRpcException(maybeResponse)
-                    }
-              })($executionContext)
+              .map((json: String) => ${responseJsonHandler(TermName("json"))})($executionContext)
           """
     )
+  }
+
+  private def createResponseJsonHandler(
+      client: Tree,
+      maybeServer: Option[Tree],
+      resultType: Type,
+      json: TermName
+  ): Tree = {
+    val jsonSerializer = macroUtils.getJsonSerializer(client)
+
+    def mapResult(resultResponse: Tree): Tree = {
+      val result = q"$resultResponse.result"
+      if (macroUtils.isJsonRpcFunctionType(resultType)) {
+        maybeServer
+            .map(server => jsonRpcFunctionClientFactoryMacro.getOrCreate(server, client, resultType, q"$result"))
+            .getOrElse(throw new UnsupportedOperationException("To use an API returning JsonRpcFunction, you need to create the API with JsonRpcServerAndClient."))
+      } else {
+        result
+      }
+    }
+
+    val resultResponse = q"resultResponse"
+    val jsonRpcResultType: Type = macroUtils.getJsonRpcResultType(resultType)
+
+    q"""
+        $jsonSerializer.deserialize[JsonRpcResultResponse[$jsonRpcResultType]]($json)
+            .map($resultResponse => ${mapResult(resultResponse)})
+            .getOrElse {
+              val maybeResponse = $jsonSerializer.deserialize[JsonRpcErrorResponse[String]](json)
+              throw new JsonRpcException(maybeResponse)
+            }
+        """
   }
 }
