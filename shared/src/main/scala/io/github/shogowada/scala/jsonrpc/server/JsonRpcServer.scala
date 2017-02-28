@@ -96,11 +96,11 @@ object JsonRpcServerMacro {
     val executionContext: Tree = macroUtils.getExecutionContext(server)
 
     val maybeParseErrorJson: c.Expr[Option[String]] =
-      macroUtils.createMaybeErrorJson(server, json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.parseError"))
+      macroUtils.createMaybeErrorJsonFromRequestJson(server, json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.parseError"))
     val maybeInvalidRequestErrorJson: c.Expr[Option[String]] =
-      macroUtils.createMaybeErrorJson(server, json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.invalidRequest"))
+      macroUtils.createMaybeErrorJsonFromRequestJson(server, json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.invalidRequest"))
     val maybeMethodNotFoundErrorJson: c.Expr[Option[String]] =
-      macroUtils.createMaybeErrorJson(server, json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.methodNotFound"))
+      macroUtils.createMaybeErrorJsonFromRequestJson(server, json, c.Expr[JsonRpcError[String]](q"JsonRpcErrors.methodNotFound"))
 
     val maybeErrorJsonOrMethodName = c.Expr[Either[Option[String], String]](
       q"""

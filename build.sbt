@@ -12,7 +12,7 @@ publishArtifact := false
 val commonSettings = Seq(
   organization := "io.github.shogowada",
   name := "scala-json-rpc",
-  version := "0.5.0",
+  version := "0.5.1",
   scalaVersion := "2.12.1",
   logBuffered in Test := false,
   licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
@@ -46,7 +46,7 @@ lazy val core = (crossProject in file("."))
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 
-        "org.scalatest" %%% "scalatest" % "3.+" % "test"
+        "org.scalatest" %%% "scalatest" % "3.+" % Test
       ),
       publishArtifact := true
     )

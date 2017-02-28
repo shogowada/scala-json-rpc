@@ -163,6 +163,62 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
       }
     }
 
+    describe("given I have an API that returns a function") {
+      class ApiThatReturnsFunction extends TwoServersAndClients {
+
+        trait Api {
+          def foo: Future[JsonRpcFunction0[Future[String]]]
+        }
+
+        class ApiImpl extends Api {
+          override def foo = Future(() => Future("foo"))
+        }
+
+        serverAndClient1.bindApi[Api](new ApiImpl)
+        val client = serverAndClient2.createApi[Api]
+      }
+
+      describe("when I call the function") {
+        class CallTheFunction extends ApiThatReturnsFunction {
+          val futureFunction: Future[JsonRpcFunction0[Future[String]]] = client.foo
+          val futureFoo: Future[String] = futureFunction.flatMap(function => function())
+        }
+
+        it("then it should execute the function") {
+          val fixture = new CallTheFunction
+          fixture.futureFoo
+              .map(foo => foo should equal("foo"))
+        }
+
+        describe("when I dispose the function") {
+          class DisposeTheFunction extends CallTheFunction {
+            val futureDisposeAcknowledgement: Future[Unit] = futureFunction.flatMap(function => function.dispose())
+          }
+
+          it("then it should succeed") {
+            val fixture = new DisposeTheFunction
+            fixture.futureDisposeAcknowledgement
+                .map(_ => succeed)
+          }
+
+          describe("and I try to use the function") {
+            class TryToUseTheFunction extends DisposeTheFunction {
+              val futureFooAfterDisposal: Future[String] = futureDisposeAcknowledgement
+                  .flatMap(_ => futureFunction)
+                  .flatMap(function => function())
+            }
+
+            it("then it should fail") {
+              val fixture = new TryToUseTheFunction
+              fixture.futureFooAfterDisposal
+                  .failed
+                  .map(_ => succeed)
+            }
+          }
+        }
+      }
+    }
+
     describe("given I have an API that takes the same function type in 2 places") {
       class ClientApiThatTakes2Functions extends TwoServersAndClients {
         val promisedFoo1Function: Promise[JsonRpcFunction0[Unit]] = Promise()
