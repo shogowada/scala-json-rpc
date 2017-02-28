@@ -101,7 +101,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
     val params = TermName("params")
 
     def maybeInvalidParamsErrorJson(json: TermName): c.Expr[Option[String]] =
-      macroUtils.createMaybeErrorJson(
+      macroUtils.createMaybeErrorJsonFromRequestJson(
         handlerContext.server,
         c.Expr[String](q"$json"),
         c.Expr[JsonRpcError[String]](q"JsonRpcErrors.invalidParams")
@@ -202,7 +202,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
           )
           """
 
-    val maybeErrorJson = macroUtils.createMaybeErrorJson(
+    val maybeErrorJson = macroUtils.createMaybeErrorJsonFromRequestJson(
       server,
       c.Expr[String](q"json"),
       c.Expr[JsonRpcError[String]](q"JsonRpcErrors.internalError")

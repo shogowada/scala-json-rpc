@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.utils
 
 import io.github.shogowada.scala.jsonrpc.JsonRpcFunction
-import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcError, JsonRpcErrorResponse}
+import io.github.shogowada.scala.jsonrpc.Models.JsonRpcError
 import io.github.shogowada.scala.jsonrpc.api.JsonRpcMethod
 
 import scala.concurrent.Future
@@ -117,35 +117,36 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     typeOf[T]
   }
 
-  def createMaybeErrorJson(
-      server: c.Tree,
+  def createMaybeErrorJsonFromRequestJson(
+      serverOrClient: c.Tree,
       json: c.Expr[String],
       jsonRpcError: c.Expr[JsonRpcError[String]]
   ): c.Expr[Option[String]] = {
-
-    val jsonSerializer: Tree = q"$server.jsonSerializer"
-
-    val error = (id: TermName) => c.Expr[JsonRpcErrorResponse[String]](
-      q"""
-          JsonRpcErrorResponse(
-            jsonrpc = Constants.JsonRpc,
-            id = $id,
-            error = $jsonRpcError
-          )
-          """
-    )
-
-    val maybeErrorJson = (id: TermName) => c.Expr[Option[String]](
-      q"""$jsonSerializer.serialize(${error(id)})"""
-    )
+    val jsonSerializer: Tree = getJsonSerializer(serverOrClient)
 
     c.Expr[Option[String]](
       q"""
           $jsonSerializer.deserialize[JsonRpcId]($json)
-            .map(requestId => requestId.id)
-            .flatMap(id => {
-              ${maybeErrorJson(TermName("id"))}
-            })
+              .map(requestId => requestId.id)
+              .flatMap(id => ${createMaybeErrorJsonFromRequestId(serverOrClient, q"id", jsonRpcError)})
+          """
+    )
+  }
+
+  def createMaybeErrorJsonFromRequestId(
+      serverOrClient: Tree,
+      id: Tree,
+      jsonRpcError: c.Expr[JsonRpcError[String]]
+  ): c.Expr[Option[String]] = {
+    val jsonSerializer: Tree = getJsonSerializer(serverOrClient)
+
+    c.Expr[Option[String]](
+      q"""
+          $jsonSerializer.serialize(JsonRpcErrorResponse(
+              jsonrpc = Constants.JsonRpc,
+              id = $id,
+              error = $jsonRpcError
+          ))
           """
     )
   }
