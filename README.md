@@ -118,7 +118,7 @@ scala-json-rpc has **no external dependency**, so it should fit into any of your
 
 - [Basic](/tutorials/basic.md)
 - [Custom JSON-RPC method name](/tutorials/custom-json-rpc-method-name.md)
-- [Passing function as parameter](/tutorials/passing-function-as-parameter.md) :tada:
+- [Passing function as parameter or return value or both](/tutorials/passing-function-as-parameter-or-return-value-or-both.md) :tada:
 
 ## Examples
 

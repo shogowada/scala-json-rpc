@@ -1,9 +1,9 @@
-# Passing function as parameter
+# Passing function as parameter or return value or both
 
 You can pass functions as parameter by using `JsonRpcFunction` with `JsonRpcServerAndClient`.
 
 - [Create JsonRpcServerAndClient](#create-jsonrpcserverandclient)
-- [Create API that takes JsonRpcFunction as parameter](#create-api-that-takes-jsonrpcfunction-as-parameter)
+- [Create API that takes JsonRpcFunction as parameter or return value or both](#create-api-that-takes-jsonrpcfunction-as-parameter-or-return-value-or-both)
 - [Implement server](#implement-server)
 - [Implement client](#implement-client)
 - [But how is it working? I thought it's JSON-RPC library!](#but-how-is-it-working-i-thought-its-json-rpc-library)
@@ -41,7 +41,7 @@ Then, you can create `JsonRpcServerAndClient` using the server and the client.
 val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
 ```
 
-## Create API that takes JsonRpcFunction as parameter
+## Create API that takes JsonRpcFunction as parameter or return value or both
 
 ```scala
 trait EchoApi {
@@ -51,6 +51,10 @@ trait EchoApi {
 trait UuidSubjectApi {
   def register(observer: JsonRpcFunction1[String, Future[Unit]]): Unit
   def unregister(observer: JsonRpcFunction1[String, Future[Unit]]): Unit
+}
+// Or, you might want to return an unregister function
+trait UuidSubjectApi {
+  def register(observer: JsonRpcFunction1[String, Future[Unit]]): Future[JsonRpcFunction0[Unit]]
 }
 ```
 
