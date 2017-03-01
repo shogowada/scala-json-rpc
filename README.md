@@ -7,10 +7,10 @@ Make communication between your server and client as easy as making function cal
 
 scala-json-rpc is a Remote Procedure Call (RPC) library honorring [JSON-RPC 2.0 spec](http://www.jsonrpc.org).
 
-JSON-RPC defines a specification of RPC in JSON format. This means that you can achieve RPC between your components as long as they are capable of:
+JSON-RPC defines a specification of RPC in JSON format. This means that you can achieve RPC between your components as long as they are capable of
 
-- serializing and deserializing JSON.
-- passing strings around.
+- Serializing and deserializing JSON
+- Passing strings around
 
 ```
 +--------+                          +--------+
