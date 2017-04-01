@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
 import java.util.UUID
 
-import io.github.shogowada.scala.jsonrpc.JsonRpcFunction1
+import io.github.shogowada.scala.jsonrpc.DisposableFunction1
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -10,7 +10,7 @@ import scala.concurrent.Future
 class TodoRepositoryApiImpl extends TodoRepositoryApi {
 
   var todos: Seq[Todo] = Seq()
-  var observersById: Map[String, JsonRpcFunction1[TodoEvent, Future[Unit]]] = Map()
+  var observersById: Map[String, DisposableFunction1[TodoEvent, Future[Unit]]] = Map()
 
   override def add(description: String): Future[Todo] = this.synchronized {
     val todo = Todo(id = UUID.randomUUID().toString, description)
@@ -31,7 +31,7 @@ class TodoRepositoryApiImpl extends TodoRepositoryApi {
     Future()
   }
 
-  override def register(observer: JsonRpcFunction1[TodoEvent, Future[Unit]]): Future[String] = this.synchronized {
+  override def register(observer: DisposableFunction1[TodoEvent, Future[Unit]]): Future[String] = this.synchronized {
     val id = UUID.randomUUID().toString
     observersById = observersById + (id -> observer)
 
@@ -55,7 +55,7 @@ class TodoRepositoryApiImpl extends TodoRepositoryApi {
     }
   }
 
-  private def notify(observerId: String, observer: JsonRpcFunction1[TodoEvent, Future[Unit]], todoEvent: TodoEvent): Unit = {
+  private def notify(observerId: String, observer: DisposableFunction1[TodoEvent, Future[Unit]], todoEvent: TodoEvent): Unit = {
     observer(todoEvent)
         .failed // Probably connection is lost.
         .foreach(_ => unregister(observerId))

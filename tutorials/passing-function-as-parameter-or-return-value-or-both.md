@@ -1,9 +1,9 @@
 # Passing function as parameter or return value or both
 
-You can pass functions as parameter by using `JsonRpcFunction` with `JsonRpcServerAndClient`.
+You can pass functions as parameter by using `DisposableFunction` with `JsonRpcServerAndClient`.
 
 - [Create JsonRpcServerAndClient](#create-jsonrpcserverandclient)
-- [Create API that takes JsonRpcFunction as parameter or return value or both](#create-api-that-takes-jsonrpcfunction-as-parameter-or-return-value-or-both)
+- [Create API that takes DisposableFunction as parameter or return value or both](#create-api-that-takes-disposablefunction-as-parameter-or-return-value-or-both)
 - [Implement server](#implement-server)
 - [Implement client](#implement-client)
 - [But how is it working? I thought it's JSON-RPC library!](#but-how-is-it-working-i-thought-its-json-rpc-library)
@@ -41,20 +41,20 @@ Then, you can create `JsonRpcServerAndClient` using the server and the client.
 val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
 ```
 
-## Create API that takes JsonRpcFunction as parameter or return value or both
+## Create API that takes DisposableFunction as parameter or return value or both
 
 ```scala
 trait EchoApi {
-  def echo(message: String, callback: JsonRpcFunction1[String, Unit]): Unit
+  def echo(message: String, callback: DisposableFunction1[String, Unit]): Unit
 }
 
 trait UuidSubjectApi {
-  def register(observer: JsonRpcFunction1[String, Future[Unit]]): Unit
-  def unregister(observer: JsonRpcFunction1[String, Future[Unit]]): Unit
+  def register(observer: DisposableFunction1[String, Future[Unit]]): Unit
+  def unregister(observer: DisposableFunction1[String, Future[Unit]]): Unit
 }
 // Or, you might want to return an unregister function
 trait UuidSubjectApi {
-  def register(observer: JsonRpcFunction1[String, Future[Unit]]): Future[JsonRpcFunction0[Unit]]
+  def register(observer: DisposableFunction1[String, Future[Unit]]): Future[DisposableFunction0[Unit]]
 }
 ```
 
@@ -66,14 +66,14 @@ The `UuidSubjectApi.unregister` works because **if the same function reference i
 
 ```scala
 class EchoApiImpl extends EchoApi {
-  override def echo(message: String, callback: JsonRpcFunction1[String, Unit]): Unit = {
+  override def echo(message: String, callback: DisposableFunction1[String, Unit]): Unit = {
     callback(message)
     callback.dispose() // Dispose the function when you no longer use it.
   }
 }
 
 class UuidSubjectApiImpl extends UuidSubjectApi {
-  var observers: Set[JsonRpcFunction1[String, Future[Unit]]] = Set()
+  var observers: Set[DisposableFunction1[String, Future[Unit]]] = Set()
 
   // ... Set timer so that we will invoke the following method periodically.
   def notify() {
@@ -85,11 +85,11 @@ class UuidSubjectApiImpl extends UuidSubjectApi {
     })
   }
 
-  override def register(observer: JsonRpcFunction1[String, Future[Unit]]): Unit = this.synchronized {
+  override def register(observer: DisposableFunction1[String, Future[Unit]]): Unit = this.synchronized {
     observers = observers + observer
   }
 
-  override def unregister(observer: JsonRpcFunction1[String, Future[Unit]]): Unit = this.synchronized {
+  override def unregister(observer: DisposableFunction1[String, Future[Unit]]): Unit = this.synchronized {
     observers = observers - observer
     observer.dispose() // We no longer use it.
   }
@@ -100,7 +100,7 @@ serverAndClient.bindApi[EchoApi](new EchoApiImpl)
 serverAndClient.bindApi[UuidSubjectApi](new UuidSubjectApiImpl)
 ```
 
-You can use the `JsonRpcFunction` just like regular function except **you need to explicitly dispose the function when you no longer use it**. This is so that both server and client can dispose relative mappings.
+You can use the `DisposableFunction` just like regular function except **you need to explicitly dispose the function when you no longer use it**. This is so that both server and client can dispose relative mappings.
 
 ## Implement client
 
@@ -121,7 +121,7 @@ uuidSubjectApi.register(uuidObserver)
 uuidSubjectApi.unregister(uuidObserver)
 ```
 
-On client side, also, you can use the parameter just like regular functions because `FunctionN` types are implicitly converted to `JsonRpcFunctionN` types. If you want to explicitly create `JsonRpcFunction`, you can do so by using its factory method like `JsonRpcFunction((message: String) => println(message))` or `JsonRpcFunction(uuidObserver)`.
+On client side, also, you can use the parameter just like regular functions because `FunctionN` types are implicitly converted to `DisposableFunctionN` types. If you want to explicitly create `DisposableFunction`, you can do so by using its factory method like `DisposableFunction((message: String) => println(message))` or `DisposableFunction(uuidObserver)`.
 
 ## But how is it working? I thought it's JSON-RPC library!
 
@@ -129,7 +129,7 @@ To illustrate how it's wroking, let's take the following API as an example.
 
 ```scala
 trait FooApi {
-  def foo(bar: JsonRpcFunction1[String, Future[String]]): Future[String]
+  def foo(bar: DisposableFunction1[String, Future[String]]): Future[String]
 }
 ```
 
@@ -159,7 +159,7 @@ Knowing this rule, you can use these APIs with JSON-RPC client & server on diffe
 
 ## Summary
 
-- You can pass functions as parameter by using `JsonRpcFunctionN` type.
+- You can pass functions as parameter by using `DisposableFunctionN` type.
 - To use function as parameter, you need to use `JsonRpcServerAndClient`.
 - Invoking the function sends just another JSON-RPC request.
     - Your function needs to return either `Unit` or `Future` just like API methods.

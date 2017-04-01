@@ -2,15 +2,15 @@ package io.github.shogowada.scala.jsonrpc.client
 
 import java.util.UUID
 
-import io.github.shogowada.scala.jsonrpc.{Constants, JsonRpcFunction}
+import io.github.shogowada.scala.jsonrpc.{Constants, DisposableFunction}
 
-class JsonRpcFunctionMethodNameRepository {
+class DisposableFunctionMethodNameRepository {
 
   var identifierToMethodNameMap: Map[Any, String] = Map()
   var methodNameToIdentifierMap: Map[String, Any] = Map()
 
-  def getOrAddAndNotify(jsonRpcFunction: JsonRpcFunction, notify: (String) => Unit): String = this.synchronized {
-    val identifier = jsonRpcFunction.identifier
+  def getOrAddAndNotify(disposableFunction: DisposableFunction, notify: (String) => Unit): String = this.synchronized {
+    val identifier = disposableFunction.identifier
     if (!identifierToMethodNameMap.contains(identifier)) {
       val methodName = Constants.FunctionMethodNamePrefix + UUID.randomUUID().toString
       identifierToMethodNameMap = identifierToMethodNameMap + (identifier -> methodName)

@@ -4,7 +4,7 @@ import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
 import scala.reflect.macros.blackbox
 
-class JsonRpcFunctionServerFactoryMacro[Context <: blackbox.Context](val c: Context) {
+class DisposableFunctionServerFactoryMacro[Context <: blackbox.Context](val c: Context) {
 
   import c.universe._
 
@@ -14,22 +14,22 @@ class JsonRpcFunctionServerFactoryMacro[Context <: blackbox.Context](val c: Cont
   def getOrCreate(
       client: Tree,
       server: Tree,
-      jsonRpcFunction: TermName,
-      jsonRpcFunctionType: Type
+      disposableFunction: TermName,
+      disposableFunctionType: Type
   ): c.Expr[String] = {
     val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
-    val jsonRpcFunctionMethodNameRepository = macroUtils.getJsonRpcFunctionMethodNameRepository(client)
+    val disposableFunctionMethodNameRepository = macroUtils.getDisposableFunctionMethodNameRepository(client)
 
     val disposeFunctionMethodHandler = requestJsonHandlerFactoryMacro.createDisposeFunctionMethodHandler(server, client)
 
-    val handler = requestJsonHandlerFactoryMacro.createFromJsonRpcFunction(client, server, jsonRpcFunction, jsonRpcFunctionType)
+    val handler = requestJsonHandlerFactoryMacro.createFromDisposableFunction(client, server, disposableFunction, disposableFunctionType)
 
     c.Expr[String](
       q"""
           $requestJsonHandlerRepository.addIfAbsent(Constants.DisposeMethodName, () => ($disposeFunctionMethodHandler))
 
-          val methodName: String = $jsonRpcFunctionMethodNameRepository.getOrAddAndNotify(
-            $jsonRpcFunction,
+          val methodName: String = $disposableFunctionMethodNameRepository.getOrAddAndNotify(
+            $disposableFunction,
             (newMethodName) => { $requestJsonHandlerRepository.add(newMethodName, $handler) }
           )
           methodName

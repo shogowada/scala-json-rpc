@@ -15,7 +15,7 @@ class JsonRpcServer[JSON_SERIALIZER <: JsonSerializer]
     val executionContext: ExecutionContext
 ) {
   val requestJsonHandlerRepository = new JsonRpcRequestJsonHandlerRepository
-  val jsonRpcFunctionRepository = new JsonRpcFunctionRepository
+  val disposableFunctionRepository = new DisposableFunctionRepository
 
   def bindApi[API](api: API): Unit = macro JsonRpcServerMacro.bindApi[API]
 

@@ -47,13 +47,13 @@ trait TodoRepositoryApi {
 
   def remove(id: String): Future[Unit]
 
-  def register(observer: JsonRpcFunction1[TodoEvent, Future[Unit]]): Future[String]
+  def register(observer: DisposableFunction1[TodoEvent, Future[Unit]]): Future[String]
 
   def unregister(observerId: String): Future[Unit]
 }
 ```
 
-Note that we are using `JsonRpcFunction1` to callback the client. For more details about `JsonRpcFunction`, please see [its tutorial page](../../tutorials/passing-function-as-parameter.md).
+Note that we are using `DisposableFunction1` to callback the client. For more details about `DisposableFunction`, please see [its tutorial page](../../tutorials/passing-function-as-parameter.md).
 
 ## Scala JS (browser)
 
@@ -140,7 +140,7 @@ Here is our API implementation:
 class TodoRepositoryApiImpl extends TodoRepositoryApi {
 
   var todos: Seq[Todo] = Seq()
-  var observersById: Map[String, JsonRpcFunction1[TodoEvent, Future[Unit]]] = Map()
+  var observersById: Map[String, DisposableFunction1[TodoEvent, Future[Unit]]] = Map()
 
   override def add(description: String): Future[Todo] = this.synchronized {
     val todo = Todo(id = UUID.randomUUID().toString, description)
@@ -161,7 +161,7 @@ class TodoRepositoryApiImpl extends TodoRepositoryApi {
     Future()
   }
 
-  override def register(observer: JsonRpcFunction1[TodoEvent, Future[Unit]]): Future[String] = this.synchronized {
+  override def register(observer: DisposableFunction1[TodoEvent, Future[Unit]]): Future[String] = this.synchronized {
     val id = UUID.randomUUID().toString
     observersById = observersById + (id -> observer)
 
@@ -185,7 +185,7 @@ class TodoRepositoryApiImpl extends TodoRepositoryApi {
     }
   }
 
-  private def notify(observerId: String, observer: JsonRpcFunction1[TodoEvent, Future[Unit]], todoEvent: TodoEvent): Unit = {
+  private def notify(observerId: String, observer: DisposableFunction1[TodoEvent, Future[Unit]], todoEvent: TodoEvent): Unit = {
     observer(todoEvent)
         .failed // Probably connection is lost.
         .foreach(_ => unregister(observerId))
