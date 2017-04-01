@@ -36,8 +36,8 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
 
         trait Api {
           def foo(
-              requestFunction: JsonRpcFunction1[String, Future[String]],
-              notificationFunction: JsonRpcFunction1[String, Unit]
+              requestFunction: DisposableFunction1[String, Future[String]],
+              notificationFunction: DisposableFunction1[String, Unit]
           ): Unit
         }
 
@@ -52,12 +52,12 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
         val promisedNotificationValue2: Promise[String] = Promise()
 
         class ApiImpl extends Api {
-          var requestFunction: JsonRpcFunction1[String, Future[String]] = _
-          var notificationFunction: JsonRpcFunction1[String, Unit] = _
+          var requestFunction: DisposableFunction1[String, Future[String]] = _
+          var notificationFunction: DisposableFunction1[String, Unit] = _
 
           override def foo(
-              theRequestFunction: JsonRpcFunction1[String, Future[String]],
-              theNotificationFunction: JsonRpcFunction1[String, Unit]
+              theRequestFunction: DisposableFunction1[String, Future[String]],
+              theNotificationFunction: DisposableFunction1[String, Unit]
           ): Unit = {
             requestFunction = theRequestFunction
             requestFunction(requestValue1).onComplete {
@@ -167,7 +167,7 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
       class ApiThatReturnsFunction extends TwoServersAndClients {
 
         trait Api {
-          def foo: Future[JsonRpcFunction0[Future[String]]]
+          def foo: Future[DisposableFunction0[Future[String]]]
         }
 
         class ApiImpl extends Api {
@@ -180,7 +180,7 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
 
       describe("when I call the function") {
         class CallTheFunction extends ApiThatReturnsFunction {
-          val futureFunction: Future[JsonRpcFunction0[Future[String]]] = client.foo
+          val futureFunction: Future[DisposableFunction0[Future[String]]] = client.foo
           val futureFoo: Future[String] = futureFunction.flatMap(function => function())
         }
 
@@ -221,21 +221,21 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
 
     describe("given I have an API that takes the same function type in 2 places") {
       class ClientApiThatTakes2Functions extends TwoServersAndClients {
-        val promisedFoo1Function: Promise[JsonRpcFunction0[Unit]] = Promise()
-        val promisedFoo2Function: Promise[JsonRpcFunction0[Unit]] = Promise()
+        val promisedFoo1Function: Promise[DisposableFunction0[Unit]] = Promise()
+        val promisedFoo2Function: Promise[DisposableFunction0[Unit]] = Promise()
 
         trait Api {
-          def foo1(bar: JsonRpcFunction0[Unit]): Unit
+          def foo1(bar: DisposableFunction0[Unit]): Unit
 
-          def foo2(bar: JsonRpcFunction0[Unit]): Unit
+          def foo2(bar: DisposableFunction0[Unit]): Unit
         }
 
         class ApiImpl extends Api {
-          override def foo1(bar: JsonRpcFunction0[Unit]): Unit = {
+          override def foo1(bar: DisposableFunction0[Unit]): Unit = {
             promisedFoo1Function.success(bar)
           }
 
-          override def foo2(bar: JsonRpcFunction0[Unit]): Unit = {
+          override def foo2(bar: DisposableFunction0[Unit]): Unit = {
             promisedFoo2Function.success(bar)
           }
         }

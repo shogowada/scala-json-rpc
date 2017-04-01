@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.utils
 
-import io.github.shogowada.scala.jsonrpc.JsonRpcFunction
+import io.github.shogowada.scala.jsonrpc.DisposableFunction
 import io.github.shogowada.scala.jsonrpc.Models.JsonRpcError
 import io.github.shogowada.scala.jsonrpc.api.JsonRpcMethod
 
@@ -26,11 +26,11 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   def getPromisedResponseRepository(prefix: Tree): Tree = q"$prefix.promisedResponseRepository"
 
-  def getJsonRpcFunctionMethodNameRepository(prefix: Tree) = q"$prefix.jsonRpcFunctionMethodNameRepository"
+  def getDisposableFunctionMethodNameRepository(prefix: Tree) = q"$prefix.disposableFunctionMethodNameRepository"
 
   def getRequestJsonHandlerRepository(prefix: Tree): Tree = q"$prefix.requestJsonHandlerRepository"
 
-  def getJsonRpcFunctionRepository(prefix: Tree) = q"$prefix.jsonRpcFunctionRepository"
+  def getDisposableFunctionRepository(prefix: Tree) = q"$prefix.disposableFunctionRepository"
 
   def getSend(prefix: Tree): Tree = q"$prefix.send"
 
@@ -86,7 +86,7 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
   }
 
   private def mapSingleJsonRpcParameterType(paramType: Type): Type = {
-    if (isJsonRpcFunctionType(paramType)) {
+    if (isDisposableFunctionType(paramType)) {
       getType[String]
     } else {
       paramType
@@ -94,15 +94,15 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
   }
 
   def getJsonRpcResultType(resultType: Type): Type = {
-    if (isJsonRpcFunctionType(resultType)) {
+    if (isDisposableFunctionType(resultType)) {
       getType[String]
     } else {
       resultType
     }
   }
 
-  def isJsonRpcFunctionType(theType: Type): Boolean = {
-    theType <:< getType[JsonRpcFunction]
+  def isDisposableFunctionType(theType: Type): Boolean = {
+    theType <:< getType[DisposableFunction]
   }
 
   def isJsonRpcNotificationMethod(returnType: Type): Boolean = {

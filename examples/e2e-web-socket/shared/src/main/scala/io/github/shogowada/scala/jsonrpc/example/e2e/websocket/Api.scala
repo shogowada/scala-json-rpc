@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
-import io.github.shogowada.scala.jsonrpc.JsonRpcFunction1
+import io.github.shogowada.scala.jsonrpc.DisposableFunction1
 
 import scala.concurrent.Future
 
@@ -20,7 +20,7 @@ trait TodoRepositoryApi {
 
   def remove(id: String): Future[Unit]
 
-  def register(observer: JsonRpcFunction1[TodoEvent, Future[Unit]]): Future[String]
+  def register(observer: DisposableFunction1[TodoEvent, Future[Unit]]): Future[String]
 
   def unregister(observerId: String): Future[Unit]
 }

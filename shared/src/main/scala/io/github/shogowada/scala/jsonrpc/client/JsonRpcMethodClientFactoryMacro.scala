@@ -1,11 +1,9 @@
 package io.github.shogowada.scala.jsonrpc.client
 
-import io.github.shogowada.scala.jsonrpc.Constants
-import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcErrorResponse, JsonRpcErrors, JsonRpcException, JsonRpcRequest}
-import io.github.shogowada.scala.jsonrpc.server.{JsonRpcFunctionServerFactoryMacro, JsonRpcRequestJsonHandlerFactoryMacro}
+import io.github.shogowada.scala.jsonrpc.Models.JsonRpcRequest
+import io.github.shogowada.scala.jsonrpc.server.{DisposableFunctionServerFactoryMacro, JsonRpcRequestJsonHandlerFactoryMacro}
 import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 
-import scala.concurrent.Future
 import scala.reflect.macros.blackbox
 
 class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Context) {
@@ -14,8 +12,8 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
 
   lazy val macroUtils = JsonRpcMacroUtils[c.type](c)
   lazy val requestJsonHandlerFactoryMacro = new JsonRpcRequestJsonHandlerFactoryMacro[c.type](c)
-  lazy val jsonRpcFunctionClientFactoryMacro = new JsonRpcFunctionClientFactoryMacro[c.type](c)
-  lazy val jsonRpcFunctionServerFactoryMacro = new JsonRpcFunctionServerFactoryMacro[c.type](c)
+  lazy val disposableFunctionClientFactoryMacro = new DisposableFunctionClientFactoryMacro[c.type](c)
+  lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
 
   def createAsFunction(
       client: Tree,
@@ -71,11 +69,11 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
   ): Tree = {
     def createJsonRpcParameter(paramType: Type, index: Int): Tree = {
       val paramName = getParamName(index)
-      if (macroUtils.isJsonRpcFunctionType(paramType)) {
-        val jsonRpcFunctionMethodName: c.Expr[String] = maybeServer
-            .map(server => jsonRpcFunctionServerFactoryMacro.getOrCreate(client, server, paramName, paramType))
-            .getOrElse(throw new UnsupportedOperationException("To use JsonRpcFunction, you need to create an API with JsonRpcServerAndClient."))
-        q"$jsonRpcFunctionMethodName"
+      if (macroUtils.isDisposableFunctionType(paramType)) {
+        val disposableFunctionMethodName: c.Expr[String] = maybeServer
+            .map(server => disposableFunctionServerFactoryMacro.getOrCreate(client, server, paramName, paramType))
+            .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to create an API with JsonRpcServerAndClient."))
+        q"$disposableFunctionMethodName"
       } else {
         q"$paramName"
       }
@@ -197,10 +195,10 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
 
     def mapResult(resultResponse: Tree): Tree = {
       val result = q"$resultResponse.result"
-      if (macroUtils.isJsonRpcFunctionType(resultType)) {
+      if (macroUtils.isDisposableFunctionType(resultType)) {
         maybeServer
-            .map(server => jsonRpcFunctionClientFactoryMacro.getOrCreate(server, client, resultType, q"$result"))
-            .getOrElse(throw new UnsupportedOperationException("To use an API returning JsonRpcFunction, you need to create the API with JsonRpcServerAndClient."))
+            .map(server => disposableFunctionClientFactoryMacro.getOrCreate(server, client, resultType, q"$result"))
+            .getOrElse(throw new UnsupportedOperationException("To use an API returning DisposableFunction, you need to create the API with JsonRpcServerAndClient."))
       } else {
         result
       }

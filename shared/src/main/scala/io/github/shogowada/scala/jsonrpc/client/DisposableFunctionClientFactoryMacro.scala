@@ -5,7 +5,7 @@ import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
 import scala.concurrent.Future
 import scala.reflect.macros.blackbox
 
-class JsonRpcFunctionClientFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
+class DisposableFunctionClientFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   import c.universe._
 
@@ -15,32 +15,32 @@ class JsonRpcFunctionClientFactoryMacro[CONTEXT <: blackbox.Context](val c: CONT
   def getOrCreate(
       server: c.Tree,
       client: c.Tree,
-      jsonRpcFunctionType: c.Type,
-      jsonRpcFunctionMethodName: c.Tree
+      disposableFunctionType: c.Type,
+      disposableFunctionMethodName: c.Tree
   ): c.Tree = {
-    val jsonRpcFunctionRepository = macroUtils.getJsonRpcFunctionRepository(server)
+    val disposableFunctionRepository = macroUtils.getDisposableFunctionRepository(server)
 
-    val newJsonRpcFunction = create(server, client, jsonRpcFunctionType, jsonRpcFunctionMethodName)
+    val newDisposableFunction = create(server, client, disposableFunctionType, disposableFunctionMethodName)
 
     q"""
-        $jsonRpcFunctionRepository
-            .getOrAdd($jsonRpcFunctionMethodName, () => $newJsonRpcFunction)
-            .asInstanceOf[$jsonRpcFunctionType]
+        $disposableFunctionRepository
+            .getOrAdd($disposableFunctionMethodName, () => $newDisposableFunction)
+            .asInstanceOf[$disposableFunctionType]
         """
   }
 
   private def create(
       server: c.Tree,
       client: c.Tree,
-      jsonRpcFunctionType: c.Type,
-      jsonRpcFunctionMethodName: c.Tree
+      disposableFunctionType: c.Type,
+      disposableFunctionMethodName: c.Tree
   ): c.Tree = {
-    val typeArgs: Seq[Type] = jsonRpcFunctionType.typeArgs
+    val typeArgs: Seq[Type] = disposableFunctionType.typeArgs
     val paramTypes: Seq[Type] = typeArgs.init
     val returnType: Type = typeArgs.last
-    val function = methodClientFactoryMacro.createAsFunction(client, Some(server), jsonRpcFunctionMethodName, paramTypes, returnType)
+    val function = methodClientFactoryMacro.createAsFunction(client, Some(server), disposableFunctionMethodName, paramTypes, returnType)
 
-    val disposeMethod = createDisposeMethod(server, client, jsonRpcFunctionMethodName)
+    val disposeMethod = createDisposeMethod(server, client, disposableFunctionMethodName)
 
     def getApplyParameterName(index: Int) = TermName(s"v$index")
 
@@ -53,7 +53,7 @@ class JsonRpcFunctionClientFactoryMacro[CONTEXT <: blackbox.Context](val c: CONT
         .map(getApplyParameterName)
 
     q"""
-        new $jsonRpcFunctionType {
+        new $disposableFunctionType {
           override val identifier = $function
 
           override def apply(..$applyParameters) = $function(..$applyParameterNames)
@@ -66,9 +66,9 @@ class JsonRpcFunctionClientFactoryMacro[CONTEXT <: blackbox.Context](val c: CONT
   private def createDisposeMethod(
       server: Tree,
       client: Tree,
-      jsonRpcFunctionMethodName: Tree
+      disposableFunctionMethodName: Tree
   ): Tree = {
-    val jsonRpcFunctionRepository = macroUtils.getJsonRpcFunctionRepository(server)
+    val disposableFunctionRepository = macroUtils.getDisposableFunctionRepository(server)
 
     val disposeClient = methodClientFactoryMacro.createAsFunction(
       client,
@@ -80,8 +80,8 @@ class JsonRpcFunctionClientFactoryMacro[CONTEXT <: blackbox.Context](val c: CONT
 
     q"""
         override def dispose(): Future[Unit] = {
-          $jsonRpcFunctionRepository.remove($jsonRpcFunctionMethodName)
-          $disposeClient($jsonRpcFunctionMethodName)
+          $disposableFunctionRepository.remove($disposableFunctionMethodName)
+          $disposeClient($disposableFunctionMethodName)
         }
         """
   }
