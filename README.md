@@ -109,8 +109,8 @@ def onResponseJsonReceived(responseJson: String): Unit = {
 
 |Platform|SBT|Scala Version|Scala JS Version|
 |---|---|---|---|
-|JVM|```"io.github.shogowada" %% "scala-json-rpc" % "0.6.0"```|2.12||
-|JS|```"io.github.shogowada" %%% "scala-json-rpc" % "0.6.0"```|2.12|0.6.14+|
+|JVM|```"io.github.shogowada" %% "scala-json-rpc" % "0.7.0"```|2.12||
+|JS|```"io.github.shogowada" %%% "scala-json-rpc" % "0.7.0"```|2.12|0.6.15+|
 
 scala-json-rpc has **no external dependency**, so it should fit into any of your Scala JVM & JS applications.
 
