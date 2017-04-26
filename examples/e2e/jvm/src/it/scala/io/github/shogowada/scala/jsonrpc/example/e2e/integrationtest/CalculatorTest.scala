@@ -41,5 +41,5 @@ class CalculatorTest extends path.FreeSpec
     }
   }
 
-  close()
+  quit()
 }

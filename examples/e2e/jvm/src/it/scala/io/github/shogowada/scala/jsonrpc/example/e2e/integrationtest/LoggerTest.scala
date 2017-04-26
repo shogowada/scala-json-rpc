@@ -31,5 +31,5 @@ class LoggerTest extends path.FreeSpec
     }
   }
 
-  close()
+  quit()
 }

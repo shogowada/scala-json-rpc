@@ -26,5 +26,5 @@ class EchoTest extends path.FreeSpec
     }
   }
 
-  close()
+  quit()
 }
