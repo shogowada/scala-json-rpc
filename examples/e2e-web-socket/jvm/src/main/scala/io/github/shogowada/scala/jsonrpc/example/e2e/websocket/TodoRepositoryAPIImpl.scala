@@ -7,7 +7,7 @@ import io.github.shogowada.scala.jsonrpc.DisposableFunction1
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class TodoRepositoryApiImpl extends TodoRepositoryApi {
+class TodoRepositoryAPIImpl extends TodoRepositoryAPI {
 
   var todos: Seq[Todo] = Seq()
   var observersById: Map[String, DisposableFunction1[TodoEvent, Future[Unit]]] = Map()

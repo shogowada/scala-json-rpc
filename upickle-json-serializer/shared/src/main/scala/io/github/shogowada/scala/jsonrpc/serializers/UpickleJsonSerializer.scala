@@ -52,9 +52,7 @@ object UpickleJsonSerializerMacro {
 
     c.Expr[Option[String]](
       q"""
-          import scala.util.Try
-          import io.github.shogowada.scala.jsonrpc.serializers.JsonRpcPickler._
-          Try(write($value)).toOption
+          scala.util.Try(io.github.shogowada.scala.jsonrpc.serializers.JsonRpcPickler.write($value)).toOption
           """
     )
   }
@@ -66,9 +64,7 @@ object UpickleJsonSerializerMacro {
 
     c.Expr[Option[T]](
       q"""
-          import scala.util.Try
-          import io.github.shogowada.scala.jsonrpc.serializers.JsonRpcPickler._
-          Try(read[$deserializeType]($json)).toOption
+          scala.util.Try(io.github.shogowada.scala.jsonrpc.serializers.JsonRpcPickler.read[$deserializeType]($json)).toOption
           """
     )
   }

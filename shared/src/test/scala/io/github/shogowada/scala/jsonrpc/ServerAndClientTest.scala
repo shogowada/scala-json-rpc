@@ -6,7 +6,6 @@ import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
 import org.scalatest.{AsyncFunSpec, Matchers}
 
-import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
 class ServerAndClientTest extends AsyncFunSpec
@@ -18,40 +17,40 @@ class ServerAndClientTest extends AsyncFunSpec
 
   describe("given I have APIs") {
 
-    trait CalculatorApi {
+    trait CalculatorAPI {
       def add(lhs: Int, rhs: Int): Future[Int]
 
       def subtract(lhs: Int, rhs: Int): Future[Int]
     }
 
-    trait GreeterApi {
+    trait GreeterAPI {
       @api.JsonRpcMethod("greet")
       def greet(greeting: String): Unit
     }
 
-    class CalculatorApiImpl extends CalculatorApi {
-      override def add(lhs: Int, rhs: Int): Future[Int] = {
-        Future(lhs + rhs)
+    class CalculatorAPIImpl extends CalculatorAPI {
+      override def add(lhs: Int, rhs: Int): Future[Int] = Future {
+        lhs + rhs
       }
 
-      override def subtract(lhs: Int, rhs: Int): Future[Int] = {
-        Future(lhs - rhs)
+      override def subtract(lhs: Int, rhs: Int): Future[Int] = Future {
+        lhs - rhs
       }
     }
 
-    class GreeterApiImpl extends GreeterApi {
-      val greetings = ListBuffer.empty[String]
+    class GreeterAPIImpl extends GreeterAPI {
+      var greetings: Seq[String] = Seq.empty
 
       override def greet(greeting: String): Unit = {
-        greetings += greeting
+        greetings = greetings :+ greeting
       }
     }
 
-    val greeterApiServer = new GreeterApiImpl
+    val greeterAPIServer = new GreeterAPIImpl()
 
     val server = JsonRpcServer(jsonSerializer)
-    server.bindApi[CalculatorApi](new CalculatorApiImpl)
-    server.bindApi[GreeterApi](greeterApiServer)
+    server.bindAPI[CalculatorAPI](new CalculatorAPIImpl)
+    server.bindAPI[GreeterAPI](greeterAPIServer)
 
     val client = JsonRpcClient(
       jsonSerializer,
@@ -59,10 +58,10 @@ class ServerAndClientTest extends AsyncFunSpec
     )
 
     describe("when I am using calculator API") {
-      val calculatorApi = client.createApi[CalculatorApi]
+      val calculatorAPI = client.createAPI[CalculatorAPI]
 
       describe("when I add 2 values") {
-        val futureResult = calculatorApi.add(1, 2)
+        val futureResult = calculatorAPI.add(1, 2)
 
         it("then it should add the 2 values") {
           futureResult.map(result => result should equal(3))
@@ -70,7 +69,7 @@ class ServerAndClientTest extends AsyncFunSpec
       }
 
       describe("when I subtract one value from the other") {
-        val futureResult = calculatorApi.subtract(1, 2)
+        val futureResult = calculatorAPI.subtract(1, 2)
 
         it("then it should subtract the value") {
           futureResult.map(result => result should equal(-1))
@@ -79,35 +78,34 @@ class ServerAndClientTest extends AsyncFunSpec
     }
 
     describe("when I am using greeter API") {
-      val greeterApi = client.createApi[GreeterApi]
+      val greeterAPI = client.createAPI[GreeterAPI]
 
       describe("when I greet") {
         val greeting = "Hello, World!"
-        greeterApi.greet(greeting)
+        greeterAPI.greet(greeting)
 
         it("then it should greet the server") {
-          greeterApiServer.greetings should equal(List(greeting))
+          greeterAPIServer.greetings should equal(List(greeting))
         }
       }
     }
 
     describe("when I am using invalid API") {
-      trait InvalidApi {
+      trait InvalidAPI {
         def invalidRequest: Future[String]
       }
 
-      val invalidApi = client.createApi[InvalidApi]
+      val invalidAPI = client.createAPI[InvalidAPI]
 
       describe("when I send request") {
-        val response = invalidApi.invalidRequest
+        val response = invalidAPI.invalidRequest
         it("then it should response error") {
           response.failed
               .map {
-                case exception: JsonRpcException[_] => {
+                case exception: JsonRpcException[_] =>
                   exception.maybeResponse should matchPattern {
                     case Some(JsonRpcErrorResponse(Constants.JsonRpc, _, JsonRpcErrors.methodNotFound)) =>
                   }
-                }
                 case exception => fail("It should have failed with JsonRpcErrorException, but failed with " + exception)
               }
         }

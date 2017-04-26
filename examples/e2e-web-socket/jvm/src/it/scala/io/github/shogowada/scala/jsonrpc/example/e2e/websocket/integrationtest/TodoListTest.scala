@@ -4,11 +4,11 @@ import io.github.shogowada.scala.jsonrpc.example.e2e.websocket.ElementIds
 import org.openqa.selenium.support.ui.{ExpectedCondition, ExpectedConditions, WebDriverWait}
 import org.openqa.selenium.{By, WebDriver}
 import org.scalatest.concurrent.Eventually
-import org.scalatest.selenium.Firefox
+import org.scalatest.selenium.{Chrome, Firefox}
 import org.scalatest.{Matchers, path}
 
 class TodoListTest extends path.FreeSpec
-    with Firefox
+    with Chrome
     with Eventually
     with Matchers {
 
@@ -26,6 +26,7 @@ class TodoListTest extends path.FreeSpec
     "when I add TODO item" - {
       val newTodoDescription = "Say hello"
 
+      waitFor(ExpectedConditions.visibilityOfElementLocated(By.id(ElementIds.NewTodoDescription)))
       textField(id(ElementIds.NewTodoDescription)).value = newTodoDescription
       clickOn(id(ElementIds.AddTodo))
 

@@ -1,93 +1,94 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e
 
+import io.github.shogowada.scalajs.reactjs.React
 import io.github.shogowada.scalajs.reactjs.VirtualDOM._
-import io.github.shogowada.scalajs.reactjs.classes.specs.ReactClassSpec
-import io.github.shogowada.scalajs.reactjs.elements.ReactHTMLInputElement
-import io.github.shogowada.scalajs.reactjs.events.SyntheticEvent
+import io.github.shogowada.scalajs.reactjs.events.{FormSyntheticEvent, SyntheticEvent}
+import org.scalajs.dom.raw.HTMLInputElement
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 
 object Calculator {
-
-  case class Props()
-
   case class State(lhs: Int, rhs: Int, added: Option[Int], subtracted: Option[Int])
 
+  type Self = React.Self[Unit, State]
 }
 
-class Calculator(calculatorApi: CalculatorApi) extends ReactClassSpec {
-  type Props = Calculator.Props
-  type State = Calculator.State
+class Calculator(calculatorAPI: CalculatorAPI) {
 
-  private var lhsElement: ReactHTMLInputElement = _
-  private var rhsElement: ReactHTMLInputElement = _
+  import Calculator._
 
-  override def getInitialState() = {
-    Calculator.State(0, 0, None, None)
-  }
+  def apply() = reactClass
 
-  override def render() = {
-    <.div()(
-      <.h2()("Calculator"),
-      <.form(^.onSubmit := onSubmit)(
-        <.input(
-          ^.id := ElementIds.CalculatorLhs,
-          ^.ref := ((element: ReactHTMLInputElement) => {
-            lhsElement = element
-          }),
-          ^.onChange := onChange,
-          ^.value := state.lhs
-        )(),
-        <.input(
-          ^.id := ElementIds.CalculatorRhs,
-          ^.ref := ((element: ReactHTMLInputElement) => {
-            rhsElement = element
-          }),
-          ^.onChange := onChange,
-          ^.value := state.rhs
-        )(),
-        <.button(
-          ^.id := ElementIds.CalculatorCalculate,
-          ^.`type` := "submit"
-        )("Calculate")
-      ),
-      <.div(^.id := ElementIds.CalculatorAdded)(
-        s"${state.lhs} + ${state.rhs} = ${state.added.getOrElse("?")}"
-      ),
-      <.div(^.id := ElementIds.CalculatorSubtracted)(
-        s"${state.lhs} - ${state.rhs} = ${state.subtracted.getOrElse("?")}"
-      )
-    ).asReactElement
-  }
+  private lazy val reactClass = React.createClass[Unit, State](
+    getInitialState = (self) => Calculator.State(0, 0, None, None),
+    render = (self) =>
+      <.div()(
+        <.h2()("Calculator"),
+        <.form(^.onSubmit := onSubmit(self))(
+          <.input(
+            ^.id := ElementIds.CalculatorLhs,
+            ^.onChange := onLhsChange(self),
+            ^.value := self.state.lhs
+          )(),
+          <.input(
+            ^.id := ElementIds.CalculatorRhs,
+            ^.onChange := onRhsChange(self),
+            ^.value := self.state.rhs
+          )(),
+          <.button(
+            ^.id := ElementIds.CalculatorCalculate,
+            ^.`type` := "submit"
+          )("Calculate")
+        ),
+        <.div(^.id := ElementIds.CalculatorAdded)(
+          s"${self.state.lhs} + ${self.state.rhs} = ${self.state.added.getOrElse("?")}"
+        ),
+        <.div(^.id := ElementIds.CalculatorSubtracted)(
+          s"${self.state.lhs} - ${self.state.rhs} = ${self.state.subtracted.getOrElse("?")}"
+        )
+      ).asReactElement
+  )
 
-  private val onChange = () => {
-    setState(state.copy(
-      lhs = lhsElement.value.toInt,
-      rhs = rhsElement.value.toInt,
-      added = None,
-      subtracted = None
-    ))
-  }
-
-  private val onSubmit = (event: SyntheticEvent) => {
-    event.preventDefault()
-
-    val lhs = state.lhs
-    val rhs = state.rhs
-
-    calculatorApi.add(lhs, rhs).onComplete {
-      case Success(added) if lhs == state.lhs && rhs == state.rhs => {
-        setState(_.copy(added = Some(added)))
-      }
-      case _ =>
+  private def onLhsChange(self: Self) =
+    (event: FormSyntheticEvent[HTMLInputElement]) => {
+      val value = event.target.value
+      self.setState(_.copy(
+        lhs = value.toInt,
+        added = None,
+        subtracted = None
+      ))
     }
 
-    calculatorApi.subtract(lhs, rhs).onComplete {
-      case Success(subtracted) if lhs == state.lhs && rhs == state.rhs => {
-        setState(_.copy(subtracted = Some(subtracted)))
-      }
-      case _ =>
+  private def onRhsChange(self: Self) =
+    (event: FormSyntheticEvent[HTMLInputElement]) => {
+      val value = event.target.value
+      self.setState(_.copy(
+        rhs = value.toInt,
+        added = None,
+        subtracted = None
+      ))
     }
-  }
+
+  private def onSubmit(self: Self) =
+    (event: SyntheticEvent) => {
+      event.preventDefault()
+
+      val lhs = self.state.lhs
+      val rhs = self.state.rhs
+
+      calculatorAPI.add(lhs, rhs).onComplete {
+        case Success(added) if lhs == self.state.lhs && rhs == self.state.rhs => {
+          self.setState(_.copy(added = Some(added)))
+        }
+        case _ =>
+      }
+
+      calculatorAPI.subtract(lhs, rhs).onComplete {
+        case Success(subtracted) if lhs == self.state.lhs && rhs == self.state.rhs => {
+          self.setState(_.copy(subtracted = Some(subtracted)))
+        }
+        case _ =>
+      }
+    }
 }

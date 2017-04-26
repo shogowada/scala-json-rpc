@@ -1,54 +1,53 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e
 
+import io.github.shogowada.scalajs.reactjs.React
 import io.github.shogowada.scalajs.reactjs.VirtualDOM._
-import io.github.shogowada.scalajs.reactjs.classes.specs.ReactClassSpec
-import io.github.shogowada.scalajs.reactjs.events.InputFormSyntheticEvent
+import io.github.shogowada.scalajs.reactjs.events.FormSyntheticEvent
+import org.scalajs.dom.raw.HTMLInputElement
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 
 object Echo {
-
-  case class Props()
-
   case class State(text: String, echoedText: Option[String])
 
+  type Self = React.Self[Unit, State]
 }
 
-class Echo(echoApi: EchoApi) extends ReactClassSpec {
+class Echo(echoAPI: EchoAPI) {
 
-  type Props = Echo.Props
-  type State = Echo.State
+  import Echo._
 
-  override def getInitialState() = {
-    Echo.State(text = "", echoedText = Some(""))
-  }
+  def apply() = reactClass
 
-  override def render() = {
-    <.div()(
-      <.h2()("Echo"),
-      <.label(^.`for` := ElementIds.EchoText)("I say:"),
-      <.input(
-        ^.id := ElementIds.EchoText,
-        ^.value := state.text,
-        ^.onChange := onChange
-      )(),
-      <.label(^.`for` := ElementIds.EchoEchoedText)("Server says:"),
-      <.span(^.id := ElementIds.EchoEchoedText)(state.echoedText.getOrElse(""))
-    ).asReactElement
-  }
+  private lazy val reactClass = React.createClass[Unit, State](
+    getInitialState = (self) => State(text = "", echoedText = Some("")),
+    render = (self) =>
+      <.div()(
+        <.h2()("Echo"),
+        <.label(^.`for` := ElementIds.EchoText)("I say:"),
+        <.input(
+          ^.id := ElementIds.EchoText,
+          ^.value := self.state.text,
+          ^.onChange := onChange(self)
+        )(),
+        <.label(^.`for` := ElementIds.EchoEchoedText)("Server says:"),
+        <.span(^.id := ElementIds.EchoEchoedText)(self.state.echoedText.getOrElse(""))
+      ).asReactElement
+  )
 
-  private val onChange = (event: InputFormSyntheticEvent) => {
-    val text = event.target.value
+  private def onChange(self: Self) =
+    (event: FormSyntheticEvent[HTMLInputElement]) => {
+      val text = event.target.value
 
-    setState(_.copy(
-      text = text,
-      echoedText = None
-    ))
+      self.setState(_.copy(
+        text = text,
+        echoedText = None
+      ))
 
-    echoApi.echo(text).onComplete {
-      case Success(echoedText) if state.text == text => setState(_.copy(echoedText = Some(echoedText)))
-      case _ =>
+      echoAPI.echo(text).onComplete {
+        case Success(echoedText) if self.state.text == text => self.setState(_.copy(echoedText = Some(echoedText)))
+        case _ =>
+      }
     }
-  }
 }

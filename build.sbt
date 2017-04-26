@@ -1,4 +1,4 @@
-crossScalaVersions := Seq("2.12.1")
+crossScalaVersions := Seq("2.12.2")
 
 publishTo := {
   val nexus = "https://oss.sonatype.org/"
@@ -13,7 +13,7 @@ val commonSettings = Seq(
   organization := "io.github.shogowada",
   name := "scala-json-rpc",
   version := "0.6.0",
-  scalaVersion := "2.12.1",
+  scalaVersion := "2.12.2",
   logBuffered in Test := false,
   licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
   homepage := Some(url("https://github.com/shogowada/scala-json-rpc")),
@@ -101,14 +101,14 @@ lazy val exampleJvmCommonSettings = Seq(
     "org.eclipse.jetty" % "jetty-webapp" % JettyVersion,
     "org.scalatra" %% "scalatra" % "2.5.+",
 
-    "org.seleniumhq.selenium" % "selenium-java" % "2.+" % "it",
+    "org.seleniumhq.selenium" % "selenium-java" % "[3.4.0,4.0.0[" % "it",
     "org.scalatest" %% "scalatest" % "3.+" % "it"
   )
 )
 
 lazy val exampleJsCommonSettings = Seq(
   libraryDependencies ++= Seq(
-    "io.github.shogowada" %%% "scalajs-reactjs" % "0.5.+",
+    "io.github.shogowada" %%% "scalajs-reactjs" % "0.11.+",
     "org.scala-js" %%% "scalajs-dom" % "0.9.+"
   )
 )

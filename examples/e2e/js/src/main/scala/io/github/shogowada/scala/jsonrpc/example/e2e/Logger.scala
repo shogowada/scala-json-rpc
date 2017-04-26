@@ -1,76 +1,78 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e
 
+import io.github.shogowada.scalajs.reactjs.React
 import io.github.shogowada.scalajs.reactjs.VirtualDOM._
-import io.github.shogowada.scalajs.reactjs.classes.specs.ReactClassSpec
-import io.github.shogowada.scalajs.reactjs.events.{InputFormSyntheticEvent, SyntheticEvent}
+import io.github.shogowada.scalajs.reactjs.events.{FormSyntheticEvent, SyntheticEvent}
+import org.scalajs.dom.raw.HTMLInputElement
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 
 object Logger {
-
-  case class Props()
-
   case class State(log: String, logs: Seq[String])
 
+  type Self = React.Self[Unit, State]
 }
 
-class Logger(loggerApi: LoggerApi) extends ReactClassSpec {
-  type Props = Logger.Props
-  type State = Logger.State
+class Logger(loggerAPI: LoggerAPI) {
 
-  override def getInitialState() = {
-    Logger.State("", Seq())
-  }
+  import Logger._
 
-  override def render() = {
-    <.div()(
-      <.h2()("Logger"),
-      <.form(^.onSubmit := onLog)(
-        <.input(
-          ^.id := ElementIds.LoggerLogText,
-          ^.value := state.log,
-          ^.onChange := onChange
-        )(),
-        <.button(
-          ^.id := ElementIds.LoggerLog,
-          ^.`type` := "submit"
-        )("Log")
-      ),
-      <.form(^.onSubmit := onGetLogs)(
-        <.button(
-          ^.id := ElementIds.LoggerGetLogs,
-          ^.`type` := "submit"
-        )("Get Logs")
-      ),
-      <.div(^.id := ElementIds.LoggerLogs)(
-        state.logs.map(log => {
-          <.div()(log)
-        })
-      )
-    ).asReactElement
-  }
+  def apply() = reactClass
 
-  private val onChange = (event: InputFormSyntheticEvent) => {
-    val log = event.target.value
+  private lazy val reactClass = React.createClass[Unit, State](
+    getInitialState = (self) => State("", Seq()),
+    render = (self) =>
+      <.div()(
+        <.h2()("Logger"),
+        <.form(^.onSubmit := onLog(self))(
+          <.input(
+            ^.id := ElementIds.LoggerLogText,
+            ^.value := self.state.log,
+            ^.onChange := onChange(self)
+          )(),
+          <.button(
+            ^.id := ElementIds.LoggerLog,
+            ^.`type` := "submit"
+          )("Log")
+        ),
+        <.form(^.onSubmit := onGetLogs(self))(
+          <.button(
+            ^.id := ElementIds.LoggerGetLogs,
+            ^.`type` := "submit"
+          )("Get Logs")
+        ),
+        <.div(^.id := ElementIds.LoggerLogs)(
+          self.state.logs.map(log => {
+            <.div()(log)
+          })
+        )
+      ).asReactElement
+  )
 
-    setState(_.copy(log = log))
-  }
+  private def onChange(self: Self) =
+    (event: FormSyntheticEvent[HTMLInputElement]) => {
+      val log = event.target.value
 
-  private val onLog = (event: SyntheticEvent) => {
-    event.preventDefault()
-
-    loggerApi.log(state.log)
-
-    setState(_.copy(log = ""))
-  }
-
-  private val onGetLogs = (event: SyntheticEvent) => {
-    event.preventDefault()
-
-    loggerApi.getAllLogs().onComplete {
-      case Success(logs) => setState(_.copy(logs = logs))
-      case _ =>
+      self.setState(_.copy(log = log))
     }
-  }
+
+  private def onLog(self: Self) =
+    (event: SyntheticEvent) => {
+      event.preventDefault()
+
+      loggerAPI.log(self.state.log)
+
+      self.setState(_.copy(log = ""))
+    }
+
+  private def onGetLogs(self: Self) =
+    (event: SyntheticEvent) => {
+      event.preventDefault()
+
+      loggerAPI.getAllLogs().onComplete {
+        case Success(logs) => self.setState(_.copy(logs = logs))
+        case _ =>
+      }
+    }
 }

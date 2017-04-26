@@ -8,7 +8,7 @@ import org.scalatest.{Assertion, AsyncFunSpec, Matchers}
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
-trait FakeApi {
+trait FakeAPI {
   def foo(bar: String, baz: Int): Future[String]
 
   @api.JsonRpcMethod(name = "bar")
@@ -17,7 +17,7 @@ trait FakeApi {
   def notify(message: String): Unit
 }
 
-class FakeApiImpl extends FakeApi {
+class FakeAPIImpl extends FakeAPI {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -40,11 +40,11 @@ class JsonRpcServerTest extends AsyncFunSpec
   override implicit def executionContext = ExecutionContext.Implicits.global
 
   describe("given I have an API bound") {
-    val api = new FakeApiImpl
+    val api = new FakeAPIImpl
 
     val jsonSerializer = UpickleJsonSerializer()
     val target = JsonRpcServer(jsonSerializer)
-    target.bindApi[FakeApi](api)
+    target.bindAPI[FakeAPI](api)
 
     def responseShouldEqual[T]
     (
@@ -76,7 +76,7 @@ class JsonRpcServerTest extends AsyncFunSpec
       val request: JsonRpcRequest[(String, Int)] = JsonRpcRequest(
         jsonrpc = Constants.JsonRpc,
         id = requestId,
-        method = classOf[FakeApi].getName + ".foo",
+        method = classOf[FakeAPI].getName + ".foo",
         params = ("bar", 1)
       )
       val requestJson: String = jsonSerializer.serialize(request).get
@@ -125,7 +125,7 @@ class JsonRpcServerTest extends AsyncFunSpec
       val message = "Hello, World!"
       val notification = JsonRpcNotification[Tuple1[String]](
         jsonrpc = Constants.JsonRpc,
-        method = classOf[FakeApi].getName + ".notify",
+        method = classOf[FakeAPI].getName + ".notify",
         params = Tuple1(message)
       )
       val notificationJson = jsonSerializer.serialize(notification).get
@@ -213,7 +213,7 @@ class JsonRpcServerTest extends AsyncFunSpec
       val request: JsonRpcRequest[Tuple1[String]] = JsonRpcRequest(
         jsonrpc = Constants.JsonRpc,
         id = id,
-        method = classOf[FakeApi].getName + ".foo",
+        method = classOf[FakeAPI].getName + ".foo",
         params = Tuple1("bar")
       )
       val requestJson = jsonSerializer.serialize(request).get

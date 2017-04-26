@@ -14,15 +14,15 @@ class JsonRpcClientTest extends AsyncFunSpec
   val client = JsonRpcClient(UpickleJsonSerializer(), (json: String) => jsonSender(json))
 
   describe("given I have an API") {
-    trait Api {
+    trait API {
       def foo(bar: String, baz: Int): Future[String]
     }
 
     describe("when I create a client API") {
-      val api = client.createApi[Api]
+      val api = client.createAPI[API]
 
       it("then it should be an instance of the API") {
-        api.isInstanceOf[Api] should equal(true)
+        api.isInstanceOf[API] should equal(true)
       }
 
       describe("and it fails to send the JSON") {

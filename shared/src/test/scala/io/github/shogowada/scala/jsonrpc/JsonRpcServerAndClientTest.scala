@@ -32,9 +32,9 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
     }
 
     describe("and I have an API that takes function as parameter") {
-      class AnApiThatTakesFunction extends TwoServersAndClients {
+      class AnAPIThatTakesFunction extends TwoServersAndClients {
 
-        trait Api {
+        trait API {
           def foo(
               requestFunction: DisposableFunction1[String, Future[String]],
               notificationFunction: DisposableFunction1[String, Unit]
@@ -51,7 +51,7 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
         val promisedNotificationValue1: Promise[String] = Promise()
         val promisedNotificationValue2: Promise[String] = Promise()
 
-        class ApiImpl extends Api {
+        class APIImpl extends API {
           var requestFunction: DisposableFunction1[String, Future[String]] = _
           var notificationFunction: DisposableFunction1[String, Unit] = _
 
@@ -70,10 +70,10 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
           }
         }
 
-        val apiImpl = new ApiImpl
-        serverAndClient1.bindApi[Api](apiImpl)
+        val apiImpl = new APIImpl
+        serverAndClient1.bindAPI[API](apiImpl)
 
-        val apiClient = serverAndClient2.createApi[Api]
+        val apiClient = serverAndClient2.createAPI[API]
 
         val requestFunctionImpl: (String) => Future[String] = (value: String) => {
           Future(value)
@@ -88,12 +88,12 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
       }
 
       it("then it should create a client API") {
-        val fixture = new AnApiThatTakesFunction
+        val fixture = new AnAPIThatTakesFunction
         fixture.apiClient should not be null
       }
 
       describe("when I call the method") {
-        class CallTheMethod extends AnApiThatTakesFunction {
+        class CallTheMethod extends AnAPIThatTakesFunction {
           apiClient.foo(requestFunctionImpl, notificationFunctionImpl)
         }
 
@@ -164,22 +164,22 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
     }
 
     describe("given I have an API that returns a function") {
-      class ApiThatReturnsFunction extends TwoServersAndClients {
+      class APIThatReturnsFunction extends TwoServersAndClients {
 
-        trait Api {
+        trait API {
           def foo: Future[DisposableFunction0[Future[String]]]
         }
 
-        class ApiImpl extends Api {
+        class APIImpl extends API {
           override def foo = Future(() => Future("foo"))
         }
 
-        serverAndClient1.bindApi[Api](new ApiImpl)
-        val client = serverAndClient2.createApi[Api]
+        serverAndClient1.bindAPI[API](new APIImpl)
+        val client = serverAndClient2.createAPI[API]
       }
 
       describe("when I call the function") {
-        class CallTheFunction extends ApiThatReturnsFunction {
+        class CallTheFunction extends APIThatReturnsFunction {
           val futureFunction: Future[DisposableFunction0[Future[String]]] = client.foo
           val futureFoo: Future[String] = futureFunction.flatMap(function => function())
         }
@@ -220,17 +220,17 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
     }
 
     describe("given I have an API that takes the same function type in 2 places") {
-      class ClientApiThatTakes2Functions extends TwoServersAndClients {
+      class ClientAPIThatTakes2Functions extends TwoServersAndClients {
         val promisedFoo1Function: Promise[DisposableFunction0[Unit]] = Promise()
         val promisedFoo2Function: Promise[DisposableFunction0[Unit]] = Promise()
 
-        trait Api {
+        trait API {
           def foo1(bar: DisposableFunction0[Unit]): Unit
 
           def foo2(bar: DisposableFunction0[Unit]): Unit
         }
 
-        class ApiImpl extends Api {
+        class APIImpl extends API {
           override def foo1(bar: DisposableFunction0[Unit]): Unit = {
             promisedFoo1Function.success(bar)
           }
@@ -240,12 +240,12 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
           }
         }
 
-        serverAndClient1.bindApi[Api](new ApiImpl)
-        val client = serverAndClient2.createApi[Api]
+        serverAndClient1.bindAPI[API](new APIImpl)
+        val client = serverAndClient2.createAPI[API]
       }
 
       describe("when I call them both with the same function") {
-        class CallThemBothWithTheSameFunction extends ClientApiThatTakes2Functions {
+        class CallThemBothWithTheSameFunction extends ClientAPIThatTakes2Functions {
           val function: () => Unit = () => {}
           client.foo1(function)
           client.foo2(function)
@@ -261,7 +261,7 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
       }
 
       describe("when I call them both with different functions") {
-        class CallThemBothWithDifferentFunctions extends ClientApiThatTakes2Functions {
+        class CallThemBothWithDifferentFunctions extends ClientAPIThatTakes2Functions {
           client.foo1(() => {})
           client.foo2(() => {})
         }
@@ -279,18 +279,18 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
     describe("and I changed the reference to servers and clients") {
       class IChangedTheReference extends TwoServersAndClients {
 
-        trait Api {
+        trait API {
           def foo(): Future[String]
         }
 
-        class ApiImpl extends Api {
+        class APIImpl extends API {
           override def foo(): Future[String] = {
             Future("foo")
           }
         }
 
-        serverAndClient1.bindApi[Api](new ApiImpl)
-        val api = serverAndClient2.createApi[Api]
+        serverAndClient1.bindAPI[API](new APIImpl)
+        val api = serverAndClient2.createAPI[API]
 
         serverAndClient1 = null
         serverAndClient2 = null

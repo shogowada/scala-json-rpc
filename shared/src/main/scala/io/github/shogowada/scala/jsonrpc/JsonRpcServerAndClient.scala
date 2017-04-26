@@ -9,53 +9,53 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JsonRpcServerAndClient[JSON_SERIALIZER <: JsonSerializer](
-    val server: JsonRpcServer[JSON_SERIALIZER],
-    val client: JsonRpcClient[JSON_SERIALIZER]
+class JsonRpcServerAndClient[JsonSerializerInUse <: JsonSerializer](
+    val server: JsonRpcServer[JsonSerializerInUse],
+    val client: JsonRpcClient[JsonSerializerInUse]
 ) {
   def send(json: String): Future[Option[String]] = client.send(json)
 
-  def bindApi[API](api: API): Unit = macro JsonRpcServerAndClientMacro.bindApi[API]
+  def bindAPI[API](api: API): Unit = macro JsonRpcServerAndClientMacro.bindAPI[API]
 
-  def createApi[API]: API = macro JsonRpcServerAndClientMacro.createApi[API]
+  def createAPI[API]: API = macro JsonRpcServerAndClientMacro.createAPI[API]
 
   def receiveAndSend(json: String): Future[Unit] = macro JsonRpcServerAndClientMacro.receiveAndSend
 }
 
 object JsonRpcServerAndClient {
-  def apply[JSON_SERIALIZER <: JsonSerializer](
-      server: JsonRpcServer[JSON_SERIALIZER],
-      client: JsonRpcClient[JSON_SERIALIZER]
+  def apply[JsonSerializerInUse <: JsonSerializer](
+      server: JsonRpcServer[JsonSerializerInUse],
+      client: JsonRpcClient[JsonSerializerInUse]
   ) = new JsonRpcServerAndClient(server, client)
 }
 
 object JsonRpcServerAndClientMacro {
-  def bindApi[API: c.WeakTypeTag](c: blackbox.Context)(api: c.Expr[API]): c.Expr[Unit] = {
+  def bindAPI[API: c.WeakTypeTag](c: blackbox.Context)(api: c.Expr[API]): c.Expr[Unit] = {
     import c.universe._
     val macroUtils = JsonRpcMacroUtils[c.type](c)
     val (serverAndClientDefinition, serverAndClient) = macroUtils.prefixDefinitionAndReference
     val server = q"$serverAndClient.server"
     val client = q"$serverAndClient.client"
-    val bindApi = JsonRpcServerMacro.bindApiImpl[c.type, API](c)(server, Some(client), api)
+    val bindAPI = JsonRpcServerMacro.bindAPIImpl[c.type, API](c)(server, Some(client), api)
     c.Expr[Unit](
       q"""
           $serverAndClientDefinition
-          $bindApi
+          $bindAPI
           """
     )
   }
 
-  def createApi[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
+  def createAPI[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
     val macroUtils = JsonRpcMacroUtils[c.type](c)
     val (serverAndClientDefinition, serverAndClient) = macroUtils.prefixDefinitionAndReference
     val server = q"$serverAndClient.server"
     val client = q"$serverAndClient.client"
-    val createApi = JsonRpcClientMacro.createApiImpl[c.type, API](c)(client, Some(server))
+    val createAPI = JsonRpcClientMacro.createAPIImpl[c.type, API](c)(client, Some(server))
     c.Expr[API](
       q"""
           $serverAndClientDefinition
-          $createApi
+          $createAPI
           """
     )
   }

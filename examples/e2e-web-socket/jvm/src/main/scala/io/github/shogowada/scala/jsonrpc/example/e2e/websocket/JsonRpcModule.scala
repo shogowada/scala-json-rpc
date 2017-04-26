@@ -10,7 +10,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object JsonRpcModule {
 
-  lazy val todoRepositoryApi = new TodoRepositoryApiImpl
+  lazy val todoRepositoryAPI = new TodoRepositoryAPIImpl
 
   lazy val jsonSerializer = UpickleJsonSerializer()
 
@@ -19,7 +19,7 @@ object JsonRpcModule {
     val client = JsonRpcClient(jsonSerializer, jsonSender)
     val serverAndClient = JsonRpcServerAndClient(server, client)
 
-    serverAndClient.bindApi[TodoRepositoryApi](todoRepositoryApi)
+    serverAndClient.bindAPI[TodoRepositoryAPI](todoRepositoryAPI)
 
     serverAndClient
   }

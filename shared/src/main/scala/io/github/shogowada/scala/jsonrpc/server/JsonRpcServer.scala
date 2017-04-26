@@ -9,15 +9,15 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JsonRpcServer[JSON_SERIALIZER <: JsonSerializer]
+class JsonRpcServer[JsonSerializerInUse <: JsonSerializer]
 (
-    val jsonSerializer: JSON_SERIALIZER,
+    val jsonSerializer: JsonSerializerInUse,
     val executionContext: ExecutionContext
 ) {
   val requestJsonHandlerRepository = new JsonRpcRequestJsonHandlerRepository
   val disposableFunctionRepository = new DisposableFunctionRepository
 
-  def bindApi[API](api: API): Unit = macro JsonRpcServerMacro.bindApi[API]
+  def bindAPI[API](api: API): Unit = macro JsonRpcServerMacro.bindAPI[API]
 
   def receive(json: String): Future[Option[String]] = macro JsonRpcServerMacro.receive
 }
@@ -25,17 +25,19 @@ class JsonRpcServer[JSON_SERIALIZER <: JsonSerializer]
 object JsonRpcServer {
   type RequestJsonHandler = (String) => Future[Option[String]]
 
-  def apply[JSON_SERIALIZER <: JsonSerializer](jsonSerializer: JSON_SERIALIZER)(implicit executionContext: ExecutionContext) = {
+  def apply[JsonSerializerInUse <: JsonSerializer](
+      jsonSerializer: JsonSerializerInUse
+  )(implicit executionContext: ExecutionContext): JsonRpcServer[JsonSerializerInUse] = {
     new JsonRpcServer(jsonSerializer, executionContext)
   }
 }
 
 object JsonRpcServerMacro {
-  def bindApi[API: c.WeakTypeTag](c: blackbox.Context)(api: c.Expr[API]): c.Expr[Unit] = {
+  def bindAPI[API: c.WeakTypeTag](c: blackbox.Context)(api: c.Expr[API]): c.Expr[Unit] = {
     import c.universe._
     val macroUtils = JsonRpcMacroUtils[c.type](c)
     val (serverDefinition, server) = macroUtils.prefixDefinitionAndReference
-    val bind = bindApiImpl[c.type, API](c)(server, None, api)
+    val bind = bindAPIImpl[c.type, API](c)(server, None, api)
     c.Expr[Unit](
       q"""
           $serverDefinition
@@ -44,7 +46,7 @@ object JsonRpcServerMacro {
     )
   }
 
-  def bindApiImpl[CONTEXT <: blackbox.Context, API: c.WeakTypeTag](c: CONTEXT)(
+  def bindAPIImpl[Context <: blackbox.Context, API: c.WeakTypeTag](c: Context)(
       server: c.Tree,
       maybeClient: Option[c.Tree],
       api: c.Expr[API]
@@ -56,7 +58,7 @@ object JsonRpcServerMacro {
     val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
 
     val apiType: Type = weakTypeOf[API]
-    val methodNameToRequestJsonHandlerList = JsonRpcMacroUtils[c.type](c).getJsonRpcApiMethods(apiType)
+    val methodNameToRequestJsonHandlerList = JsonRpcMacroUtils[c.type](c).getJsonRpcAPIMethods(apiType)
         .map((apiMember: MethodSymbol) => createMethodNameToRequestJsonHandler[c.type, API](c)(server, maybeClient, api, apiMember))
 
     c.Expr[Unit](
@@ -68,7 +70,7 @@ object JsonRpcServerMacro {
     )
   }
 
-  private def createMethodNameToRequestJsonHandler[CONTEXT <: blackbox.Context, API](c: blackbox.Context)(
+  private def createMethodNameToRequestJsonHandler[Context <: blackbox.Context, API](c: blackbox.Context)(
       server: c.Tree,
       maybeClient: Option[c.Tree],
       api: c.Expr[API],
@@ -80,7 +82,7 @@ object JsonRpcServerMacro {
     val requestJsonHandlerFactoryMacro = new JsonRpcRequestJsonHandlerFactoryMacro[c.type](c)
 
     val methodName = macroUtils.getJsonRpcMethodName(method)
-    val handler = requestJsonHandlerFactoryMacro.createFromApiMethod[API](server, maybeClient, api, method)
+    val handler = requestJsonHandlerFactoryMacro.createFromAPIMethod[API](server, maybeClient, api, method)
 
     c.Expr[(String, RequestJsonHandler)](q"""$methodName -> $handler""")
   }
