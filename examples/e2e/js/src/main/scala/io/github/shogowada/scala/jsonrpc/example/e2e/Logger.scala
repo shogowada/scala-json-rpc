@@ -14,7 +14,7 @@ object Logger {
   type Self = React.Self[Unit, State]
 }
 
-class Logger(loggerApi: LoggerApi) {
+class Logger(loggerAPI: LoggerAPI) {
 
   import Logger._
 
@@ -61,7 +61,7 @@ class Logger(loggerApi: LoggerApi) {
     (event: SyntheticEvent) => {
       event.preventDefault()
 
-      loggerApi.log(self.state.log)
+      loggerAPI.log(self.state.log)
 
       self.setState(_.copy(log = ""))
     }
@@ -70,7 +70,7 @@ class Logger(loggerApi: LoggerApi) {
     (event: SyntheticEvent) => {
       event.preventDefault()
 
-      loggerApi.getAllLogs().onComplete {
+      loggerAPI.getAllLogs().onComplete {
         case Success(logs) => self.setState(_.copy(logs = logs))
         case _ =>
       }

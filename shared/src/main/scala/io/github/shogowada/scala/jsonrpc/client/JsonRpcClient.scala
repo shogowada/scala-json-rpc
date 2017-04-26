@@ -8,9 +8,9 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
+class JsonRpcClient[JsonSerializerInUse <: JsonSerializer]
 (
-    val jsonSerializer: JSON_SERIALIZER,
+    val jsonSerializer: JsonSerializerInUse,
     val jsonSender: JsonSender,
     val executionContext: ExecutionContext
 ) {
@@ -19,16 +19,16 @@ class JsonRpcClient[JSON_SERIALIZER <: JsonSerializer]
 
   def send(json: String): Future[Option[String]] = jsonSender(json)
 
-  def createApi[API]: API = macro JsonRpcClientMacro.createApi[API]
+  def createAPI[API]: API = macro JsonRpcClientMacro.createAPI[API]
 
   def receive(json: String): Boolean = macro JsonRpcClientMacro.receive
 }
 
 object JsonRpcClient {
-  def apply[JSON_SERIALIZER <: JsonSerializer](
-      jsonSerializer: JSON_SERIALIZER,
+  def apply[JsonSerializerInUse <: JsonSerializer](
+      jsonSerializer: JsonSerializerInUse,
       jsonSender: JsonSender
-  )(implicit executionContext: ExecutionContext) = {
+  )(implicit executionContext: ExecutionContext): JsonRpcClient[JsonSerializerInUse] = {
     new JsonRpcClient(
       jsonSerializer,
       jsonSender,
@@ -38,7 +38,7 @@ object JsonRpcClient {
 }
 
 object JsonRpcClientMacro {
-  def createApi[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
+  def createAPI[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
     val macroUtils = JsonRpcMacroUtils[c.type](c)
     val (clientDefinition, client) = macroUtils.prefixDefinitionAndReference
@@ -51,7 +51,7 @@ object JsonRpcClientMacro {
     )
   }
 
-  def createApiImpl[CONTEXT <: blackbox.Context, API: c.WeakTypeTag](c: CONTEXT)(
+  def createApiImpl[Context <: blackbox.Context, API: c.WeakTypeTag](c: Context)(
       client: c.Tree,
       maybeServer: Option[c.Tree]
   ): c.Expr[API] = {
@@ -67,7 +67,7 @@ object JsonRpcClientMacro {
     )
   }
 
-  private def createMemberFunctions[CONTEXT <: blackbox.Context, API: c.WeakTypeTag](c: CONTEXT)(
+  private def createMemberFunctions[Context <: blackbox.Context, API: c.WeakTypeTag](c: Context)(
       client: c.Tree,
       maybeServer: Option[c.Tree]
   ): Iterable[c.Tree] = {
@@ -77,7 +77,7 @@ object JsonRpcClientMacro {
         .map((apiMethod: MethodSymbol) => createMemberFunction[c.type](c)(client, maybeServer, apiMethod))
   }
 
-  private def createMemberFunction[CONTEXT <: blackbox.Context](c: CONTEXT)(
+  private def createMemberFunction[Context <: blackbox.Context](c: Context)(
       client: c.Tree,
       maybeServer: Option[c.Tree],
       apiMethod: c.universe.MethodSymbol

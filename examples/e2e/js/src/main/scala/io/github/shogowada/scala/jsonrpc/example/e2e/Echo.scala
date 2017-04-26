@@ -14,7 +14,7 @@ object Echo {
   type Self = React.Self[Unit, State]
 }
 
-class Echo(echoApi: EchoApi) {
+class Echo(echoAPI: EchoAPI) {
 
   import Echo._
 
@@ -45,7 +45,7 @@ class Echo(echoApi: EchoApi) {
         echoedText = None
       ))
 
-      echoApi.echo(text).onComplete {
+      echoAPI.echo(text).onComplete {
         case Success(echoedText) if self.state.text == text => self.setState(_.copy(echoedText = Some(echoedText)))
         case _ =>
       }

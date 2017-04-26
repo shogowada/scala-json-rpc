@@ -67,7 +67,7 @@ object TodoListView {
 }
 
 class TodoListView(
-    todoRepositoryApi: TodoRepositoryApi
+    todoRepositoryAPI: TodoRepositoryAPI
 ) {
 
   import TodoListView._
@@ -77,7 +77,7 @@ class TodoListView(
   private lazy val reactClass = React.createClass[Unit, State](
     getInitialState = (self) => State(ready = false, Seq()),
     componentDidMount = (self) => {
-      val futureObserverId = todoRepositoryApi.register(onTodoEvent(self, _))
+      val futureObserverId = todoRepositoryAPI.register(onTodoEvent(self, _))
 
       futureObserverId.onComplete {
         case Success(_) => self.setState(_.copy(ready = true))
@@ -88,7 +88,7 @@ class TodoListView(
     },
     componentWillUnmount = (self) => {
       promisedObserverId.future.foreach(observerId => {
-        todoRepositoryApi.unregister(observerId)
+        todoRepositoryAPI.unregister(observerId)
       })
     },
     render = (self) =>
@@ -128,10 +128,10 @@ class TodoListView(
   }
 
   private val onAddTodo = (description: String) => {
-    todoRepositoryApi.add(description)
+    todoRepositoryAPI.add(description)
   }: Unit
 
   private val onRemoveTodo = (todo: Todo) => {
-    todoRepositoryApi.remove(todo.id)
+    todoRepositoryAPI.remove(todo.id)
   }: Unit
 }

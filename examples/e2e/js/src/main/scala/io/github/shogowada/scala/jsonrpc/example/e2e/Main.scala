@@ -12,15 +12,15 @@ import scala.concurrent.Future
 import scala.scalajs.js.JSApp
 
 class App(
-    calculatorApi: CalculatorApi,
-    echoApi: EchoApi,
-    loggerApi: LoggerApi
+    calculatorAPI: CalculatorAPI,
+    echoAPI: EchoAPI,
+    loggerAPI: LoggerAPI
 ) {
   def apply(): ReactElement =
     <.div()(
-      <((new Calculator(calculatorApi)) ()).empty,
-      <((new Echo(echoApi)) ()).empty,
-      <((new Logger(loggerApi)) ()).empty
+      <((new Calculator(calculatorAPI)) ()).empty,
+      <((new Echo(echoAPI)) ()).empty,
+      <((new Logger(loggerAPI)) ()).empty
     )
 }
 
@@ -42,11 +42,11 @@ object Main extends JSApp {
 
     val client = JsonRpcClient(UpickleJsonSerializer(), jsonSender)
 
-    val calculatorApi = client.createApi[CalculatorApi]
-    val echoApi = client.createApi[EchoApi]
-    val loggerApi = client.createApi[LoggerApi]
+    val calculatorAPI = client.createAPI[CalculatorAPI]
+    val echoAPI = client.createAPI[EchoAPI]
+    val loggerAPI = client.createAPI[LoggerAPI]
 
     val mountNode = dom.document.getElementById("mount-node")
-    ReactDOM.render((new App(calculatorApi, echoApi, loggerApi)) (), mountNode)
+    ReactDOM.render((new App(calculatorAPI, echoAPI, loggerAPI)) (), mountNode)
   }
 }

@@ -14,7 +14,7 @@ object Calculator {
   type Self = React.Self[Unit, State]
 }
 
-class Calculator(calculatorApi: CalculatorApi) {
+class Calculator(calculatorAPI: CalculatorAPI) {
 
   import Calculator._
 
@@ -77,14 +77,14 @@ class Calculator(calculatorApi: CalculatorApi) {
       val lhs = self.state.lhs
       val rhs = self.state.rhs
 
-      calculatorApi.add(lhs, rhs).onComplete {
+      calculatorAPI.add(lhs, rhs).onComplete {
         case Success(added) if lhs == self.state.lhs && rhs == self.state.rhs => {
           self.setState(_.copy(added = Some(added)))
         }
         case _ =>
       }
 
-      calculatorApi.subtract(lhs, rhs).onComplete {
+      calculatorAPI.subtract(lhs, rhs).onComplete {
         case Success(subtracted) if lhs == self.state.lhs && rhs == self.state.rhs => {
           self.setState(_.copy(subtracted = Some(subtracted)))
         }

@@ -27,13 +27,13 @@ JSON-RPC defines a specification of RPC in JSON format. This means that you can 
 Using scala-json-rpc, your server and client can communicate over statically typed interfaces like below:
 
 ```scala
-trait LoggerApi {
+trait LoggerAPI {
   def log(message: String): Unit
 }
 
 case class Foo(id: String)
 
-trait FooRepositoryApi {
+trait FooRepositoryAPI {
   def add(foo: Foo): Future[Unit]
   def remove(foo: Foo): Future[Unit]
   def getAll(): Future[Set[Foo]]
@@ -43,11 +43,11 @@ trait FooRepositoryApi {
 ### Server
 
 ```scala
-class LoggerApiImpl extends LoggerApi {
+class LoggerAPIImpl extends LoggerAPI {
   override def log(message: String): Unit = println(message)
 }
 
-class FooRepositoryApiImpl extends FooRepositoryApi {
+class FooRepositoryAPIImpl extends FooRepositoryAPI {
   var foos: Set[Foo] = Set()
 
   override def add(foo: Foo): Future[Unit] = this.synchronized {
@@ -60,15 +60,15 @@ class FooRepositoryApiImpl extends FooRepositoryApi {
     Future() // Acknowledge
   }
 
-  override def getAll(): Future[Set[Foo]] = {
-    Future(foos)
+  override def getAll(): Future[Set[Foo]] = Future {
+    foos
   }
 }
 
 val jsonSerializer = // ...
 val server = jsonRpcServer(jsonSerializer)
-server.bindApi[LoggerApi](new LoggerApiImpl)
-server.bindApi[FooRepositoryApi](new FooRepositoryApiImpl)
+server.bindAPI[LoggerAPI](new LoggerAPIImpl)
+server.bindAPI[FooRepositoryAPI](new FooRepositoryAPIImpl)
 
 def onRequestJsonReceived(requestJson: String): Unit = {
   server.receive(requestJson).onComplete {
@@ -85,17 +85,17 @@ val jsonSerializer = // ...
 val jsonSender = // ...
 val client = JsonRpcClient(jsonSerializer, jsonSender)
 
-val loggerApi = client.createApi[LoggerApi]
-val fooRepositoryApi = client.createApi[FooRepositoryApi]
+val loggerAPI = client.createAPI[LoggerAPI]
+val fooRepositoryAPI = client.createAPI[FooRepositoryAPI]
 
-loggerApi.log("Hello, World!")
+loggerAPI.log("Hello, World!")
 
-fooRepositoryApi.add(Foo("A"))
-fooRepositoryApi.add(Foo("B"))
+fooRepositoryAPI.add(Foo("A"))
+fooRepositoryAPI.add(Foo("B"))
 
-fooRepositoryApi.remove(Foo("A"))
+fooRepositoryAPI.remove(Foo("A"))
 
-fooRepositoryApi.getAll().onComplete {
+fooRepositoryAPI.getAll().onComplete {
   case Success(foos: Set[Foo]) => println(s"Received all the foos: $foos")
   case _ =>
 }

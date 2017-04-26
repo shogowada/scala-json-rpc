@@ -19,7 +19,7 @@ class JsonRpcClientTest extends AsyncFunSpec
     }
 
     describe("when I create a client API") {
-      val api = client.createApi[Api]
+      val api = client.createAPI[Api]
 
       it("then it should be an instance of the API") {
         api.isInstanceOf[Api] should equal(true)

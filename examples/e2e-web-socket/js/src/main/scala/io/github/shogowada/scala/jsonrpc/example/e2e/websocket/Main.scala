@@ -24,7 +24,7 @@ object Main extends JSApp {
 
     val mountNode = dom.document.getElementById("mount-node")
     ReactDOM.render(
-      <((new TodoListView(serverAndClient.createApi[TodoRepositoryApi])) ()).empty,
+      <((new TodoListView(serverAndClient.createAPI[TodoRepositoryAPI])) ()).empty,
       mountNode
     )
   }

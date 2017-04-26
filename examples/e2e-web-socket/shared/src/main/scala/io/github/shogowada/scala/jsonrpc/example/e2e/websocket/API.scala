@@ -15,7 +15,7 @@ object TodoEventTypes {
 
 case class TodoEvent(todo: Todo, eventType: String)
 
-trait TodoRepositoryApi {
+trait TodoRepositoryAPI {
   def add(description: String): Future[Todo]
 
   def remove(id: String): Future[Unit]
