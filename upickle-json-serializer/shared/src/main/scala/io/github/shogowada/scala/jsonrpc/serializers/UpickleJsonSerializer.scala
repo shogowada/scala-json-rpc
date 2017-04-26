@@ -5,7 +5,7 @@ import upickle.Js
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-object JsonRpcPickler extends upickle.AttributeTagged {
+object JSONRPCPickler extends upickle.AttributeTagged {
   override implicit def OptionW[T: Writer]: Writer[Option[T]] = {
     Writer {
       case None => Js.Null
@@ -52,7 +52,7 @@ object UpickleJsonSerializerMacro {
 
     c.Expr[Option[String]](
       q"""
-          scala.util.Try(io.github.shogowada.scala.jsonrpc.serializers.JsonRpcPickler.write($value)).toOption
+          scala.util.Try(io.github.shogowada.scala.jsonrpc.serializers.JSONRPCPickler.write($value)).toOption
           """
     )
   }
@@ -64,7 +64,7 @@ object UpickleJsonSerializerMacro {
 
     c.Expr[Option[T]](
       q"""
-          scala.util.Try(io.github.shogowada.scala.jsonrpc.serializers.JsonRpcPickler.read[$deserializeType]($json)).toOption
+          scala.util.Try(io.github.shogowada.scala.jsonrpc.serializers.JSONRPCPickler.read[$deserializeType]($json)).toOption
           """
     )
   }

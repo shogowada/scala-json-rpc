@@ -10,8 +10,8 @@ You can use upickle-json-serializer to use upickle as your ```JsonSerializer```.
 ```scala
 val jsonSerializer = UpickleJsonSerializer()
 
-val server = JsonRpcServer(jsonSerializer)
+val server = JSONRPCServer(jsonSerializer)
 
 val jsonSender = // ...
-val client = JsonRpcClient(jsonSerializer, jsonSender)
+val client = JSONRPCClient(jsonSerializer, jsonSender)
 ```

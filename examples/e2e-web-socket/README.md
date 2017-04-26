@@ -5,10 +5,10 @@ When your application is both server and client, incoming JSON messages can be e
 You can write something like below to make sure the JSON is handled appropriately.
 
 ```scala
-val wasJsonRpcResponse: Boolean = jsonRpcClient.receive(json)
-if (!wasJsonRpcResponse) {
-  jsonRpcServer.receive(json).onComplete {
-    case Success(Some(responseJson: String)) => jsonRpcClient.send(responseJson)
+val wasJSONRPCResponse: Boolean = jsonRPCClient.receive(json)
+if (!wasJSONRPCResponse) {
+  jsonRPCServer.receive(json).onComplete {
+    case Success(Some(responseJson: String)) => jsonRPCClient.send(responseJson)
     case _ =>
   }
 }
@@ -16,14 +16,14 @@ if (!wasJsonRpcResponse) {
 
 But it is tedious and error prone to write this everytime you implement bidirectional JSON-RPC.
 
-Because this is such a common use case, we have an API called `JsonRpcServerAndClient` for this purpose, so we recommend using it.
+Because this is such a common use case, we have an API called `JSONRPCServerAndClient` for this purpose, so we recommend using it.
 
 ```scala
-val serverAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
+val serverAndClient = JSONRPCServerAndClient(jsonRPCServer, jsonRPCClient)
 serverAndClient.receiveAndSend(json)
 ```
 
-`jsonRpcServerAndClient.receiveAndSend` makes sure to:
+`jsonRPCServerAndClient.receiveAndSend` makes sure to:
 
 - handle the given JSON using the client first then the server second.
 - send the response if present using the client's `send` method.
@@ -98,10 +98,10 @@ object Main extends JSApp {
     s"$protocol//${location.host}/jsonrpc"
   }
 
-  private def createServerAndClient(futureWebSocket: Future[WebSocket]): JsonRpcServerAndClient[UpickleJsonSerializer] = {
+  private def createServerAndClient(futureWebSocket: Future[WebSocket]): JSONRPCServerAndClient[UpickleJsonSerializer] = {
     val jsonSerializer = UpickleJsonSerializer()
 
-    val server = JsonRpcServer(jsonSerializer)
+    val server = JSONRPCServer(jsonSerializer)
 
     val jsonSender: JsonSender = (json: String) => {
       futureWebSocket
@@ -111,9 +111,9 @@ object Main extends JSApp {
             _ => Future(None)
           ))
     }
-    val client = JsonRpcClient(jsonSerializer, jsonSender)
+    val client = JSONRPCClient(jsonSerializer, jsonSender)
 
-    val serverAndClient = JsonRpcServerAndClient(server, client)
+    val serverAndClient = JSONRPCServerAndClient(server, client)
 
     futureWebSocket.foreach(webSocket => {
       webSocket.onmessage = (event: dom.MessageEvent) => {
@@ -196,16 +196,16 @@ class TodoRepositoryAPIImpl extends TodoRepositoryAPI {
 Here is our WebSocket implementation:
 
 ```scala
-object JsonRpcModule {
+object JSONRPCModule {
 
   lazy val todoRepositoryAPI = new TodoRepositoryAPIImpl
 
   lazy val jsonSerializer = UpickleJsonSerializer()
 
-  def createJsonRpcServerAndClient(jsonSender: JsonSender): JsonRpcServerAndClient[UpickleJsonSerializer] = {
-    val server = JsonRpcServer(jsonSerializer)
-    val client = JsonRpcClient(jsonSerializer, jsonSender)
-    val serverAndClient = JsonRpcServerAndClient(server, client)
+  def createJSONRPCServerAndClient(jsonSender: JsonSender): JSONRPCServerAndClient[UpickleJsonSerializer] = {
+    val server = JSONRPCServer(jsonSerializer)
+    val client = JSONRPCClient(jsonSerializer, jsonSender)
+    val serverAndClient = JSONRPCServerAndClient(server, client)
 
     serverAndClient.bindAPI[TodoRepositoryAPI](todoRepositoryAPI)
 
@@ -213,8 +213,8 @@ object JsonRpcModule {
   }
 }
 
-class JsonRpcWebSocket extends WebSocketAdapter {
-  private var serverAndClient: JsonRpcServerAndClient[UpickleJsonSerializer] = _
+class JSONRPCWebSocket extends WebSocketAdapter {
+  private var serverAndClient: JSONRPCServerAndClient[UpickleJsonSerializer] = _
 
   override def onWebSocketConnect(session: Session): Unit = {
     super.onWebSocketConnect(session)
@@ -229,7 +229,7 @@ class JsonRpcWebSocket extends WebSocketAdapter {
     // Create an independent server and client for each WebSocket session.
     // This is to make sure we clean up all the caches (e.g. promised response, etc)
     // on each WebSocket session.
-    serverAndClient = JsonRpcModule.createJsonRpcServerAndClient(jsonSender)
+    serverAndClient = JSONRPCModule.createJSONRPCServerAndClient(jsonSender)
   }
 
   override def onWebSocketText(message: String): Unit = {

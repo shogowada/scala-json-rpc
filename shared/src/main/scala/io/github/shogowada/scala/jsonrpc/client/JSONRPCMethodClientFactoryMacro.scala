@@ -1,46 +1,46 @@
 package io.github.shogowada.scala.jsonrpc.client
 
-import io.github.shogowada.scala.jsonrpc.Models.JsonRpcRequest
-import io.github.shogowada.scala.jsonrpc.server.{DisposableFunctionServerFactoryMacro, JsonRpcRequestJsonHandlerFactoryMacro}
-import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
+import io.github.shogowada.scala.jsonrpc.Models.JSONRPCRequest
+import io.github.shogowada.scala.jsonrpc.server.{DisposableFunctionServerFactoryMacro, JSONRPCRequestJsonHandlerFactoryMacro}
+import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
 
 import scala.reflect.macros.blackbox
 
-class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Context) {
+class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Context) {
 
   import c.universe._
 
-  lazy val macroUtils = JsonRpcMacroUtils[c.type](c)
-  lazy val requestJsonHandlerFactoryMacro = new JsonRpcRequestJsonHandlerFactoryMacro[c.type](c)
+  lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
+  lazy val requestJsonHandlerFactoryMacro = new JSONRPCRequestJsonHandlerFactoryMacro[c.type](c)
   lazy val disposableFunctionClientFactoryMacro = new DisposableFunctionClientFactoryMacro[c.type](c)
   lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
 
   def createAsFunction(
       client: Tree,
       maybeServer: Option[Tree],
-      jsonRpcMethodName: Tree,
+      jsonRPCMethodName: Tree,
       paramTypes: Seq[Type],
       returnType: Type
   ): Tree = {
-    val jsonRpcParameterType: Tree = macroUtils.getJsonRpcParameterType(paramTypes)
-    val jsonRpcParameter = getJsonRpcParameter(client, maybeServer, paramTypes)
+    val jsonRPCParameterType: Tree = macroUtils.getJSONRPCParameterType(paramTypes)
+    val jsonRPCParameter = getJSONRPCParameter(client, maybeServer, paramTypes)
 
     def createMethodBody: c.Expr[returnType.type] = {
-      if (macroUtils.isJsonRpcNotificationMethod(returnType)) {
+      if (macroUtils.isJSONRPCNotificationMethod(returnType)) {
         createNotificationMethodBody(
           client,
-          jsonRpcParameterType,
-          jsonRpcMethodName,
-          jsonRpcParameter,
+          jsonRPCParameterType,
+          jsonRPCMethodName,
+          jsonRPCParameter,
           returnType
         )
-      } else if (macroUtils.isJsonRpcRequestMethod(returnType)) {
+      } else if (macroUtils.isJSONRPCRequestMethod(returnType)) {
         createRequestMethodBody(
           client,
           maybeServer,
-          jsonRpcParameterType,
-          jsonRpcMethodName,
-          jsonRpcParameter,
+          jsonRPCParameterType,
+          jsonRPCMethodName,
+          jsonRPCParameter,
           returnType
         )
       } else {
@@ -62,32 +62,32 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
         """
   }
 
-  private def getJsonRpcParameter(
+  private def getJSONRPCParameter(
       client: Tree,
       maybeServer: Option[Tree],
       paramTypes: Seq[Type]
   ): Tree = {
-    def createJsonRpcParameter(paramType: Type, index: Int): Tree = {
+    def createJSONRPCParameter(paramType: Type, index: Int): Tree = {
       val paramName = getParamName(index)
       if (macroUtils.isDisposableFunctionType(paramType)) {
         val disposableFunctionMethodName: c.Expr[String] = maybeServer
             .map(server => disposableFunctionServerFactoryMacro.getOrCreate(client, server, paramName, paramType))
-            .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to create an API with JsonRpcServerAndClient."))
+            .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to create an API with JSONRPCServerAndClient."))
         q"$disposableFunctionMethodName"
       } else {
         q"$paramName"
       }
     }
 
-    val jsonRpcParameters: Seq[Tree] = paramTypes
+    val jsonRPCParameters: Seq[Tree] = paramTypes
         .zipWithIndex
-        .map { case (paramType, index) => createJsonRpcParameter(paramType, index) }
+        .map { case (paramType, index) => createJSONRPCParameter(paramType, index) }
 
-    if (jsonRpcParameters.size == 1) {
-      val parameter = jsonRpcParameters.head
+    if (jsonRPCParameters.size == 1) {
+      val parameter = jsonRPCParameters.head
       q"Tuple1($parameter)"
     } else {
-      q"(..$jsonRpcParameters)"
+      q"(..$jsonRPCParameters)"
     }
   }
 
@@ -97,9 +97,9 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
 
   private def createNotificationMethodBody(
       client: Tree,
-      jsonRpcParameterType: Tree,
-      jsonRpcMethodName: Tree,
-      jsonRpcParameter: Tree,
+      jsonRPCParameterType: Tree,
+      jsonRPCMethodName: Tree,
+      jsonRPCParameter: Tree,
       returnType: Type
   ): c.Expr[returnType.type] = {
     val jsonSerializer = macroUtils.getJsonSerializer(client)
@@ -107,10 +107,10 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
 
     c.Expr[returnType.type](
       q"""
-          val notification = JsonRpcNotification[$jsonRpcParameterType](
-              jsonrpc = Constants.JsonRpc,
-              method = $jsonRpcMethodName,
-              params = $jsonRpcParameter
+          val notification = JSONRPCNotification[$jsonRPCParameterType](
+              jsonrpc = Constants.JSONRPC,
+              method = $jsonRPCMethodName,
+              params = $jsonRPCParameter
           )
           $jsonSerializer.serialize(notification)
               .foreach((json: String) => $send(json))
@@ -121,9 +121,9 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
   private def createRequestMethodBody(
       client: Tree,
       maybeServer: Option[Tree],
-      jsonRpcParameterType: Tree,
-      jsonRpcMethodName: Tree,
-      jsonRpcParameter: Tree,
+      jsonRPCParameterType: Tree,
+      jsonRPCMethodName: Tree,
+      jsonRPCParameter: Tree,
       returnType: Type
   ): c.Expr[returnType.type] = {
     val jsonSerializer = macroUtils.getJsonSerializer(client)
@@ -134,13 +134,13 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
 
     val requestId = TermName("requestId")
 
-    def request(requestId: TermName) = c.Expr[JsonRpcRequest[jsonRpcParameterType.type]](
+    def request(requestId: TermName) = c.Expr[JSONRPCRequest[jsonRPCParameterType.type]](
       q"""
-          JsonRpcRequest[$jsonRpcParameterType](
-            jsonrpc = Constants.JsonRpc,
+          JSONRPCRequest[$jsonRPCParameterType](
+            jsonrpc = Constants.JSONRPC,
             id = $requestId,
-            method = $jsonRpcMethodName,
-            params = $jsonRpcParameter
+            method = $jsonRPCMethodName,
+            params = $jsonRPCParameter
           )
           """
     )
@@ -173,12 +173,12 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
                   .map((json: String) => ${responseJsonHandler(q"json")})($executionContext)
             }
             case None => {
-              val jsonRpcErrorResponse = JsonRpcErrorResponse(
-                jsonrpc = Constants.JsonRpc,
+              val jsonRPCErrorResponse = JSONRPCErrorResponse(
+                jsonrpc = Constants.JSONRPC,
                 id = $requestId,
-                error = JsonRpcErrors.internalError
+                error = JSONRPCErrors.internalError
               )
-              Future.failed(new JsonRpcException(Some(jsonRpcErrorResponse)))
+              Future.failed(new JSONRPCException(Some(jsonRPCErrorResponse)))
             }
           }
           """
@@ -198,20 +198,20 @@ class JsonRpcMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
       if (macroUtils.isDisposableFunctionType(resultType)) {
         maybeServer
             .map(server => disposableFunctionClientFactoryMacro.getOrCreate(server, client, resultType, q"$result"))
-            .getOrElse(throw new UnsupportedOperationException("To use an API returning DisposableFunction, you need to create the API with JsonRpcServerAndClient."))
+            .getOrElse(throw new UnsupportedOperationException("To use an API returning DisposableFunction, you need to create the API with JSONRPCServerAndClient."))
       } else {
         result
       }
     }
 
-    val jsonRpcResultType: Type = macroUtils.getJsonRpcResultType(resultType)
+    val jsonRPCResultType: Type = macroUtils.getJSONRPCResultType(resultType)
 
     q"""
-        $jsonSerializer.deserialize[JsonRpcResultResponse[$jsonRpcResultType]]($json) match {
+        $jsonSerializer.deserialize[JSONRPCResultResponse[$jsonRPCResultType]]($json) match {
           case Some(resultResponse) => ${mapResult(q"resultResponse")}
           case None => {
-            val maybeResponse = $jsonSerializer.deserialize[JsonRpcErrorResponse[String]]($json)
-            throw new JsonRpcException(maybeResponse)
+            val maybeResponse = $jsonSerializer.deserialize[JSONRPCErrorResponse[String]]($json)
+            throw new JSONRPCException(maybeResponse)
           }
         }
         """

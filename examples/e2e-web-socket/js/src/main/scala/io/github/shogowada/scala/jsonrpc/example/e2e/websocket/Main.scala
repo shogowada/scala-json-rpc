@@ -2,11 +2,11 @@ package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
 import java.io.IOException
 
-import io.github.shogowada.scala.jsonrpc.JsonRpcServerAndClient
+import io.github.shogowada.scala.jsonrpc.JSONRPCServerAndClient
 import io.github.shogowada.scala.jsonrpc.Types.JsonSender
-import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
+import io.github.shogowada.scala.jsonrpc.client.JSONRPCClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
+import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer
 import io.github.shogowada.scalajs.reactjs.ReactDOM
 import io.github.shogowada.scalajs.reactjs.VirtualDOM._
 import org.scalajs.dom
@@ -53,10 +53,10 @@ object Main extends JSApp {
     s"$protocol//${location.host}/jsonrpc"
   }
 
-  private def createServerAndClient(futureWebSocket: Future[WebSocket]): JsonRpcServerAndClient[UpickleJsonSerializer] = {
+  private def createServerAndClient(futureWebSocket: Future[WebSocket]): JSONRPCServerAndClient[UpickleJsonSerializer] = {
     val jsonSerializer = UpickleJsonSerializer()
 
-    val server = JsonRpcServer(jsonSerializer)
+    val server = JSONRPCServer(jsonSerializer)
 
     val jsonSender: JsonSender = (json: String) => {
       futureWebSocket
@@ -66,9 +66,9 @@ object Main extends JSApp {
             _ => Future(None)
           ))
     }
-    val client = JsonRpcClient(jsonSerializer, jsonSender)
+    val client = JSONRPCClient(jsonSerializer, jsonSender)
 
-    val serverAndClient = JsonRpcServerAndClient(server, client)
+    val serverAndClient = JSONRPCServerAndClient(server, client)
 
     futureWebSocket.foreach(webSocket => {
       webSocket.onmessage = (event: dom.MessageEvent) => {

@@ -53,9 +53,9 @@ class LoggerAPIImpl extends LoggerAPI {
 We build JSON-RPC server using those API implementations.
 
 ```scala
-object JsonRpcModule {
-  lazy val jsonRpcServer: JsonRpcServer[UpickleJsonSerializer] = {
-    val server = JsonRpcServer(UpickleJsonSerializer())
+object JSONRPCModule {
+  lazy val jsonRPCServer: JSONRPCServer[UpickleJsonSerializer] = {
+    val server = JSONRPCServer(UpickleJsonSerializer())
     server.bindAPI[CalculatorAPI](new CalculatorAPIImpl)
     server.bindAPI[EchoAPI](new EchoAPIImpl)
     server.bindAPI[LoggerAPI](new LoggerAPIImpl)
@@ -69,13 +69,13 @@ To expose HTTP end point on the server, we are using [Scalatra](http://www.scala
 ```scala
 class ScalatraBootstrap extends LifeCycle {
   override def init(context: ServletContext): Unit = {
-    context.mount(new JsonRpcServlet, "/jsonrpc/*")
+    context.mount(new JSONRPCServlet, "/jsonrpc/*")
   }
 }
 
-class JsonRpcServlet extends ScalatraServlet {
+class JSONRPCServlet extends ScalatraServlet {
   post("/") {
-    val server = JsonRpcModule.jsonRpcServer
+    val server = JSONRPCModule.jsonRPCServer
     val futureResult: Future[ActionResult] = server.receive(request.body).map {
       case Some(responseJson) => Ok(responseJson) // For JSON-RPC request, we return response.
       case None => NoContent() // For JSON-RPC notification, we do not return response.
@@ -104,7 +104,7 @@ val jsonSender: (String) => Future[Option[String]] =
         })
   }
 
-val client = JsonRpcClient(UpickleJsonSerializer(), jsonSender)
+val client = JSONRPCClient(UpickleJsonSerializer(), jsonSender)
 ```
 
 Once the client is built, we can use it to create and use the APIs like below.

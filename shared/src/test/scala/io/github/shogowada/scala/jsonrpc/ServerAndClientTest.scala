@@ -1,9 +1,9 @@
 package io.github.shogowada.scala.jsonrpc
 
-import io.github.shogowada.scala.jsonrpc.Models.{JsonRpcErrorResponse, JsonRpcErrors, JsonRpcException}
-import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
+import io.github.shogowada.scala.jsonrpc.Models.{JSONRPCErrorResponse, JSONRPCErrors, JSONRPCException}
+import io.github.shogowada.scala.jsonrpc.client.JSONRPCClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
+import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer
 import org.scalatest.{AsyncFunSpec, Matchers}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,7 +24,7 @@ class ServerAndClientTest extends AsyncFunSpec
     }
 
     trait GreeterAPI {
-      @api.JsonRpcMethod("greet")
+      @api.JSONRPCMethod("greet")
       def greet(greeting: String): Unit
     }
 
@@ -48,11 +48,11 @@ class ServerAndClientTest extends AsyncFunSpec
 
     val greeterAPIServer = new GreeterAPIImpl()
 
-    val server = JsonRpcServer(jsonSerializer)
+    val server = JSONRPCServer(jsonSerializer)
     server.bindAPI[CalculatorAPI](new CalculatorAPIImpl)
     server.bindAPI[GreeterAPI](greeterAPIServer)
 
-    val client = JsonRpcClient(
+    val client = JSONRPCClient(
       jsonSerializer,
       (json: String) => server.receive(json)
     )
@@ -102,11 +102,11 @@ class ServerAndClientTest extends AsyncFunSpec
         it("then it should response error") {
           response.failed
               .map {
-                case exception: JsonRpcException[_] =>
+                case exception: JSONRPCException[_] =>
                   exception.maybeResponse should matchPattern {
-                    case Some(JsonRpcErrorResponse(Constants.JsonRpc, _, JsonRpcErrors.methodNotFound)) =>
+                    case Some(JSONRPCErrorResponse(Constants.JSONRPC, _, JSONRPCErrors.methodNotFound)) =>
                   }
-                case exception => fail("It should have failed with JsonRpcErrorException, but failed with " + exception)
+                case exception => fail("It should have failed with JSONRPCErrorException, but failed with " + exception)
               }
         }
       }

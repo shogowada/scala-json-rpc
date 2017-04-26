@@ -66,7 +66,7 @@ class FooRepositoryAPIImpl extends FooRepositoryAPI {
 }
 
 val jsonSerializer = // ...
-val server = jsonRpcServer(jsonSerializer)
+val server = jsonRPCServer(jsonSerializer)
 server.bindAPI[LoggerAPI](new LoggerAPIImpl)
 server.bindAPI[FooRepositoryAPI](new FooRepositoryAPIImpl)
 
@@ -83,7 +83,7 @@ def onRequestJsonReceived(requestJson: String): Unit = {
 ```scala
 val jsonSerializer = // ...
 val jsonSender = // ...
-val client = JsonRpcClient(jsonSerializer, jsonSender)
+val client = JSONRPCClient(jsonSerializer, jsonSender)
 
 val loggerAPI = client.createAPI[LoggerAPI]
 val fooRepositoryAPI = client.createAPI[FooRepositoryAPI]
@@ -109,8 +109,8 @@ def onResponseJsonReceived(responseJson: String): Unit = {
 
 |Platform|SBT|Scala Version|Scala JS Version|
 |---|---|---|---|
-|JVM|```"io.github.shogowada" %% "scala-json-rpc" % "0.7.0"```|2.12||
-|JS|```"io.github.shogowada" %%% "scala-json-rpc" % "0.7.0"```|2.12|0.6.15+|
+|JVM|```"io.github.shogowada" %% "scala-json-rpc" % "0.8.0"```|2.12||
+|JS|```"io.github.shogowada" %%% "scala-json-rpc" % "0.8.0"```|2.12|0.6.15+|
 
 scala-json-rpc has **no external dependency**, so it should fit into any of your Scala JVM & JS applications.
 

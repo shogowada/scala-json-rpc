@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc.api
 
 import scala.annotation.StaticAnnotation
 
-case class JsonRpcMethod
+case class JSONRPCMethod
 (
     name: String
 ) extends StaticAnnotation

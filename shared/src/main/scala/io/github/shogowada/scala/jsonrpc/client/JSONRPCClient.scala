@@ -2,34 +2,34 @@ package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.Types.{Id, JsonSender}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
-import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
+import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JsonRpcClient[JsonSerializerInUse <: JsonSerializer]
+class JSONRPCClient[JsonSerializerInUse <: JsonSerializer]
 (
     val jsonSerializer: JsonSerializerInUse,
     val jsonSender: JsonSender,
     val executionContext: ExecutionContext
 ) {
-  val promisedResponseRepository = new JsonRpcPromisedResponseRepository
+  val promisedResponseRepository = new JSONRPCPromisedResponseRepository
   val disposableFunctionMethodNameRepository = new DisposableFunctionMethodNameRepository
 
   def send(json: String): Future[Option[String]] = jsonSender(json)
 
-  def createAPI[API]: API = macro JsonRpcClientMacro.createAPI[API]
+  def createAPI[API]: API = macro JSONRPCClientMacro.createAPI[API]
 
-  def receive(json: String): Boolean = macro JsonRpcClientMacro.receive
+  def receive(json: String): Boolean = macro JSONRPCClientMacro.receive
 }
 
-object JsonRpcClient {
+object JSONRPCClient {
   def apply[JsonSerializerInUse <: JsonSerializer](
       jsonSerializer: JsonSerializerInUse,
       jsonSender: JsonSender
-  )(implicit executionContext: ExecutionContext): JsonRpcClient[JsonSerializerInUse] = {
-    new JsonRpcClient(
+  )(implicit executionContext: ExecutionContext): JSONRPCClient[JsonSerializerInUse] = {
+    new JSONRPCClient(
       jsonSerializer,
       jsonSender,
       executionContext
@@ -37,10 +37,10 @@ object JsonRpcClient {
   }
 }
 
-object JsonRpcClientMacro {
+object JSONRPCClientMacro {
   def createAPI[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
-    val macroUtils = JsonRpcMacroUtils[c.type](c)
+    val macroUtils = JSONRPCMacroUtils[c.type](c)
     val (clientDefinition, client) = macroUtils.prefixDefinitionAndReference
     val api = createAPIImpl[c.type, API](c)(client, None)
     c.Expr[API](
@@ -73,7 +73,7 @@ object JsonRpcClientMacro {
   ): Iterable[c.Tree] = {
     import c.universe._
     val apiType: Type = weakTypeOf[API]
-    JsonRpcMacroUtils[c.type](c).getJsonRpcAPIMethods(apiType)
+    JSONRPCMacroUtils[c.type](c).getJSONRPCAPIMethods(apiType)
         .map((apiMethod: MethodSymbol) => createMemberFunction[c.type](c)(client, maybeServer, apiMethod))
   }
 
@@ -84,8 +84,8 @@ object JsonRpcClientMacro {
   ): c.Tree = {
     import c.universe._
 
-    val macroUtils = JsonRpcMacroUtils[c.type](c)
-    val methodClientFactoryMacro = new JsonRpcMethodClientFactoryMacro[c.type](c)
+    val macroUtils = JSONRPCMacroUtils[c.type](c)
+    val methodClientFactoryMacro = new JSONRPCMethodClientFactoryMacro[c.type](c)
 
     val paramTypes: Seq[Type] = apiMethod.paramLists.flatten
         .map(param => param.typeSignature)
@@ -93,7 +93,7 @@ object JsonRpcClientMacro {
     val function = methodClientFactoryMacro.createAsFunction(
       client,
       maybeServer,
-      q"${macroUtils.getJsonRpcMethodName(apiMethod)}",
+      q"${macroUtils.getJSONRPCMethodName(apiMethod)}",
       paramTypes,
       apiMethod.returnType
     )
@@ -119,23 +119,23 @@ object JsonRpcClientMacro {
   def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Boolean] = {
     import c.universe._
 
-    val macroUtils = JsonRpcMacroUtils[c.type](c)
+    val macroUtils = JSONRPCMacroUtils[c.type](c)
 
     val (clientDefinition, client) = macroUtils.prefixDefinitionAndReference
     val jsonSerializer: Tree = q"$client.jsonSerializer"
     val promisedResponseRepository: Tree = q"$client.promisedResponseRepository"
 
-    val maybeJsonRpcId = c.Expr[Option[Id]](
+    val maybeJSONRPCId = c.Expr[Option[Id]](
       q"""
-          $jsonSerializer.deserialize[JsonRpcId]($json)
-              .filter(requestId => requestId.jsonrpc == Constants.JsonRpc)
+          $jsonSerializer.deserialize[JSONRPCId]($json)
+              .filter(requestId => requestId.jsonrpc == Constants.JSONRPC)
               .map(requestId => requestId.id)
           """
     )
 
     val maybePromisedResponse = c.Expr[Option[Promise[String]]](
       q"""
-          $maybeJsonRpcId
+          $maybeJSONRPCId
               .flatMap(requestId => $promisedResponseRepository.getAndRemove(requestId))
           """
     )

@@ -18,7 +18,7 @@ object Main {
           .toASCIIString
     )
     context.addServlet(classOf[DefaultServlet], "/")
-    context.addServlet(classOf[JsonRpcWebSocketServlet], "/jsonrpc")
+    context.addServlet(classOf[JSONRPCWebSocketServlet], "/jsonrpc")
 
     server.setHandler(context)
 

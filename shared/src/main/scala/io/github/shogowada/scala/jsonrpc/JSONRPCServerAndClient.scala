@@ -1,42 +1,42 @@
 package io.github.shogowada.scala.jsonrpc
 
-import io.github.shogowada.scala.jsonrpc.client.{JsonRpcClient, JsonRpcClientMacro}
+import io.github.shogowada.scala.jsonrpc.client.{JSONRPCClient, JSONRPCClientMacro}
 import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
-import io.github.shogowada.scala.jsonrpc.server.{JsonRpcServer, JsonRpcServerMacro}
-import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
+import io.github.shogowada.scala.jsonrpc.server.{JSONRPCServer, JSONRPCServerMacro}
+import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JsonRpcServerAndClient[JsonSerializerInUse <: JsonSerializer](
-    val server: JsonRpcServer[JsonSerializerInUse],
-    val client: JsonRpcClient[JsonSerializerInUse]
+class JSONRPCServerAndClient[JsonSerializerInUse <: JsonSerializer](
+    val server: JSONRPCServer[JsonSerializerInUse],
+    val client: JSONRPCClient[JsonSerializerInUse]
 ) {
   def send(json: String): Future[Option[String]] = client.send(json)
 
-  def bindAPI[API](api: API): Unit = macro JsonRpcServerAndClientMacro.bindAPI[API]
+  def bindAPI[API](api: API): Unit = macro JSONRPCServerAndClientMacro.bindAPI[API]
 
-  def createAPI[API]: API = macro JsonRpcServerAndClientMacro.createAPI[API]
+  def createAPI[API]: API = macro JSONRPCServerAndClientMacro.createAPI[API]
 
-  def receiveAndSend(json: String): Future[Unit] = macro JsonRpcServerAndClientMacro.receiveAndSend
+  def receiveAndSend(json: String): Future[Unit] = macro JSONRPCServerAndClientMacro.receiveAndSend
 }
 
-object JsonRpcServerAndClient {
+object JSONRPCServerAndClient {
   def apply[JsonSerializerInUse <: JsonSerializer](
-      server: JsonRpcServer[JsonSerializerInUse],
-      client: JsonRpcClient[JsonSerializerInUse]
-  ) = new JsonRpcServerAndClient(server, client)
+      server: JSONRPCServer[JsonSerializerInUse],
+      client: JSONRPCClient[JsonSerializerInUse]
+  ) = new JSONRPCServerAndClient(server, client)
 }
 
-object JsonRpcServerAndClientMacro {
+object JSONRPCServerAndClientMacro {
   def bindAPI[API: c.WeakTypeTag](c: blackbox.Context)(api: c.Expr[API]): c.Expr[Unit] = {
     import c.universe._
-    val macroUtils = JsonRpcMacroUtils[c.type](c)
+    val macroUtils = JSONRPCMacroUtils[c.type](c)
     val (serverAndClientDefinition, serverAndClient) = macroUtils.prefixDefinitionAndReference
     val server = q"$serverAndClient.server"
     val client = q"$serverAndClient.client"
-    val bindAPI = JsonRpcServerMacro.bindAPIImpl[c.type, API](c)(server, Some(client), api)
+    val bindAPI = JSONRPCServerMacro.bindAPIImpl[c.type, API](c)(server, Some(client), api)
     c.Expr[Unit](
       q"""
           $serverAndClientDefinition
@@ -47,11 +47,11 @@ object JsonRpcServerAndClientMacro {
 
   def createAPI[API: c.WeakTypeTag](c: blackbox.Context): c.Expr[API] = {
     import c.universe._
-    val macroUtils = JsonRpcMacroUtils[c.type](c)
+    val macroUtils = JSONRPCMacroUtils[c.type](c)
     val (serverAndClientDefinition, serverAndClient) = macroUtils.prefixDefinitionAndReference
     val server = q"$serverAndClient.server"
     val client = q"$serverAndClient.client"
-    val createAPI = JsonRpcClientMacro.createAPIImpl[c.type, API](c)(client, Some(server))
+    val createAPI = JSONRPCClientMacro.createAPIImpl[c.type, API](c)(client, Some(server))
     c.Expr[API](
       q"""
           $serverAndClientDefinition
@@ -62,7 +62,7 @@ object JsonRpcServerAndClientMacro {
 
   def receiveAndSend(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Future[Unit]] = {
     import c.universe._
-    val macroUtils = JsonRpcMacroUtils[c.type](c)
+    val macroUtils = JSONRPCMacroUtils[c.type](c)
     val (serverAndClientDefinition, serverAndClient) = macroUtils.prefixDefinitionAndReference
     val server: Tree = q"$serverAndClient.server"
     val client: Tree = q"$serverAndClient.client"
@@ -72,8 +72,8 @@ object JsonRpcServerAndClientMacro {
           ..${macroUtils.imports}
           $serverAndClientDefinition
           def receiveAndSend(json: String): Future[Unit] = {
-            val wasJsonRpcResponse: Boolean = $client.receive(json)
-            if (!wasJsonRpcResponse) {
+            val wasJSONRPCResponse: Boolean = $client.receive(json)
+            if (!wasJSONRPCResponse) {
               $server.receive(json)
                 .flatMap((maybeResponseJsonFromUs: Option[String]) => {
                   maybeResponseJsonFromUs match {

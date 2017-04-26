@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc
 
 object Constants {
-  final val JsonRpc = "2.0"
+  final val JSONRPC = "2.0"
 
   final val ReservedMethodNamePrefix = "io.github.shogowada.scala.jsonrpc."
 

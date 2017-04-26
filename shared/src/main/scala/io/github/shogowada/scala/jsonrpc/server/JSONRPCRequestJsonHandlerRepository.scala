@@ -1,8 +1,8 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.RequestJsonHandler
+import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer.RequestJsonHandler
 
-class JsonRpcRequestJsonHandlerRepository {
+class JSONRPCRequestJsonHandlerRepository {
   var methodNameToHandlerMap: Map[String, RequestJsonHandler] = Map()
 
   def add(methodName: String, requestJsonHandler: RequestJsonHandler): Unit = this.synchronized {

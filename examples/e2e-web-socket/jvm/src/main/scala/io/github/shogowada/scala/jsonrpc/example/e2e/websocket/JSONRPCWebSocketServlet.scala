@@ -5,8 +5,8 @@ import javax.servlet.annotation.WebServlet
 import org.eclipse.jetty.websocket.servlet.{WebSocketServlet, WebSocketServletFactory}
 
 @WebServlet(name = "JSON-RPC WebSocket servlet", urlPatterns = Array("/jsonrpc"))
-class JsonRpcWebSocketServlet extends WebSocketServlet {
+class JSONRPCWebSocketServlet extends WebSocketServlet {
   override def configure(factory: WebSocketServletFactory): Unit = {
-    factory.register(classOf[JsonRpcWebSocket])
+    factory.register(classOf[JSONRPCWebSocket])
   }
 }

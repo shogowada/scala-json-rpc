@@ -1,17 +1,17 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.Models.JsonRpcError
+import io.github.shogowada.scala.jsonrpc.Models.JSONRPCError
 import io.github.shogowada.scala.jsonrpc.client.DisposableFunctionClientFactoryMacro
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer.RequestJsonHandler
-import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
+import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer.RequestJsonHandler
+import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
 
 import scala.reflect.macros.blackbox
 
-class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
+class JSONRPCRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   import c.universe._
 
-  lazy val macroUtils = JsonRpcMacroUtils[c.type](c)
+  lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
   lazy val disposableFunctionClientFactoryMacro = new DisposableFunctionClientFactoryMacro[c.type](c)
   lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
 
@@ -60,7 +60,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
   }
 
   private def create(handlerContext: RequestJsonHandlerContext): c.Expr[RequestJsonHandler] = {
-    if (macroUtils.isJsonRpcNotificationMethod(handlerContext.returnType)) {
+    if (macroUtils.isJSONRPCNotificationMethod(handlerContext.returnType)) {
       createNotificationHandler(handlerContext)
     } else {
       createRequestHandler(handlerContext)
@@ -73,7 +73,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
 
     val params = TermName("params")
 
-    val jsonRpcParameterType: Tree = macroUtils.getJsonRpcParameterType(handlerContext.parameterTypeLists.flatten)
+    val jsonRPCParameterType: Tree = macroUtils.getJSONRPCParameterType(handlerContext.parameterTypeLists.flatten)
 
     def methodInvocation(params: TermName) = createMethodInvocation(handlerContext, params)
 
@@ -81,7 +81,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
       q"""
           (json: String) => {
             ..${macroUtils.imports}
-            $jsonSerializer.deserialize[JsonRpcNotification[$jsonRpcParameterType]](json)
+            $jsonSerializer.deserialize[JSONRPCNotification[$jsonRPCParameterType]](json)
               .foreach(notification => {
                 val $params = notification.params
                 ${methodInvocation(params)}
@@ -104,10 +104,10 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
       macroUtils.createMaybeErrorJsonFromRequestJson(
         handlerContext.server,
         c.Expr[String](q"$json"),
-        c.Expr[JsonRpcError[String]](q"JsonRpcErrors.invalidParams")
+        c.Expr[JSONRPCError[String]](q"JSONRPCErrors.invalidParams")
       )
 
-    val jsonRpcParameterType: Tree = macroUtils.getJsonRpcParameterType(handlerContext.parameterTypeLists.flatten)
+    val jsonRPCParameterType: Tree = macroUtils.getJSONRPCParameterType(handlerContext.parameterTypeLists.flatten)
 
     def methodInvocation(params: TermName): Tree = createMethodInvocation(handlerContext, params)
 
@@ -115,12 +115,12 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
       q"""
           ($json: String) => {
             ..${macroUtils.imports}
-            $jsonSerializer.deserialize[JsonRpcRequest[$jsonRpcParameterType]]($json)
-              .map(($request: JsonRpcRequest[$jsonRpcParameterType]) => {
+            $jsonSerializer.deserialize[JSONRPCRequest[$jsonRPCParameterType]]($json)
+              .map(($request: JSONRPCRequest[$jsonRPCParameterType]) => {
                 val $params = $request.params
                 ${methodInvocation(params)}
-                  .map((result) => JsonRpcResultResponse(
-                    jsonrpc = Constants.JsonRpc,
+                  .map((result) => JSONRPCResultResponse(
+                    jsonrpc = Constants.JSONRPC,
                     id = $request.id,
                     result = result
                   ))($executionContext)
@@ -151,7 +151,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
       def disposableFunctionServer(disposableFunction: TermName): c.Expr[String] =
         handlerContext.maybeClient
             .map(client => disposableFunctionServerFactoryMacro.getOrCreate(client, handlerContext.server, disposableFunction, handlerContext.returnType))
-            .getOrElse(throw new UnsupportedOperationException("To return DisposableFunction, you need to bind the API to JsonRpcServerAndClient."))
+            .getOrElse(throw new UnsupportedOperationException("To return DisposableFunction, you need to bind the API to JSONRPCServerAndClient."))
       q"""
           $realMethodInvocation
               .map(disposableFunction => ${disposableFunctionServer(TermName("disposableFunction"))})($executionContext)
@@ -173,7 +173,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
       if (macroUtils.isDisposableFunctionType(parameterType)) {
         handlerContext.maybeClient
             .map(client => disposableFunctionClientFactoryMacro.getOrCreate(handlerContext.server, client, parameterType, argument))
-            .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to bind the API to JsonRpcServerAndClient."))
+            .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to bind the API to JSONRPCServerAndClient."))
       } else {
         argument
       }
@@ -195,8 +195,8 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
 
     def response(id: Tree) =
       q"""
-          JsonRpcResultResponse[Unit](
-            jsonrpc = Constants.JsonRpc,
+          JSONRPCResultResponse[Unit](
+            jsonrpc = Constants.JSONRPC,
             id = $id,
             result = ()
           )
@@ -205,13 +205,13 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
     val maybeErrorJson = macroUtils.createMaybeErrorJsonFromRequestJson(
       server,
       c.Expr[String](q"json"),
-      c.Expr[JsonRpcError[String]](q"JsonRpcErrors.internalError")
+      c.Expr[JSONRPCError[String]](q"JSONRPCErrors.internalError")
     )
 
     q"""
         (json: String) => {
           ..${macroUtils.imports}
-          val maybeResponse: Option[String] = $jsonSerializer.deserialize[JsonRpcRequest[Tuple1[String]]](json)
+          val maybeResponse: Option[String] = $jsonSerializer.deserialize[JSONRPCRequest[Tuple1[String]]](json)
             .flatMap(request => {
               val Tuple1(methodName) = request.params
               $disposableFunctionMethodNameRepository.remove(methodName)

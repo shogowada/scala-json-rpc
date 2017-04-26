@@ -1,17 +1,17 @@
 # Passing function as parameter or return value or both
 
-You can pass functions as parameter by using `DisposableFunction` with `JsonRpcServerAndClient`.
+You can pass functions as parameter by using `DisposableFunction` with `JSONRPCServerAndClient`.
 
-- [Create JsonRpcServerAndClient](#create-jsonrpcserverandclient)
+- [Create JSONRPCServerAndClient](#create-jsonrpcserverandclient)
 - [Create API that takes DisposableFunction as parameter or return value or both](#create-api-that-takes-disposablefunction-as-parameter-or-return-value-or-both)
 - [Implement server](#implement-server)
 - [Implement client](#implement-client)
 - [But how is it working? I thought it's JSON-RPC library!](#but-how-is-it-working-i-thought-its-json-rpc-library)
 - [Summary](#summary)
 
-## Create JsonRpcServerAndClient
+## Create JSONRPCServerAndClient
 
-For function as parameter to work, you need bidirectional communication because when calling the function on sever, it calls the remote procedure (the function as parameter) of client. So both ends need to be `JsonRpcServerAndClient`.
+For function as parameter to work, you need bidirectional communication because when calling the function on sever, it calls the remote procedure (the function as parameter) of client. So both ends need to be `JSONRPCServerAndClient`.
 
 ```
 +--------+                           +--------+
@@ -23,7 +23,7 @@ For function as parameter to work, you need bidirectional communication because 
 +--------+                           +--------+
 ```
 
-To create `JsonRpcServerAndClient`, you need to create a server and a client first like you normally would.
+To create `JSONRPCServerAndClient`, you need to create a server and a client first like you normally would.
 
 ```scala
 val jsonSerializer = new MyJsonSerializer()
@@ -31,14 +31,14 @@ val jsonSender: (String) => Future[Option[String]] = {
   // Implement JSON sender
   // ...
 }
-val jsonRpcServer = JsonRpcServer(jsonSerializer)
-val jsonRpcClient = JsonRpcClient(jsonSerializer, jsonSender)
+val jsonRPCServer = JSONRPCServer(jsonSerializer)
+val jsonRPCClient = JSONRPCClient(jsonSerializer, jsonSender)
 ```
 
-Then, you can create `JsonRpcServerAndClient` using the server and the client.
+Then, you can create `JSONRPCServerAndClient` using the server and the client.
 
 ```scala
-val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
+val jsonRPCServerAndClient = JSONRPCServerAndClient(jsonRPCServer, jsonRPCClient)
 ```
 
 ## Create API that takes DisposableFunction as parameter or return value or both
@@ -58,7 +58,7 @@ trait UuidSubjectAPI {
 }
 ```
 
-Internally, `JsonRpcFuncion` is just another JSON-RPC client, so just like an API method, **you need to return either `Unit` or `Future`**.
+Internally, `JSONRPCFuncion` is just another JSON-RPC client, so just like an API method, **you need to return either `Unit` or `Future`**.
 
 The `UuidSubjectAPI.unregister` works because **if the same function reference is passed from client, it will be the same function reference on server too**.
 
@@ -95,7 +95,7 @@ class UuidSubjectAPIImpl extends UuidSubjectAPI {
   }
 }
 
-val serverAndClient = JsonRpcServerAndClient(/* ... */)
+val serverAndClient = JSONRPCServerAndClient(/* ... */)
 serverAndClient.bindAPI[EchoAPI](new EchoAPIImpl)
 serverAndClient.bindAPI[UuidSubjectAPI](new UuidSubjectAPIImpl)
 ```
@@ -105,7 +105,7 @@ You can use the `DisposableFunction` just like regular function except **you nee
 ## Implement client
 
 ```scala
-val serverAndClient = JsonRpcServerAndClient(/* ... */)
+val serverAndClient = JSONRPCServerAndClient(/* ... */)
 
 val echoAPI = serverAndClient.createAPI[API]
 echoAPI.echo("Hello, World!", (message: String) => {
@@ -160,7 +160,7 @@ Knowing this rule, you can use these APIs with JSON-RPC client & server on diffe
 ## Summary
 
 - You can pass functions as parameter by using `DisposableFunctionN` type.
-- To use function as parameter, you need to use `JsonRpcServerAndClient`.
+- To use function as parameter, you need to use `JSONRPCServerAndClient`.
 - Invoking the function sends just another JSON-RPC request.
     - Your function needs to return either `Unit` or `Future` just like API methods.
 - If you pass the same function reference from client, it will be the same function reference on server too.

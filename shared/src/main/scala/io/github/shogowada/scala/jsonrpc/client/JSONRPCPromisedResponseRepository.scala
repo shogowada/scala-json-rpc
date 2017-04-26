@@ -4,7 +4,7 @@ import io.github.shogowada.scala.jsonrpc.Types.Id
 
 import scala.concurrent.Promise
 
-class JsonRpcPromisedResponseRepository {
+class JSONRPCPromisedResponseRepository {
 
   private var idToPromisedResponseMap: Map[Id, Promise[String]] = Map()
 

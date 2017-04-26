@@ -1,19 +1,19 @@
 package io.github.shogowada.scala.jsonrpc
 
-import io.github.shogowada.scala.jsonrpc.Models.JsonRpcException
-import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
+import io.github.shogowada.scala.jsonrpc.Models.JSONRPCException
+import io.github.shogowada.scala.jsonrpc.client.JSONRPCClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
-import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
+import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer
 import org.scalatest._
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Success
 
-class JsonRpcServerAndClientTest extends AsyncFunSpec
+class JSONRPCServerAndClientTest extends AsyncFunSpec
     with OneInstancePerTest
     with Matchers {
 
-  override def newInstance = new JsonRpcServerAndClientTest
+  override def newInstance = new JSONRPCServerAndClientTest
 
   override implicit val executionContext = ExecutionContext.Implicits.global
 
@@ -21,14 +21,14 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
 
   describe("given I have 2 servers and clients") {
     class TwoServersAndClients {
-      val server1 = JsonRpcServer(jsonSerializer)
-      val server2 = JsonRpcServer(jsonSerializer)
+      val server1 = JSONRPCServer(jsonSerializer)
+      val server2 = JSONRPCServer(jsonSerializer)
 
-      val client1 = JsonRpcClient(jsonSerializer, (json: String) => server2.receive(json))
-      val client2 = JsonRpcClient(jsonSerializer, (json: String) => server1.receive(json))
+      val client1 = JSONRPCClient(jsonSerializer, (json: String) => server2.receive(json))
+      val client2 = JSONRPCClient(jsonSerializer, (json: String) => server1.receive(json))
 
-      var serverAndClient1 = JsonRpcServerAndClient(server1, client1)
-      var serverAndClient2 = JsonRpcServerAndClient(server2, client2)
+      var serverAndClient1 = JSONRPCServerAndClient(server1, client1)
+      var serverAndClient2 = JSONRPCServerAndClient(server2, client2)
     }
 
     describe("and I have an API that takes function as parameter") {
@@ -151,7 +151,7 @@ class JsonRpcServerAndClientTest extends AsyncFunSpec
             it("then calling the request function should fail") {
               val fixture = new DisposeTheFunction
               fixture.apiImpl.requestFunction("FAKE").failed
-                  .map(throwable => throwable.isInstanceOf[JsonRpcException[_]] should equal(true))
+                  .map(throwable => throwable.isInstanceOf[JSONRPCException[_]] should equal(true))
             }
 
             it("then calling the notification function should ignore the error") {

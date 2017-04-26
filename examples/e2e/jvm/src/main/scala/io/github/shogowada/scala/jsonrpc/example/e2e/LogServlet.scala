@@ -10,7 +10,7 @@ import scala.concurrent.duration.Duration
 
 class LogServlet extends ScalatraServlet {
   get("/") {
-    val futureResult = JsonRpcModule.loggerAPI.getAllLogs()
+    val futureResult = JSONRPCModule.loggerAPI.getAllLogs()
         .map(logs => Ok(logs))
     Await.result(futureResult, Duration(1, TimeUnit.MINUTES))
   }

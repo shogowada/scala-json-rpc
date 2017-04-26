@@ -14,7 +14,7 @@ Then JSON-RPC method name for the API method ```foo``` will be ```io.github.shog
 
 But sometimes you want to define custom method names so that it integrates well with other components written with different technologies.
 
-To define custome method name, you can annotate API method with ```@api.JsonRpcMethod``` annotation. For example, if you define your API like below:
+To define custome method name, you can annotate API method with ```@api.JSONRPCMethod``` annotation. For example, if you define your API like below:
 
 ```scala
 package io.github.shogowada
@@ -22,7 +22,7 @@ package io.github.shogowada
 import io.github.shogowada.scala.jsonrpc.api
 
 trait API {
-  @api.JsonRpcMethod(name = "foo")
+  @api.JSONRPCMethod(name = "foo")
   def foo: Unit
 }
 ```

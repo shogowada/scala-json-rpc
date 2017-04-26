@@ -5,13 +5,13 @@ import org.scalatest.{AsyncFunSpec, Matchers}
 
 import scala.concurrent.Future
 
-class JsonRpcClientTest extends AsyncFunSpec
+class JSONRPCClientTest extends AsyncFunSpec
     with Matchers {
 
   var jsonSender = (json: String) => {
     Future(None)
   }
-  val client = JsonRpcClient(UpickleJsonSerializer(), (json: String) => jsonSender(json))
+  val client = JSONRPCClient(UpickleJsonSerializer(), (json: String) => jsonSender(json))
 
   describe("given I have an API") {
     trait API {

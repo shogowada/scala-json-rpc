@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.utils.JsonRpcMacroUtils
+import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
 
 import scala.reflect.macros.blackbox
 
@@ -8,8 +8,8 @@ class DisposableFunctionServerFactoryMacro[Context <: blackbox.Context](val c: C
 
   import c.universe._
 
-  lazy val macroUtils = JsonRpcMacroUtils[c.type](c)
-  lazy val requestJsonHandlerFactoryMacro = new JsonRpcRequestJsonHandlerFactoryMacro[c.type](c)
+  lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
+  lazy val requestJsonHandlerFactoryMacro = new JSONRPCRequestJsonHandlerFactoryMacro[c.type](c)
 
   def getOrCreate(
       client: Tree,
