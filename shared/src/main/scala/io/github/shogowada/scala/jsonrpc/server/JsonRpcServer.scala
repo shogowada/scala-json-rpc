@@ -37,7 +37,7 @@ object JsonRpcServerMacro {
     import c.universe._
     val macroUtils = JsonRpcMacroUtils[c.type](c)
     val (serverDefinition, server) = macroUtils.prefixDefinitionAndReference
-    val bind = bindApiImpl[c.type, API](c)(server, None, api)
+    val bind = bindAPIImpl[c.type, API](c)(server, None, api)
     c.Expr[Unit](
       q"""
           $serverDefinition
@@ -46,7 +46,7 @@ object JsonRpcServerMacro {
     )
   }
 
-  def bindApiImpl[Context <: blackbox.Context, API: c.WeakTypeTag](c: Context)(
+  def bindAPIImpl[Context <: blackbox.Context, API: c.WeakTypeTag](c: Context)(
       server: c.Tree,
       maybeClient: Option[c.Tree],
       api: c.Expr[API]
@@ -58,7 +58,7 @@ object JsonRpcServerMacro {
     val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
 
     val apiType: Type = weakTypeOf[API]
-    val methodNameToRequestJsonHandlerList = JsonRpcMacroUtils[c.type](c).getJsonRpcApiMethods(apiType)
+    val methodNameToRequestJsonHandlerList = JsonRpcMacroUtils[c.type](c).getJsonRpcAPIMethods(apiType)
         .map((apiMember: MethodSymbol) => createMethodNameToRequestJsonHandler[c.type, API](c)(server, maybeClient, api, apiMember))
 
     c.Expr[Unit](
@@ -82,7 +82,7 @@ object JsonRpcServerMacro {
     val requestJsonHandlerFactoryMacro = new JsonRpcRequestJsonHandlerFactoryMacro[c.type](c)
 
     val methodName = macroUtils.getJsonRpcMethodName(method)
-    val handler = requestJsonHandlerFactoryMacro.createFromApiMethod[API](server, maybeClient, api, method)
+    val handler = requestJsonHandlerFactoryMacro.createFromAPIMethod[API](server, maybeClient, api, method)
 
     c.Expr[(String, RequestJsonHandler)](q"""$methodName -> $handler""")
   }

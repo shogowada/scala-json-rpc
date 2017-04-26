@@ -42,7 +42,7 @@ object JsonRpcClientMacro {
     import c.universe._
     val macroUtils = JsonRpcMacroUtils[c.type](c)
     val (clientDefinition, client) = macroUtils.prefixDefinitionAndReference
-    val api = createApiImpl[c.type, API](c)(client, None)
+    val api = createAPIImpl[c.type, API](c)(client, None)
     c.Expr[API](
       q"""
           $clientDefinition
@@ -51,7 +51,7 @@ object JsonRpcClientMacro {
     )
   }
 
-  def createApiImpl[Context <: blackbox.Context, API: c.WeakTypeTag](c: Context)(
+  def createAPIImpl[Context <: blackbox.Context, API: c.WeakTypeTag](c: Context)(
       client: c.Tree,
       maybeServer: Option[c.Tree]
   ): c.Expr[API] = {
@@ -73,7 +73,7 @@ object JsonRpcClientMacro {
   ): Iterable[c.Tree] = {
     import c.universe._
     val apiType: Type = weakTypeOf[API]
-    JsonRpcMacroUtils[c.type](c).getJsonRpcApiMethods(apiType)
+    JsonRpcMacroUtils[c.type](c).getJsonRpcAPIMethods(apiType)
         .map((apiMethod: MethodSymbol) => createMemberFunction[c.type](c)(client, maybeServer, apiMethod))
   }
 

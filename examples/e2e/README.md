@@ -9,16 +9,16 @@ You can see the complete code under this directory, but we have documented some 
 We define the following 3 JSON-RPC APIs.
 
 ```scala
-trait CalculatorApi {
+trait CalculatorAPI {
   def add(lhs: Int, rhs: Int): Future[Int]
   def subtract(lhs: Int, rhs: Int): Future[Int]
 }
 
-trait EchoApi {
+trait EchoAPI {
   def echo(message: String): Future[String]
 }
 
-trait LoggerApi {
+trait LoggerAPI {
   def log(message: String): Unit
 }
 ```
@@ -28,7 +28,7 @@ trait LoggerApi {
 We implement the APIs on server side like below.
 
 ```scala
-class CalculatorApiImpl extends CalculatorApi {
+class CalculatorAPIImpl extends CalculatorAPI {
   override def add(lhs: Int, rhs: Int): Future[Int] = {
     Future(lhs + rhs)
   }
@@ -37,13 +37,13 @@ class CalculatorApiImpl extends CalculatorApi {
   }
 }
 
-class EchoApiImpl extends EchoApi {
+class EchoAPIImpl extends EchoAPI {
   override def echo(message: String): Future[String] = {
     Future(message) // It just returns the message as is
   }
 }
 
-class LoggerApiImpl extends LoggerApi {
+class LoggerAPIImpl extends LoggerAPI {
   override def log(message: String): Unit = {
     println(message) // It logs the message
   }
@@ -56,9 +56,9 @@ We build JSON-RPC server using those API implementations.
 object JsonRpcModule {
   lazy val jsonRpcServer: JsonRpcServer[UpickleJsonSerializer] = {
     val server = JsonRpcServer(UpickleJsonSerializer())
-    server.bindApi[CalculatorApi](new CalculatorApiImpl)
-    server.bindApi[EchoApi](new EchoApiImpl)
-    server.bindApi[LoggerApi](new LoggerApiImpl)
+    server.bindAPI[CalculatorAPI](new CalculatorAPIImpl)
+    server.bindAPI[EchoAPI](new EchoAPIImpl)
+    server.bindAPI[LoggerAPI](new LoggerAPIImpl)
     server
   }
 }
@@ -110,32 +110,32 @@ val client = JsonRpcClient(UpickleJsonSerializer(), jsonSender)
 Once the client is built, we can use it to create and use the APIs like below.
 
 ```scala
-val calculatorApi = client.createApi[CalculatorApi]
-val echoApi = client.createApi[EchoApi]
-val loggerApi = client.createApi[LoggerApi]
+val calculatorAPI = client.createAPI[CalculatorAPI]
+val echoAPI = client.createAPI[EchoAPI]
+val loggerAPI = client.createAPI[LoggerAPI]
 
-loggerApi.log("This is the beginning of my example.")
+loggerAPI.log("This is the beginning of my example.")
 
-calculatorApi.add(1, 2).onComplete {
+calculatorAPI.add(1, 2).onComplete {
   case Success(result) => println(s"1 + 2 = $result")
   case _ =>
 }
 
-calculatorApi.subtract(1, 2).onComplete {
+calculatorAPI.subtract(1, 2).onComplete {
   case Success(result) => println(s"1 - 2 = $result")
   case _ =>
 }
 
-echoApi.echo("Hello, World!").onComplete {
+echoAPI.echo("Hello, World!").onComplete {
   case Success(result) => println(s"""You said "$result"""")
   case _ =>
 }
 
-loggerApi.log("This is the end of my example.")
+loggerAPI.log("This is the end of my example.")
 ```
 
 When you run this, you will see that:
 
-- calculations via ```calculatorApi``` is operated on server and returned to client.
-- messages sent via ```echoApi``` reaches to server and returned to client as is.
-- messages sent via ```loggerApi``` is logged on server.
+- calculations via ```calculatorAPI``` is operated on server and returned to client.
+- messages sent via ```echoAPI``` reaches to server and returned to client as is.
+- messages sent via ```loggerAPI``` is logged on server.

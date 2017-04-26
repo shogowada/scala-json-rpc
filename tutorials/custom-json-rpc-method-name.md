@@ -5,12 +5,12 @@ By default, method name is full name of the method. For example, if you have an 
 ```scala
 package io.github.shogowada
 
-trait Api {
+trait API {
   def foo: Unit
 }
 ```
 
-Then JSON-RPC method name for the API method ```foo``` will be ```io.github.shogowada.Api.foo```. If you are using this library only to achieve RMI between your Scala components, this is convenient to guarantee uniqueness of the method names.
+Then JSON-RPC method name for the API method ```foo``` will be ```io.github.shogowada.API.foo```. If you are using this library only to achieve RMI between your Scala components, this is convenient to guarantee uniqueness of the method names.
 
 But sometimes you want to define custom method names so that it integrates well with other components written with different technologies.
 
@@ -21,7 +21,7 @@ package io.github.shogowada
 
 import io.github.shogowada.scala.jsonrpc.api
 
-trait Api {
+trait API {
   @api.JsonRpcMethod(name = "foo")
   def foo: Unit
 }

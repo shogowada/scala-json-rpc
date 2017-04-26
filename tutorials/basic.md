@@ -21,7 +21,7 @@ For example, if you want to have a repository of `Foo` and make it available rem
 ```scala
 case class Foo(id: String)
 
-trait FooRepositoryApi {
+trait FooRepositoryAPI {
   def add(foo: Foo): Unit
   def remove(foo: Foo): Unit
   def getAll(): Future[Set[Foo]]
@@ -38,7 +38,7 @@ It needs to return `Future[_]` because RPC happens remotely, meaning:
 If your method returns `Unit`, it will be JSON-RPC notification, meaning you don't get any response including errors. If you don't need anything returned but still want to know if the RPC succeeded, you can let it return `Future[Unit]`.
 
 ```scala
-trait FooRepositoryApi {
+trait FooRepositoryAPI {
   def add(foo: Foo): Future[Unit]
   def remove(foo: Foo): Future[Unit]
   def getAll(): Future[Set[Foo]]
@@ -96,10 +96,10 @@ val jsonSender: (String) => Future[Option[String]] = (json: String) => {
 }
 val jsonRpcClient = JsonRpcClient(jsonSerializer, jsonSender)
 
-val fooRepositoryApi = jsonRpcClient.createApi[FooRepositoryApi]
+val fooRepositoryAPI = jsonRpcClient.createAPI[FooRepositoryAPI]
 
 val fooA = Foo("A")
-fooRepositoryApi.add(fooA).onComplete {
+fooRepositoryAPI.add(fooA).onComplete {
   case Success(_) => println(s"Successfully added $fooA to the repository")
   case _ => println(s"Failed to add $fooA to the repository")
 }
@@ -189,13 +189,13 @@ We will cover those in the following sections, but here is a piece of code to gi
 val jsonSerializer = new MyJsonSerializer()
 val jsonRpcServer = JsonRpcServer(jsonSerializer)
 
-class FooRepositoryApiImpl extends FooRepositoryApi {
-  // Implement FooRepositoryApi
+class FooRepositoryAPIImpl extends FooRepositoryAPI {
+  // Implement FooRepositoryAPI
   // ...
 }
 
-val fooRepositoryApi = new FooRepositoryApiImpl
-jsonRpcServer.bindApi[FooRepositoryApi](fooRepositoryApi)
+val fooRepositoryAPI = new FooRepositoryAPIImpl
+jsonRpcServer.bindAPI[FooRepositoryAPI](fooRepositoryAPI)
 
 jsonRpcServer.receive(String).onComplete {
   case Success(Some(responseJson)) => {
@@ -259,16 +259,16 @@ val jsonRpcClient = JsonRpcClient(/* ... */)
 val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient)
 ```
 
-Just as how it looks like, you think of `JsonRpcServerAndClient` as `JsonRpcServer` and `JsonRpcClient` combined. You can still bind your API implementation using `bindApi[API](api: API)` method:
+Just as how it looks like, you think of `JsonRpcServerAndClient` as `JsonRpcServer` and `JsonRpcClient` combined. You can still bind your API implementation using `bindAPI[API](api: API)` method:
 
 ```scala
-jsonRpcServerAndClient.bindApi[FooRepositoryApi](new FooRepositoryApiImpl)
+jsonRpcServerAndClient.bindAPI[FooRepositoryAPI](new FooRepositoryAPIImpl)
 ```
 
-or use `createApi[API]` to create an API client:
+or use `createAPI[API]` to create an API client:
 
 ```scala
-val fooRepositoryApi = jsonRpcServerAndClient.createApi[FooRepositoryApi]
+val fooRepositoryAPI = jsonRpcServerAndClient.createAPI[FooRepositoryAPI]
 ```
 
 You can receive request JSON and send response JSON by using `receive`. The method can also take care of sending response JSON because it already has access to your `JsonSender` given to `JsonRpcClient`.

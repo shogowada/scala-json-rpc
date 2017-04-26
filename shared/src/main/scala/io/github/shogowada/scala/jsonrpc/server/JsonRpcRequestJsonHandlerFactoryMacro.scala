@@ -23,7 +23,7 @@ class JsonRpcRequestJsonHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
       returnType: c.Type
   )
 
-  def createFromApiMethod[API](
+  def createFromAPIMethod[API](
       server: c.Tree,
       maybeClient: Option[c.Tree],
       api: c.Expr[API],

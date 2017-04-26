@@ -43,7 +43,7 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     // used at the point of macro expansion will always be used for the macro.
     // For example, if you have the following code
     //
-    // server.bindApi[Api]
+    // server.bindAPI[API]
     // server = null
     //
     // then the API bound will break because its c.prefix.tree is now changed to null.
@@ -54,7 +54,7 @@ class JsonRpcMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     )
   }
 
-  def getJsonRpcApiMethods(apiType: Type): Iterable[MethodSymbol] = {
+  def getJsonRpcAPIMethods(apiType: Type): Iterable[MethodSymbol] = {
     apiType.decls
         .filter((apiMember: Symbol) => isJsonRpcMethod(apiMember))
         .map((apiMember: Symbol) => apiMember.asMethod)

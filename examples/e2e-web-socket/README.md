@@ -42,7 +42,7 @@ object TodoEventTypes {
 
 case class TodoEvent(todo: Todo, eventType: String)
 
-trait TodoRepositoryApi {
+trait TodoRepositoryAPI {
   def add(description: String): Future[Todo]
 
   def remove(id: String): Future[Unit]
@@ -68,7 +68,7 @@ object Main extends JSApp {
     val mountNode = dom.document.getElementById("mount-node")
     ReactDOM.render(
       new TodoListView(
-        serverAndClient.createApi[TodoRepositoryApi]
+        serverAndClient.createAPI[TodoRepositoryAPI]
       )(TodoListView.Props()),
       mountNode
     )
@@ -137,7 +137,7 @@ object Main extends JSApp {
 Here is our API implementation:
 
 ```scala
-class TodoRepositoryApiImpl extends TodoRepositoryApi {
+class TodoRepositoryAPIImpl extends TodoRepositoryAPI {
 
   var todos: Seq[Todo] = Seq()
   var observersById: Map[String, DisposableFunction1[TodoEvent, Future[Unit]]] = Map()
@@ -198,7 +198,7 @@ Here is our WebSocket implementation:
 ```scala
 object JsonRpcModule {
 
-  lazy val todoRepositoryApi = new TodoRepositoryApiImpl
+  lazy val todoRepositoryAPI = new TodoRepositoryAPIImpl
 
   lazy val jsonSerializer = UpickleJsonSerializer()
 
@@ -207,7 +207,7 @@ object JsonRpcModule {
     val client = JsonRpcClient(jsonSerializer, jsonSender)
     val serverAndClient = JsonRpcServerAndClient(server, client)
 
-    serverAndClient.bindApi[TodoRepositoryApi](todoRepositoryApi)
+    serverAndClient.bindAPI[TodoRepositoryAPI](todoRepositoryAPI)
 
     serverAndClient
   }

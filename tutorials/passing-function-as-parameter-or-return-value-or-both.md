@@ -44,35 +44,35 @@ val jsonRpcServerAndClient = JsonRpcServerAndClient(jsonRpcServer, jsonRpcClient
 ## Create API that takes DisposableFunction as parameter or return value or both
 
 ```scala
-trait EchoApi {
+trait EchoAPI {
   def echo(message: String, callback: DisposableFunction1[String, Unit]): Unit
 }
 
-trait UuidSubjectApi {
+trait UuidSubjectAPI {
   def register(observer: DisposableFunction1[String, Future[Unit]]): Unit
   def unregister(observer: DisposableFunction1[String, Future[Unit]]): Unit
 }
 // Or, you might want to return an unregister function
-trait UuidSubjectApi {
+trait UuidSubjectAPI {
   def register(observer: DisposableFunction1[String, Future[Unit]]): Future[DisposableFunction0[Unit]]
 }
 ```
 
 Internally, `JsonRpcFuncion` is just another JSON-RPC client, so just like an API method, **you need to return either `Unit` or `Future`**.
 
-The `UuidSubjectApi.unregister` works because **if the same function reference is passed from client, it will be the same function reference on server too**.
+The `UuidSubjectAPI.unregister` works because **if the same function reference is passed from client, it will be the same function reference on server too**.
 
 ## Implement server
 
 ```scala
-class EchoApiImpl extends EchoApi {
+class EchoAPIImpl extends EchoAPI {
   override def echo(message: String, callback: DisposableFunction1[String, Unit]): Unit = {
     callback(message)
     callback.dispose() // Dispose the function when you no longer use it.
   }
 }
 
-class UuidSubjectApiImpl extends UuidSubjectApi {
+class UuidSubjectAPIImpl extends UuidSubjectAPI {
   var observers: Set[DisposableFunction1[String, Future[Unit]]] = Set()
 
   // ... Set timer so that we will invoke the following method periodically.
@@ -96,8 +96,8 @@ class UuidSubjectApiImpl extends UuidSubjectApi {
 }
 
 val serverAndClient = JsonRpcServerAndClient(/* ... */)
-serverAndClient.bindApi[EchoApi](new EchoApiImpl)
-serverAndClient.bindApi[UuidSubjectApi](new UuidSubjectApiImpl)
+serverAndClient.bindAPI[EchoAPI](new EchoAPIImpl)
+serverAndClient.bindAPI[UuidSubjectAPI](new UuidSubjectAPIImpl)
 ```
 
 You can use the `DisposableFunction` just like regular function except **you need to explicitly dispose the function when you no longer use it**. This is so that both server and client can dispose relative mappings.
@@ -107,8 +107,8 @@ You can use the `DisposableFunction` just like regular function except **you nee
 ```scala
 val serverAndClient = JsonRpcServerAndClient(/* ... */)
 
-val echoApi = serverAndClient.createApi[Api]
-echoApi.echo("Hello, World!", (message: String) => {
+val echoAPI = serverAndClient.createAPI[API]
+echoAPI.echo("Hello, World!", (message: String) => {
   println(s"Server echoed: $message")
 })
 
@@ -116,9 +116,9 @@ val uuidObserver: (String) => Future[Unit] = (uuid: String) => {
   println(s"Notified UUID: $uuid")
   Future() // Let server know it was successful
 }
-val uuidSubjectApi = serverAndClient.createApi[UuidSubjectApi]
-uuidSubjectApi.register(uuidObserver)
-uuidSubjectApi.unregister(uuidObserver)
+val uuidSubjectAPI = serverAndClient.createAPI[UuidSubjectAPI]
+uuidSubjectAPI.register(uuidObserver)
+uuidSubjectAPI.unregister(uuidObserver)
 ```
 
 On client side, also, you can use the parameter just like regular functions because `FunctionN` types are implicitly converted to `DisposableFunctionN` types. If you want to explicitly create `DisposableFunction`, you can do so by using its factory method like `DisposableFunction((message: String) => println(message))` or `DisposableFunction(uuidObserver)`.
@@ -128,7 +128,7 @@ On client side, also, you can use the parameter just like regular functions beca
 To illustrate how it's wroking, let's take the following API as an example.
 
 ```scala
-trait FooApi {
+trait FooAPI {
   def foo(bar: DisposableFunction1[String, Future[String]]): Future[String]
 }
 ```
@@ -139,7 +139,7 @@ When you invoke an `foo` function from client, passing your function as `bar`, i
 {
   "jsonrpc": "2.0",
   "id": "<request ID>",
-  "method": "FooApi.foo",
+  "method": "FooAPI.foo",
   "params": ["<method.name.for.the.bar.function>"]
 }
 ```

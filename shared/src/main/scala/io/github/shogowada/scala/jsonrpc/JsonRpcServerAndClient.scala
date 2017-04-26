@@ -36,11 +36,11 @@ object JsonRpcServerAndClientMacro {
     val (serverAndClientDefinition, serverAndClient) = macroUtils.prefixDefinitionAndReference
     val server = q"$serverAndClient.server"
     val client = q"$serverAndClient.client"
-    val bindApi = JsonRpcServerMacro.bindApiImpl[c.type, API](c)(server, Some(client), api)
+    val bindAPI = JsonRpcServerMacro.bindAPIImpl[c.type, API](c)(server, Some(client), api)
     c.Expr[Unit](
       q"""
           $serverAndClientDefinition
-          $bindApi
+          $bindAPI
           """
     )
   }
@@ -51,11 +51,11 @@ object JsonRpcServerAndClientMacro {
     val (serverAndClientDefinition, serverAndClient) = macroUtils.prefixDefinitionAndReference
     val server = q"$serverAndClient.server"
     val client = q"$serverAndClient.client"
-    val createApi = JsonRpcClientMacro.createApiImpl[c.type, API](c)(client, Some(server))
+    val createAPI = JsonRpcClientMacro.createAPIImpl[c.type, API](c)(client, Some(server))
     c.Expr[API](
       q"""
           $serverAndClientDefinition
-          $createApi
+          $createAPI
           """
     )
   }
