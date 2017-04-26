@@ -4,11 +4,11 @@ import io.github.shogowada.scala.jsonrpc.example.e2e.websocket.ElementIds
 import org.openqa.selenium.support.ui.{ExpectedCondition, ExpectedConditions, WebDriverWait}
 import org.openqa.selenium.{By, WebDriver}
 import org.scalatest.concurrent.Eventually
-import org.scalatest.selenium.Firefox
+import org.scalatest.selenium.{Chrome, Firefox}
 import org.scalatest.{Matchers, path}
 
 class TodoListTest extends path.FreeSpec
-    with Firefox
+    with Chrome
     with Eventually
     with Matchers {
 

@@ -6,7 +6,20 @@ scala:
 jdk:
   - oraclejdk8
 
+addons:
+  apt:
+    sources:
+      - google-chrome
+    packages:
+      - google-chrome-stable
+
 before_script:
+  - wget -N http://chromedriver.storage.googleapis.com/2.29/chromedriver_linux64.zip
+  - unzip chromedriver_linux64.zip
+  - sudo apt-get install libnss3
+  - sudo apt-get --only-upgrade install google-chrome-stable
+  - sudo cp chromedriver /usr/local/bin/.
+  - sudo chmod +x /usr/local/bin/chromedriver
   - "export DISPLAY=:99"
   - "sh -e /etc/init.d/xvfb start"
   - sleep 3 # give xvfb some time to start
