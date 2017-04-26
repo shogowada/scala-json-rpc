@@ -4,7 +4,7 @@ import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import io.github.shogowada.scalajs.reactjs.ReactDOM
 import io.github.shogowada.scalajs.reactjs.VirtualDOM._
-import io.github.shogowada.scalajs.reactjs.classes.specs.StatelessReactClassSpec
+import io.github.shogowada.scalajs.reactjs.elements.ReactElement
 import org.scalajs.dom
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -15,17 +15,13 @@ class App(
     calculatorApi: CalculatorApi,
     echoApi: EchoApi,
     loggerApi: LoggerApi
-) extends StatelessReactClassSpec {
-
-  case class Props()
-
-  override def render() = {
+) {
+  def apply(): ReactElement =
     <.div()(
-      new Calculator(calculatorApi)(Calculator.Props()),
-      new Echo(echoApi)(Echo.Props()),
-      new Logger(loggerApi)(Logger.Props())
+      <((new Calculator(calculatorApi)) ()).empty,
+      <((new Echo(echoApi)) ()).empty,
+      <((new Logger(loggerApi)) ()).empty
     )
-  }
 }
 
 object Main extends JSApp {
@@ -51,6 +47,6 @@ object Main extends JSApp {
     val loggerApi = client.createApi[LoggerApi]
 
     val mountNode = dom.document.getElementById("mount-node")
-    ReactDOM.render(new App(calculatorApi, echoApi, loggerApi), mountNode)
+    ReactDOM.render((new App(calculatorApi, echoApi, loggerApi)) (), mountNode)
   }
 }

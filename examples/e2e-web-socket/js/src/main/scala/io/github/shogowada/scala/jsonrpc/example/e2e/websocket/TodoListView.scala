@@ -1,24 +1,19 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 
+import io.github.shogowada.scalajs.reactjs.React
 import io.github.shogowada.scalajs.reactjs.VirtualDOM._
-import io.github.shogowada.scalajs.reactjs.classes.specs.{ReactClassSpec, StatelessReactClassSpec}
 import io.github.shogowada.scalajs.reactjs.elements.ReactElement
-import io.github.shogowada.scalajs.reactjs.events.InputFormSyntheticEvent
+import io.github.shogowada.scalajs.reactjs.events.FormSyntheticEvent
+import org.scalajs.dom.raw.HTMLInputElement
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.util.Success
 
 object TodoView {
-
   case class Props(todo: Todo, onRemove: (Todo) => Unit)
 
-}
-
-class TodoView extends StatelessReactClassSpec {
-  override type Props = TodoView.Props
-
-  override def render(): ReactElement = {
+  def apply(props: TodoView.Props): ReactElement = {
     <.li(^.key := props.todo.id)(
       props.todo.description,
       <.button(^.onClick := (() => props.onRemove(props.todo)))("Remove")
@@ -27,113 +22,109 @@ class TodoView extends StatelessReactClassSpec {
 }
 
 object AddTodoView {
-
   case class Props(onAdd: (String) => Unit)
 
   case class State(description: String)
 
+  type Self = React.Self[Props, State]
 }
 
-class AddTodoView extends ReactClassSpec {
+class AddTodoView {
 
   import AddTodoView._
 
-  override type Props = AddTodoView.Props
-  override type State = AddTodoView.State
+  def apply() = reactClass
 
-  override def getInitialState() = State("")
+  private lazy val reactClass = React.createClass[Props, State](
+    getInitialState = (self) => State(""),
+    render = (self) =>
+      <.div()(
+        <.input(
+          ^.id := ElementIds.NewTodoDescription,
+          ^.value := self.state.description,
+          ^.onChange := onChange(self)
+        )(),
+        <.button(^.id := ElementIds.AddTodo, ^.onClick := onClick(self))("Add")
+      ).asReactElement
+  )
 
-  override def render(): ReactElement = {
-    <.div()(
-      <.input(
-        ^.id := ElementIds.NewTodoDescription,
-        ^.value := state.description,
-        ^.onChange := onChange
-      )(),
-      <.button(^.id := ElementIds.AddTodo, ^.onClick := onClick)("Add")
-    ).asReactElement
-  }
+  private def onChange(self: Self) =
+    (event: FormSyntheticEvent[HTMLInputElement]) => {
+      self.setState(State(event.target.value))
+    }
 
-  private val onChange = (event: InputFormSyntheticEvent) => {
-    setState(State(event.target.value))
-  }
-
-  private val onClick = () => {
-    setState(State(""))
-    props.onAdd(state.description)
-  }
+  private def onClick(self: Self) =
+    () => {
+      self.setState(State(""))
+      self.props.wrapped.onAdd(self.state.description)
+    }
 }
 
 object TodoListView {
-
-  case class Props()
-
   case class State(ready: Boolean, todos: Seq[Todo])
 
+  type Self = React.Self[Unit, State]
 }
 
 class TodoListView(
     todoRepositoryApi: TodoRepositoryApi
-) extends ReactClassSpec {
+) {
 
   import TodoListView._
 
-  override type Props = TodoListView.Props
-  override type State = TodoListView.State
+  def apply() = reactClass
 
-  override def getInitialState() = State(ready = false, Seq())
+  private lazy val reactClass = React.createClass[Unit, State](
+    getInitialState = (self) => State(ready = false, Seq()),
+    componentDidMount = (self) => {
+      val futureObserverId = todoRepositoryApi.register(onTodoEvent(self, _))
+
+      futureObserverId.onComplete {
+        case Success(_) => self.setState(_.copy(ready = true))
+        case _ =>
+      }
+
+      promisedObserverId.completeWith(futureObserverId)
+    },
+    componentWillUnmount = (self) => {
+      promisedObserverId.future.foreach(observerId => {
+        todoRepositoryApi.unregister(observerId)
+      })
+    },
+    render = (self) =>
+      <.div()(
+        <.h2()("TODO List"),
+        <.div(^.id := ElementIds.Ready)(
+          self.state.ready match {
+            case true => "Ready!"
+            case _ => "Not ready yet..."
+          }
+        ),
+        <.ul()(
+          self.state.todos.map(todo => {
+            TodoView(TodoView.Props(todo, onRemove = onRemoveTodo))
+          })
+        ),
+        <((new AddTodoView()) ())(^.wrapped := AddTodoView.Props(onAdd = onAddTodo))()
+      ).asReactElement
+  )
 
   val promisedObserverId: Promise[String] = Promise()
 
-  override def componentDidMount(): Unit = {
-    val futureObserverId = todoRepositoryApi.register(onTodoEvent(_))
-
-    futureObserverId.onComplete {
-      case Success(_) => setState(_.copy(ready = true))
-      case _ =>
-    }
-
-    promisedObserverId.completeWith(futureObserverId)
-  }
-
-  override def componentWillUnmount(): Unit = {
-    promisedObserverId.future.foreach(observerId => {
-      todoRepositoryApi.unregister(observerId)
-    })
-  }
-
-  private def onTodoEvent(event: TodoEvent): Future[Unit] = {
+  private def onTodoEvent(self: Self, event: TodoEvent): Future[Unit] = {
     event.eventType match {
-      case TodoEventTypes.Add => setState((prevState: State) => {
+      case TodoEventTypes.Add => self.setState((prevState: State) => {
         prevState.copy(
           todos = prevState.todos :+ event.todo
         )
       })
-      case TodoEventTypes.Remove => setState((prevState: State) => {
+      case TodoEventTypes.Remove => self.setState((prevState: State) => {
         prevState.copy(
           todos = prevState.todos.filterNot(_.id == event.todo.id)
         )
       })
     }
     Future()
-  }
-
-  override def render(): ReactElement = {
-    <.div()(
-      <.h2()("TODO List"),
-      <.div(^.id := ElementIds.Ready)(
-        state.ready match {
-          case true => "Ready!"
-          case _ => "Not ready yet..."
-        }
-      ),
-      <.ul()(
-        state.todos.map(todo => {
-          new TodoView()(TodoView.Props(todo, onRemove = onRemoveTodo))
-        })
-      ),
-      new AddTodoView()(AddTodoView.Props(onAdd = onAddTodo))
-    ).asReactElement
   }
 
   private val onAddTodo = (description: String) => {

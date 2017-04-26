@@ -26,6 +26,7 @@ class TodoListTest extends path.FreeSpec
     "when I add TODO item" - {
       val newTodoDescription = "Say hello"
 
+      waitFor(ExpectedConditions.visibilityOfElementLocated(By.id(ElementIds.NewTodoDescription)))
       textField(id(ElementIds.NewTodoDescription)).value = newTodoDescription
       clickOn(id(ElementIds.AddTodo))
 

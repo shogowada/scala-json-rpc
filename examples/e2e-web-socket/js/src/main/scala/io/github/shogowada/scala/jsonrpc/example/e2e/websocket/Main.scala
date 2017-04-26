@@ -8,6 +8,7 @@ import io.github.shogowada.scala.jsonrpc.client.JsonRpcClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
 import io.github.shogowada.scala.jsonrpc.server.JsonRpcServer
 import io.github.shogowada.scalajs.reactjs.ReactDOM
+import io.github.shogowada.scalajs.reactjs.VirtualDOM._
 import org.scalajs.dom
 import org.scalajs.dom.WebSocket
 
@@ -23,9 +24,7 @@ object Main extends JSApp {
 
     val mountNode = dom.document.getElementById("mount-node")
     ReactDOM.render(
-      new TodoListView(
-        serverAndClient.createApi[TodoRepositoryApi]
-      )(TodoListView.Props()),
+      <((new TodoListView(serverAndClient.createApi[TodoRepositoryApi])) ()).empty,
       mountNode
     )
   }
