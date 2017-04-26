@@ -66,7 +66,7 @@ class FooRepositoryAPIImpl extends FooRepositoryAPI {
 }
 
 val jsonSerializer = // ...
-val server = jsonRPCServer(jsonSerializer)
+val server = JSONRPCServer(jsonSerializer)
 server.bindAPI[LoggerAPI](new LoggerAPIImpl)
 server.bindAPI[FooRepositoryAPI](new FooRepositoryAPIImpl)
 
