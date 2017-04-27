@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.client
 
-import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
+import io.github.shogowada.scala.jsonrpc.serializers.UpickleJSONSerializer
 import org.scalatest.{AsyncFunSpec, Matchers}
 
 import scala.concurrent.Future
@@ -11,7 +11,7 @@ class JSONRPCClientTest extends AsyncFunSpec
   var jsonSender = (json: String) => {
     Future(None)
   }
-  val client = JSONRPCClient(UpickleJsonSerializer(), (json: String) => jsonSender(json))
+  val client = JSONRPCClient(UpickleJSONSerializer(), (json: String) => jsonSender(json))
 
   describe("given I have an API") {
     trait API {

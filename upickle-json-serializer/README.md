@@ -5,10 +5,10 @@
 |JVM|```"io.github.shogowada" %% "scala-json-rpc-upickle-json-serializer" % "0.6.0"```|2.12||
 |JS|```"io.github.shogowada" %%% "scala-json-rpc-upickle-json-serializer" % "0.6.0"```|2.12|0.6.14+|
 
-You can use upickle-json-serializer to use upickle as your ```JsonSerializer```.
+You can use upickle-json-serializer to use upickle as your ```JSONSerializer```.
 
 ```scala
-val jsonSerializer = UpickleJsonSerializer()
+val jsonSerializer = UpickleJSONSerializer()
 
 val server = JSONRPCServer(jsonSerializer)
 

@@ -9,7 +9,7 @@ class DisposableFunctionServerFactoryMacro[Context <: blackbox.Context](val c: C
   import c.universe._
 
   lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
-  lazy val requestJsonHandlerFactoryMacro = new JSONRPCRequestJsonHandlerFactoryMacro[c.type](c)
+  lazy val requestJSONHandlerFactoryMacro = new JSONRPCRequestJSONHandlerFactoryMacro[c.type](c)
 
   def getOrCreate(
       client: Tree,
@@ -17,20 +17,20 @@ class DisposableFunctionServerFactoryMacro[Context <: blackbox.Context](val c: C
       disposableFunction: TermName,
       disposableFunctionType: Type
   ): c.Expr[String] = {
-    val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
+    val requestJSONHandlerRepository = macroUtils.getRequestJSONHandlerRepository(server)
     val disposableFunctionMethodNameRepository = macroUtils.getDisposableFunctionMethodNameRepository(client)
 
-    val disposeFunctionMethodHandler = requestJsonHandlerFactoryMacro.createDisposeFunctionMethodHandler(server, client)
+    val disposeFunctionMethodHandler = requestJSONHandlerFactoryMacro.createDisposeFunctionMethodHandler(server, client)
 
-    val handler = requestJsonHandlerFactoryMacro.createFromDisposableFunction(client, server, disposableFunction, disposableFunctionType)
+    val handler = requestJSONHandlerFactoryMacro.createFromDisposableFunction(client, server, disposableFunction, disposableFunctionType)
 
     c.Expr[String](
       q"""
-          $requestJsonHandlerRepository.addIfAbsent(Constants.DisposeMethodName, () => ($disposeFunctionMethodHandler))
+          $requestJSONHandlerRepository.addIfAbsent(Constants.DisposeMethodName, () => ($disposeFunctionMethodHandler))
 
           val methodName: String = $disposableFunctionMethodNameRepository.getOrAddAndNotify(
             $disposableFunction,
-            (newMethodName) => { $requestJsonHandlerRepository.add(newMethodName, $handler) }
+            (newMethodName) => { $requestJSONHandlerRepository.add(newMethodName, $handler) }
           )
           methodName
           """

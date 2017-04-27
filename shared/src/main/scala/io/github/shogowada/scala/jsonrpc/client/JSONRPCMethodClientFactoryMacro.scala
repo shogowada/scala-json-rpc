@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.Models.JSONRPCRequest
-import io.github.shogowada.scala.jsonrpc.server.{DisposableFunctionServerFactoryMacro, JSONRPCRequestJsonHandlerFactoryMacro}
+import io.github.shogowada.scala.jsonrpc.server.{DisposableFunctionServerFactoryMacro, JSONRPCRequestJSONHandlerFactoryMacro}
 import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
 
 import scala.reflect.macros.blackbox
@@ -11,7 +11,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
   import c.universe._
 
   lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
-  lazy val requestJsonHandlerFactoryMacro = new JSONRPCRequestJsonHandlerFactoryMacro[c.type](c)
+  lazy val requestJSONHandlerFactoryMacro = new JSONRPCRequestJSONHandlerFactoryMacro[c.type](c)
   lazy val disposableFunctionClientFactoryMacro = new DisposableFunctionClientFactoryMacro[c.type](c)
   lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
 
@@ -102,7 +102,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
       jsonRPCParameter: Tree,
       returnType: Type
   ): c.Expr[returnType.type] = {
-    val jsonSerializer = macroUtils.getJsonSerializer(client)
+    val jsonSerializer = macroUtils.getJSONSerializer(client)
     val send = macroUtils.getSend(client)
 
     c.Expr[returnType.type](
@@ -126,7 +126,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
       jsonRPCParameter: Tree,
       returnType: Type
   ): c.Expr[returnType.type] = {
-    val jsonSerializer = macroUtils.getJsonSerializer(client)
+    val jsonSerializer = macroUtils.getJSONSerializer(client)
     val promisedResponseRepository = macroUtils.getPromisedResponseRepository(client)
     val send = macroUtils.getSend(client)
     val receive = macroUtils.getReceive(client)
@@ -147,20 +147,20 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
 
     val promisedResponse = TermName("promisedResponse")
 
-    def responseJsonHandler(json: Tree): Tree = {
+    def responseJSONHandler(json: Tree): Tree = {
       val resultType: Type = returnType.typeArgs.head
-      createResponseJsonHandler(client, maybeServer, resultType, json)
+      createResponseJSONHandler(client, maybeServer, resultType, json)
     }
 
     c.Expr[returnType.type](
       q"""
           val $requestId = Left(${macroUtils.newUuid})
           $jsonSerializer.serialize(${request(requestId)}) match {
-            case Some((requestJson: String)) => {
+            case Some((requestJSON: String)) => {
               val $promisedResponse = $promisedResponseRepository.addAndGet($requestId)
 
-              $send(requestJson).onComplete((tried: Try[Option[String]]) => tried match {
-                case Success(Some(responseJson: String)) => $receive(responseJson)
+              $send(requestJSON).onComplete((tried: Try[Option[String]]) => tried match {
+                case Success(Some(responseJSON: String)) => $receive(responseJSON)
                 case Success(None) =>
                 case Failure(throwable) => {
                   $promisedResponseRepository
@@ -170,7 +170,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
               })($executionContext)
 
               $promisedResponse.future
-                  .map((json: String) => ${responseJsonHandler(q"json")})($executionContext)
+                  .map((json: String) => ${responseJSONHandler(q"json")})($executionContext)
             }
             case None => {
               val jsonRPCErrorResponse = JSONRPCErrorResponse(
@@ -185,13 +185,13 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
     )
   }
 
-  private def createResponseJsonHandler(
+  private def createResponseJSONHandler(
       client: Tree,
       maybeServer: Option[Tree],
       resultType: Type,
       json: Tree
   ): Tree = {
-    val jsonSerializer = macroUtils.getJsonSerializer(client)
+    val jsonSerializer = macroUtils.getJSONSerializer(client)
 
     def mapResult(resultResponse: Tree): Tree = {
       val result = q"$resultResponse.result"

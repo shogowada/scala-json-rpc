@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc
 
 import io.github.shogowada.scala.jsonrpc.Models.{JSONRPCErrorResponse, JSONRPCErrors, JSONRPCException}
 import io.github.shogowada.scala.jsonrpc.client.JSONRPCClient
-import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
+import io.github.shogowada.scala.jsonrpc.serializers.UpickleJSONSerializer
 import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer
 import org.scalatest.{AsyncFunSpec, Matchers}
 
@@ -13,7 +13,7 @@ class ServerAndClientTest extends AsyncFunSpec
 
   override implicit def executionContext = ExecutionContext.Implicits.global
 
-  val jsonSerializer = UpickleJsonSerializer()
+  val jsonSerializer = UpickleJSONSerializer()
 
   describe("given I have APIs") {
 

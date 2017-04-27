@@ -3,9 +3,9 @@ package io.github.shogowada.scala.jsonrpc.example.e2e.websocket
 import java.io.IOException
 
 import io.github.shogowada.scala.jsonrpc.JSONRPCServerAndClient
-import io.github.shogowada.scala.jsonrpc.Types.JsonSender
+import io.github.shogowada.scala.jsonrpc.Types.JSONSender
 import io.github.shogowada.scala.jsonrpc.client.JSONRPCClient
-import io.github.shogowada.scala.jsonrpc.serializers.UpickleJsonSerializer
+import io.github.shogowada.scala.jsonrpc.serializers.UpickleJSONSerializer
 import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer
 import io.github.shogowada.scalajs.reactjs.ReactDOM
 import io.github.shogowada.scalajs.reactjs.VirtualDOM._
@@ -53,12 +53,12 @@ object Main extends JSApp {
     s"$protocol//${location.host}/jsonrpc"
   }
 
-  private def createServerAndClient(futureWebSocket: Future[WebSocket]): JSONRPCServerAndClient[UpickleJsonSerializer] = {
-    val jsonSerializer = UpickleJsonSerializer()
+  private def createServerAndClient(futureWebSocket: Future[WebSocket]): JSONRPCServerAndClient[UpickleJSONSerializer] = {
+    val jsonSerializer = UpickleJSONSerializer()
 
     val server = JSONRPCServer(jsonSerializer)
 
-    val jsonSender: JsonSender = (json: String) => {
+    val jsonSender: JSONSender = (json: String) => {
       futureWebSocket
           .map(webSocket => Try(webSocket.send(json)))
           .flatMap(tried => tried.fold(

@@ -1,21 +1,21 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer.RequestJsonHandler
+import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer.RequestJSONHandler
 
-class JSONRPCRequestJsonHandlerRepository {
-  var methodNameToHandlerMap: Map[String, RequestJsonHandler] = Map()
+class JSONRPCRequestJSONHandlerRepository {
+  var methodNameToHandlerMap: Map[String, RequestJSONHandler] = Map()
 
-  def add(methodName: String, requestJsonHandler: RequestJsonHandler): Unit = this.synchronized {
-    methodNameToHandlerMap = methodNameToHandlerMap + (methodName -> requestJsonHandler)
+  def add(methodName: String, requestJSONHandler: RequestJSONHandler): Unit = this.synchronized {
+    methodNameToHandlerMap = methodNameToHandlerMap + (methodName -> requestJSONHandler)
   }
 
-  def addIfAbsent(methodName: String, handlerFactory: () => (RequestJsonHandler)): Unit = this.synchronized {
+  def addIfAbsent(methodName: String, handlerFactory: () => (RequestJSONHandler)): Unit = this.synchronized {
     if (!methodNameToHandlerMap.contains(methodName)) {
       add(methodName, handlerFactory())
     }
   }
 
-  def get(methodName: String): Option[RequestJsonHandler] = {
+  def get(methodName: String): Option[RequestJSONHandler] = {
     methodNameToHandlerMap.get(methodName)
   }
 

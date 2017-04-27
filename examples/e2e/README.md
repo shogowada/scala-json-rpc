@@ -54,8 +54,8 @@ We build JSON-RPC server using those API implementations.
 
 ```scala
 object JSONRPCModule {
-  lazy val jsonRPCServer: JSONRPCServer[UpickleJsonSerializer] = {
-    val server = JSONRPCServer(UpickleJsonSerializer())
+  lazy val jsonRPCServer: JSONRPCServer[UpickleJSONSerializer] = {
+    val server = JSONRPCServer(UpickleJSONSerializer())
     server.bindAPI[CalculatorAPI](new CalculatorAPIImpl)
     server.bindAPI[EchoAPI](new EchoAPIImpl)
     server.bindAPI[LoggerAPI](new LoggerAPIImpl)
@@ -77,7 +77,7 @@ class JSONRPCServlet extends ScalatraServlet {
   post("/") {
     val server = JSONRPCModule.jsonRPCServer
     val futureResult: Future[ActionResult] = server.receive(request.body).map {
-      case Some(responseJson) => Ok(responseJson) // For JSON-RPC request, we return response.
+      case Some(responseJSON) => Ok(responseJSON) // For JSON-RPC request, we return response.
       case None => NoContent() // For JSON-RPC notification, we do not return response.
     }
     Await.result(futureResult, 1.minutes)
@@ -104,7 +104,7 @@ val jsonSender: (String) => Future[Option[String]] =
         })
   }
 
-val client = JSONRPCClient(UpickleJsonSerializer(), jsonSender)
+val client = JSONRPCClient(UpickleJSONSerializer(), jsonSender)
 ```
 
 Once the client is built, we can use it to create and use the APIs like below.

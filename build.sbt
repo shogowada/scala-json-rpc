@@ -12,7 +12,7 @@ publishArtifact := false
 val commonSettings = Seq(
   organization := "io.github.shogowada",
   name := "scala-json-rpc",
-  version := "0.8.0",
+  version := "0.9.0",
   scalaVersion := "2.12.2",
   logBuffered in Test := false,
   licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
@@ -51,7 +51,7 @@ lazy val core = (crossProject in file("."))
       publishArtifact := true
     )
     .dependsOn(jsonSerializer)
-    .dependsOn(upickleJsonSerializer % "test")
+    .dependsOn(upickleJSONSerializer % "test")
 
 lazy val jvm = core.jvm
 lazy val js = core.js
@@ -67,7 +67,7 @@ lazy val jsonSerializer = (crossProject in file("json-serializer"))
 lazy val jsonSerializerJvm = jsonSerializer.jvm
 lazy val jsonSerializerJs = jsonSerializer.js
 
-lazy val upickleJsonSerializer = (crossProject in file("upickle-json-serializer"))
+lazy val upickleJSONSerializer = (crossProject in file("upickle-json-serializer"))
     .disablePlugins(AssemblyPlugin)
     .settings(commonSettings: _*)
     .settings(
@@ -81,8 +81,8 @@ lazy val upickleJsonSerializer = (crossProject in file("upickle-json-serializer"
     )
     .dependsOn(jsonSerializer)
 
-lazy val upickleJsonSerializerJvm = upickleJsonSerializer.jvm
-lazy val upickleJsonSerializerJs = upickleJsonSerializer.js
+lazy val upickleJSONSerializerJvm = upickleJSONSerializer.jvm
+lazy val upickleJSONSerializerJs = upickleJSONSerializer.js
 
 // Examples
 
@@ -121,7 +121,7 @@ lazy val exampleE2e = (crossProject in file("examples/e2e"))
     .settings(
       name += "-e2e"
     )
-    .dependsOn(core, upickleJsonSerializer)
+    .dependsOn(core, upickleJSONSerializer)
 
 lazy val exampleE2eJvm = exampleE2e.jvm
     .enablePlugins(SbtWeb, WebScalaJSBundlerPlugin)
@@ -153,7 +153,7 @@ lazy val exampleE2eWebSocket = (crossProject in file("examples/e2e-web-socket"))
     .settings(
       name += "-e2e-websocket"
     )
-    .dependsOn(core, upickleJsonSerializer)
+    .dependsOn(core, upickleJSONSerializer)
 
 lazy val exampleE2eWebSocketJvm = exampleE2eWebSocket.jvm
     .enablePlugins(SbtWeb, WebScalaJSBundlerPlugin)

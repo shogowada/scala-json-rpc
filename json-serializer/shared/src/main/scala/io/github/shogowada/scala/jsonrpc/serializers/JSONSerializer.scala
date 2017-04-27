@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.serializers
 
-trait JsonSerializer {
+trait JSONSerializer {
   def serialize[T](value: T): Option[String] = {
     throw new UnsupportedOperationException("This default implementation is here only to allow macros to be defined on child classes.")
   }

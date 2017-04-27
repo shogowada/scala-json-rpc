@@ -26,7 +26,7 @@ For function as parameter to work, you need bidirectional communication because 
 To create `JSONRPCServerAndClient`, you need to create a server and a client first like you normally would.
 
 ```scala
-val jsonSerializer = new MyJsonSerializer()
+val jsonSerializer = new MyJSONSerializer()
 val jsonSender: (String) => Future[Option[String]] = {
   // Implement JSON sender
   // ...

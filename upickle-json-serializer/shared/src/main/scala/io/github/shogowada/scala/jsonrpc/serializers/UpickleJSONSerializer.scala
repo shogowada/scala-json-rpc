@@ -35,18 +35,18 @@ object JSONRPCPickler extends upickle.AttributeTagged {
   }
 }
 
-class UpickleJsonSerializer extends JsonSerializer {
-  override def serialize[T](value: T): Option[String] = macro UpickleJsonSerializerMacro.serialize[T]
+class UpickleJSONSerializer extends JSONSerializer {
+  override def serialize[T](value: T): Option[String] = macro UpickleJSONSerializerMacro.serialize[T]
 
-  override def deserialize[T](json: String): Option[T] = macro UpickleJsonSerializerMacro.deserialize[T]
+  override def deserialize[T](json: String): Option[T] = macro UpickleJSONSerializerMacro.deserialize[T]
 }
 
-object UpickleJsonSerializer {
-  def apply() = new UpickleJsonSerializer
+object UpickleJSONSerializer {
+  def apply() = new UpickleJSONSerializer
 }
 
 
-object UpickleJsonSerializerMacro {
+object UpickleJSONSerializerMacro {
   def serialize[T](c: blackbox.Context)(value: c.Expr[T]): c.Expr[Option[String]] = {
     import c.universe._
 

@@ -8,7 +8,7 @@ You can write something like below to make sure the JSON is handled appropriatel
 val wasJSONRPCResponse: Boolean = jsonRPCClient.receive(json)
 if (!wasJSONRPCResponse) {
   jsonRPCServer.receive(json).onComplete {
-    case Success(Some(responseJson: String)) => jsonRPCClient.send(responseJson)
+    case Success(Some(responseJSON: String)) => jsonRPCClient.send(responseJSON)
     case _ =>
   }
 }
@@ -98,12 +98,12 @@ object Main extends JSApp {
     s"$protocol//${location.host}/jsonrpc"
   }
 
-  private def createServerAndClient(futureWebSocket: Future[WebSocket]): JSONRPCServerAndClient[UpickleJsonSerializer] = {
-    val jsonSerializer = UpickleJsonSerializer()
+  private def createServerAndClient(futureWebSocket: Future[WebSocket]): JSONRPCServerAndClient[UpickleJSONSerializer] = {
+    val jsonSerializer = UpickleJSONSerializer()
 
     val server = JSONRPCServer(jsonSerializer)
 
-    val jsonSender: JsonSender = (json: String) => {
+    val jsonSender: JSONSender = (json: String) => {
       futureWebSocket
           .map(webSocket => Try(webSocket.send(json)))
           .flatMap(tried => tried.fold(
@@ -200,9 +200,9 @@ object JSONRPCModule {
 
   lazy val todoRepositoryAPI = new TodoRepositoryAPIImpl
 
-  lazy val jsonSerializer = UpickleJsonSerializer()
+  lazy val jsonSerializer = UpickleJSONSerializer()
 
-  def createJSONRPCServerAndClient(jsonSender: JsonSender): JSONRPCServerAndClient[UpickleJsonSerializer] = {
+  def createJSONRPCServerAndClient(jsonSender: JSONSender): JSONRPCServerAndClient[UpickleJSONSerializer] = {
     val server = JSONRPCServer(jsonSerializer)
     val client = JSONRPCClient(jsonSerializer, jsonSender)
     val serverAndClient = JSONRPCServerAndClient(server, client)
@@ -214,12 +214,12 @@ object JSONRPCModule {
 }
 
 class JSONRPCWebSocket extends WebSocketAdapter {
-  private var serverAndClient: JSONRPCServerAndClient[UpickleJsonSerializer] = _
+  private var serverAndClient: JSONRPCServerAndClient[UpickleJSONSerializer] = _
 
   override def onWebSocketConnect(session: Session): Unit = {
     super.onWebSocketConnect(session)
 
-    val jsonSender: JsonSender = (json: String) => {
+    val jsonSender: JSONSender = (json: String) => {
       Try(session.getRemote.sendString(json)).fold(
         throwable => Future.failed(throwable),
         _ => Future(None)

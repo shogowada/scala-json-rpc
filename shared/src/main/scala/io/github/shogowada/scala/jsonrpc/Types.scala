@@ -5,5 +5,5 @@ import scala.concurrent.Future
 object Types {
   type Id = Either[String, BigDecimal]
 
-  type JsonSender = (String) => Future[Option[String]]
+  type JSONSender = (String) => Future[Option[String]]
 }

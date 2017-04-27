@@ -22,13 +22,13 @@ class JSONRPCMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
 
   lazy val newUuid: c.Expr[String] = c.Expr[String](q"java.util.UUID.randomUUID.toString")
 
-  def getJsonSerializer(prefix: Tree): Tree = q"$prefix.jsonSerializer"
+  def getJSONSerializer(prefix: Tree): Tree = q"$prefix.jsonSerializer"
 
   def getPromisedResponseRepository(prefix: Tree): Tree = q"$prefix.promisedResponseRepository"
 
   def getDisposableFunctionMethodNameRepository(prefix: Tree) = q"$prefix.disposableFunctionMethodNameRepository"
 
-  def getRequestJsonHandlerRepository(prefix: Tree): Tree = q"$prefix.requestJsonHandlerRepository"
+  def getRequestJSONHandlerRepository(prefix: Tree): Tree = q"$prefix.requestJSONHandlerRepository"
 
   def getDisposableFunctionRepository(prefix: Tree) = q"$prefix.disposableFunctionRepository"
 
@@ -117,28 +117,28 @@ class JSONRPCMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     typeOf[T]
   }
 
-  def createMaybeErrorJsonFromRequestJson(
+  def createMaybeErrorJSONFromRequestJSON(
       serverOrClient: c.Tree,
       json: c.Expr[String],
       jsonRPCError: c.Expr[JSONRPCError[String]]
   ): c.Expr[Option[String]] = {
-    val jsonSerializer: Tree = getJsonSerializer(serverOrClient)
+    val jsonSerializer: Tree = getJSONSerializer(serverOrClient)
 
     c.Expr[Option[String]](
       q"""
           $jsonSerializer.deserialize[JSONRPCId]($json)
               .map(requestId => requestId.id)
-              .flatMap(id => ${createMaybeErrorJsonFromRequestId(serverOrClient, q"id", jsonRPCError)})
+              .flatMap(id => ${createMaybeErrorJSONFromRequestId(serverOrClient, q"id", jsonRPCError)})
           """
     )
   }
 
-  def createMaybeErrorJsonFromRequestId(
+  def createMaybeErrorJSONFromRequestId(
       serverOrClient: Tree,
       id: Tree,
       jsonRPCError: c.Expr[JSONRPCError[String]]
   ): c.Expr[Option[String]] = {
-    val jsonSerializer: Tree = getJsonSerializer(serverOrClient)
+    val jsonSerializer: Tree = getJSONSerializer(serverOrClient)
 
     c.Expr[Option[String]](
       q"""

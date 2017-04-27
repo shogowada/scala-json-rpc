@@ -1,20 +1,20 @@
 package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.Models.JSONRPCError
-import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
-import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer.RequestJsonHandler
+import io.github.shogowada.scala.jsonrpc.serializers.JSONSerializer
+import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer.RequestJSONHandler
 import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JSONRPCServer[JsonSerializerInUse <: JsonSerializer]
+class JSONRPCServer[JSONSerializerInUse <: JSONSerializer]
 (
-    val jsonSerializer: JsonSerializerInUse,
+    val jsonSerializer: JSONSerializerInUse,
     val executionContext: ExecutionContext
 ) {
-  val requestJsonHandlerRepository = new JSONRPCRequestJsonHandlerRepository
+  val requestJSONHandlerRepository = new JSONRPCRequestJSONHandlerRepository
   val disposableFunctionRepository = new DisposableFunctionRepository
 
   def bindAPI[API](api: API): Unit = macro JSONRPCServerMacro.bindAPI[API]
@@ -23,11 +23,11 @@ class JSONRPCServer[JsonSerializerInUse <: JsonSerializer]
 }
 
 object JSONRPCServer {
-  type RequestJsonHandler = (String) => Future[Option[String]]
+  type RequestJSONHandler = (String) => Future[Option[String]]
 
-  def apply[JsonSerializerInUse <: JsonSerializer](
-      jsonSerializer: JsonSerializerInUse
-  )(implicit executionContext: ExecutionContext): JSONRPCServer[JsonSerializerInUse] = {
+  def apply[JSONSerializerInUse <: JSONSerializer](
+      jsonSerializer: JSONSerializerInUse
+  )(implicit executionContext: ExecutionContext): JSONRPCServer[JSONSerializerInUse] = {
     new JSONRPCServer(jsonSerializer, executionContext)
   }
 }
@@ -55,36 +55,36 @@ object JSONRPCServerMacro {
 
     val macroUtils = JSONRPCMacroUtils[c.type](c)
 
-    val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
+    val requestJSONHandlerRepository = macroUtils.getRequestJSONHandlerRepository(server)
 
     val apiType: Type = weakTypeOf[API]
-    val methodNameToRequestJsonHandlerList = JSONRPCMacroUtils[c.type](c).getJSONRPCAPIMethods(apiType)
-        .map((apiMember: MethodSymbol) => createMethodNameToRequestJsonHandler[c.type, API](c)(server, maybeClient, api, apiMember))
+    val methodNameToRequestJSONHandlerList = JSONRPCMacroUtils[c.type](c).getJSONRPCAPIMethods(apiType)
+        .map((apiMember: MethodSymbol) => createMethodNameToRequestJSONHandler[c.type, API](c)(server, maybeClient, api, apiMember))
 
     c.Expr[Unit](
       q"""
-          Seq(..$methodNameToRequestJsonHandlerList).foreach {
-            case (methodName, handler) => $requestJsonHandlerRepository.add(methodName, handler)
+          Seq(..$methodNameToRequestJSONHandlerList).foreach {
+            case (methodName, handler) => $requestJSONHandlerRepository.add(methodName, handler)
           }
           """
     )
   }
 
-  private def createMethodNameToRequestJsonHandler[Context <: blackbox.Context, API](c: blackbox.Context)(
+  private def createMethodNameToRequestJSONHandler[Context <: blackbox.Context, API](c: blackbox.Context)(
       server: c.Tree,
       maybeClient: Option[c.Tree],
       api: c.Expr[API],
       method: c.universe.MethodSymbol
-  ): c.Expr[(String, RequestJsonHandler)] = {
+  ): c.Expr[(String, RequestJSONHandler)] = {
     import c.universe._
 
     val macroUtils = JSONRPCMacroUtils[c.type](c)
-    val requestJsonHandlerFactoryMacro = new JSONRPCRequestJsonHandlerFactoryMacro[c.type](c)
+    val requestJSONHandlerFactoryMacro = new JSONRPCRequestJSONHandlerFactoryMacro[c.type](c)
 
     val methodName = macroUtils.getJSONRPCMethodName(method)
-    val handler = requestJsonHandlerFactoryMacro.createFromAPIMethod[API](server, maybeClient, api, method)
+    val handler = requestJSONHandlerFactoryMacro.createFromAPIMethod[API](server, maybeClient, api, method)
 
-    c.Expr[(String, RequestJsonHandler)](q"""$methodName -> $handler""")
+    c.Expr[(String, RequestJSONHandler)](q"""$methodName -> $handler""")
   }
 
   def receive(c: blackbox.Context)(json: c.Expr[String]): c.Expr[Future[Option[String]]] = {
@@ -93,24 +93,24 @@ object JSONRPCServerMacro {
     val macroUtils = JSONRPCMacroUtils[c.type](c)
 
     val (serverDefinition, server) = macroUtils.prefixDefinitionAndReference
-    val jsonSerializer: Tree = macroUtils.getJsonSerializer(server)
-    val requestJsonHandlerRepository = macroUtils.getRequestJsonHandlerRepository(server)
+    val jsonSerializer: Tree = macroUtils.getJSONSerializer(server)
+    val requestJSONHandlerRepository = macroUtils.getRequestJSONHandlerRepository(server)
     val executionContext: Tree = macroUtils.getExecutionContext(server)
 
-    val maybeParseErrorJson: c.Expr[Option[String]] =
-      macroUtils.createMaybeErrorJsonFromRequestJson(server, json, c.Expr[JSONRPCError[String]](q"JSONRPCErrors.parseError"))
-    val maybeInvalidRequestErrorJson: c.Expr[Option[String]] =
-      macroUtils.createMaybeErrorJsonFromRequestJson(server, json, c.Expr[JSONRPCError[String]](q"JSONRPCErrors.invalidRequest"))
-    val maybeMethodNotFoundErrorJson: c.Expr[Option[String]] =
-      macroUtils.createMaybeErrorJsonFromRequestJson(server, json, c.Expr[JSONRPCError[String]](q"JSONRPCErrors.methodNotFound"))
+    val maybeParseErrorJSON: c.Expr[Option[String]] =
+      macroUtils.createMaybeErrorJSONFromRequestJSON(server, json, c.Expr[JSONRPCError[String]](q"JSONRPCErrors.parseError"))
+    val maybeInvalidRequestErrorJSON: c.Expr[Option[String]] =
+      macroUtils.createMaybeErrorJSONFromRequestJSON(server, json, c.Expr[JSONRPCError[String]](q"JSONRPCErrors.invalidRequest"))
+    val maybeMethodNotFoundErrorJSON: c.Expr[Option[String]] =
+      macroUtils.createMaybeErrorJSONFromRequestJSON(server, json, c.Expr[JSONRPCError[String]](q"JSONRPCErrors.methodNotFound"))
 
-    val maybeErrorJsonOrMethodName = c.Expr[Either[Option[String], String]](
+    val maybeErrorJSONOrMethodName = c.Expr[Either[Option[String], String]](
       q"""
           $jsonSerializer.deserialize[JSONRPCMethod]($json)
-              .toRight($maybeParseErrorJson)
+              .toRight($maybeParseErrorJSON)
               .right.flatMap(method => {
                 if(method.jsonrpc != Constants.JSONRPC) {
-                  Left($maybeInvalidRequestErrorJson)
+                  Left($maybeInvalidRequestErrorJSON)
                 } else {
                   Right(method.method)
                 }
@@ -118,20 +118,20 @@ object JSONRPCServerMacro {
           """
     )
 
-    val maybeErrorJsonOrHandler = c.Expr[Either[Option[String], RequestJsonHandler]](
+    val maybeErrorJSONOrHandler = c.Expr[Either[Option[String], RequestJSONHandler]](
       q"""
-          $maybeErrorJsonOrMethodName
+          $maybeErrorJSONOrMethodName
               .right.flatMap((methodName: String) => {
-                $requestJsonHandlerRepository.get(methodName)
-                  .toRight($maybeMethodNotFoundErrorJson)
+                $requestJSONHandlerRepository.get(methodName)
+                  .toRight($maybeMethodNotFoundErrorJSON)
               })
           """
     )
 
-    val futureMaybeJson = c.Expr[Future[Option[String]]](
+    val futureMaybeJSON = c.Expr[Future[Option[String]]](
       q"""
-          $maybeErrorJsonOrHandler.fold[Future[Option[String]]](
-            maybeErrorJson => Future(maybeErrorJson)($executionContext),
+          $maybeErrorJSONOrHandler.fold[Future[Option[String]]](
+            maybeErrorJSON => Future(maybeErrorJSON)($executionContext),
             handler => handler($json)
           )
           """
@@ -141,7 +141,7 @@ object JSONRPCServerMacro {
       q"""
           ..${macroUtils.imports}
           $serverDefinition
-          $futureMaybeJson
+          $futureMaybeJSON
           """
     )
   }

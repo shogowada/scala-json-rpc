@@ -47,10 +47,10 @@ trait FooRepositoryAPI {
 
 ### Shared JSON serialization and deserialization logic
 
-You also want to make sure that your server and client serializes and deserializes JSON in the same way. You can define your JSON serialization and deserialization logic by extending `JsonSerializer` trait.
+You also want to make sure that your server and client serializes and deserializes JSON in the same way. You can define your JSON serialization and deserialization logic by extending `JSONSerializer` trait.
 
 ```scala
-class MyJsonSerializer extends JsonSerializer {
+class MyJSONSerializer extends JSONSerializer {
   def serialize[T](value: T): Option[String] = {
     // Serialize the value into JSON or return None
     // ...
@@ -62,7 +62,7 @@ class MyJsonSerializer extends JsonSerializer {
 }
 ```
 
-If you just want it to work, you can use `UpickleJsonSerializer` which already implements `JsonSerializer` using [upickle](http://www.lihaoyi.com/upickle-pprint/upickle/) under the hood. See [its README page](/upickle-json-serializer) for details.
+If you just want it to work, you can use `UpickleJSONSerializer` which already implements `JSONSerializer` using [upickle](http://www.lihaoyi.com/upickle-pprint/upickle/) under the hood. See [its README page](/upickle-json-serializer) for details.
 
 If you want to define your own logic, make sure the following requirements are met:
 
@@ -88,7 +88,7 @@ For `JSONRPCClient` to work, you need to define:
 We will cover those in the following sections, but here is a piece of code to give you a general idea of how `JSONRPCClient` works.
 
 ```scala
-val jsonSerializer = new MyJsonSerializer()
+val jsonSerializer = new MyJSONSerializer()
 val jsonSender: (String) => Future[Option[String]] = (json: String) => {
   // Send the "json" to server and optionally return its response.
   // We will cover this in the following sections.
@@ -107,10 +107,10 @@ fooRepositoryAPI.add(fooA).onComplete {
 
 ### Sending request JSON to server
 
-Your `JSONRPCClient` needs to know how to send JSON to server so that when you call your API method, it knows how to complete the RPC. You can define the logic as `JsonSender` function.
+Your `JSONRPCClient` needs to know how to send JSON to server so that when you call your API method, it knows how to complete the RPC. You can define the logic as `JSONSender` function.
 
 ```scala
-type JsonSender = (String) => Future[Option[String]]
+type JSONSender = (String) => Future[Option[String]]
 ```
 
 The function is supposed to:
@@ -120,7 +120,7 @@ The function is supposed to:
 3. return optional response from server as `Future[Option[String]]`.
     - Whenever it failed to send the JSON, you need to return failed `Future[Option[String]]` so that it can fail the API method call.
 
-For example, if your server is exposing JSON-RPC endpoint via HTTP at POST /jsonrpc, your `JsonSender` might look like this:
+For example, if your server is exposing JSON-RPC endpoint via HTTP at POST /jsonrpc, your `JSONSender` might look like this:
 
 ```scala
 val jsonSender: (String) => Future[Option[String]] = (json: String) => {
@@ -139,18 +139,18 @@ val jsonSender: (String) => Future[Option[String]] = (json: String) => {
 
 ### Receiving request JSON from server
 
-If you are returning `Future(Some(responseJson))` from your `JsonSender` for all of your requests, it completes the receiving part, so you don't need to worry about this section. This is common if you are using HTTP to send request to server.
+If you are returning `Future(Some(responseJSON))` from your `JSONSender` for all of your requests, it completes the receiving part, so you don't need to worry about this section. This is common if you are using HTTP to send request to server.
 
-If it is not feasible to return response from `JsonSender`, you can let it always return `Future(None)`, and receive it explicitly by using `receive` method of your `JSONRPCClient`. This is common if you are using WebSocket or TCP socket to send request to server.
+If it is not feasible to return response from `JSONSender`, you can let it always return `Future(None)`, and receive it explicitly by using `receive` method of your `JSONRPCClient`. This is common if you are using WebSocket or TCP socket to send request to server.
 
 For example, if you are using WebSocket to send and receive JSON-RPC messages, your code might look like this:
 
 ```scala
-def start(jsonRPCWebSocketUrl: String): JSONRPCClient[MyJsonSerializer] {
+def start(jsonRPCWebSocketUrl: String): JSONRPCClient[MyJSONSerializer] {
   val webSocket = new dom.WebSocket(jsonRPCWebSocketUrl)
 
   webSocket.onopen = (_: dom.Event) => {
-    val jsonSerializer = UpickleJsonSerializer()
+    val jsonSerializer = UpickleJSONSerializer()
     val jsonSender: (String) => Future[Option[String]] = (json: String) => {
       Try(webSocket.send(json)).fold(
         throwable => Future.failed(throwable),
@@ -186,7 +186,7 @@ For `JSONRPCServer` to work, you need to define:
 We will cover those in the following sections, but here is a piece of code to give you a general idea of how `JSONRPCServer` works.
 
 ```scala
-val jsonSerializer = new MyJsonSerializer()
+val jsonSerializer = new MyJSONSerializer()
 val jsonRPCServer = JSONRPCServer(jsonSerializer)
 
 class FooRepositoryAPIImpl extends FooRepositoryAPI {
@@ -198,7 +198,7 @@ val fooRepositoryAPI = new FooRepositoryAPIImpl
 jsonRPCServer.bindAPI[FooRepositoryAPI](fooRepositoryAPI)
 
 jsonRPCServer.receive(String).onComplete {
-  case Success(Some(responseJson)) => {
+  case Success(Some(responseJSON)) => {
     // RPC is either succeeded or failed, and there is a response for client.
     // We will cover this in the following sections.
     // ...
@@ -219,7 +219,7 @@ To receive request JSON from client, you can use `receive` method. The method op
 
 |Return value|Description|
 |---|---|
-|`Future(Some(responseJson: String))`|Either JSON-RPC request suceeded or failed. `responseJson` can be either JSON-RPC response or error.|
+|`Future(Some(responseJSON: String))`|Either JSON-RPC request suceeded or failed. `responseJSON` can be either JSON-RPC response or error.|
 |`Future(None)`|Either JSON-RPC notification succeeded or failed. It has nothing to respond because it was JSON-RPC notification.|
 |`Failure(throwable: Throwable)`|None of above.|
 
@@ -228,7 +228,7 @@ If you are using HTTP to take requests, your code might look like this:
 ```scala
 post("/jsonrpc") {
   jsonRPCServer.receive(request.body).map {
-    case Some(responseJson: String) => Ok(responseJson) // 200 status
+    case Some(responseJSON: String) => Ok(responseJSON) // 200 status
     case None => NoContent() // 204 status
   }
 }
@@ -239,7 +239,7 @@ Or, if you are using WebSocket, it might look like this:
 ```scala
 def onWebSocketText(text: String) {
   jsonRPCServer.receive(text).onComplete {
-    case Success(Some(responseJson: String)) => webSocketSession.send(responseJson)
+    case Success(Some(responseJSON: String)) => webSocketSession.send(responseJSON)
     case Success(None) => // Do nothing
     case Failure(throwable) => // Handle error
   }
@@ -271,8 +271,8 @@ or use `createAPI[API]` to create an API client:
 val fooRepositoryAPI = jsonRPCServerAndClient.createAPI[FooRepositoryAPI]
 ```
 
-You can receive request JSON and send response JSON by using `receive`. The method can also take care of sending response JSON because it already has access to your `JsonSender` given to `JSONRPCClient`.
+You can receive request JSON and send response JSON by using `receive`. The method can also take care of sending response JSON because it already has access to your `JSONSender` given to `JSONRPCClient`.
 
 ```scala
-jsonRPCServerAndClient.receive(requestOrResponseJson)
+jsonRPCServerAndClient.receive(requestOrResponseJSON)
 ```

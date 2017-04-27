@@ -1,17 +1,17 @@
 package io.github.shogowada.scala.jsonrpc.client
 
-import io.github.shogowada.scala.jsonrpc.Types.{Id, JsonSender}
-import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
+import io.github.shogowada.scala.jsonrpc.Types.{Id, JSONSender}
+import io.github.shogowada.scala.jsonrpc.serializers.JSONSerializer
 import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JSONRPCClient[JsonSerializerInUse <: JsonSerializer]
+class JSONRPCClient[JSONSerializerInUse <: JSONSerializer]
 (
-    val jsonSerializer: JsonSerializerInUse,
-    val jsonSender: JsonSender,
+    val jsonSerializer: JSONSerializerInUse,
+    val jsonSender: JSONSender,
     val executionContext: ExecutionContext
 ) {
   val promisedResponseRepository = new JSONRPCPromisedResponseRepository
@@ -25,10 +25,10 @@ class JSONRPCClient[JsonSerializerInUse <: JsonSerializer]
 }
 
 object JSONRPCClient {
-  def apply[JsonSerializerInUse <: JsonSerializer](
-      jsonSerializer: JsonSerializerInUse,
-      jsonSender: JsonSender
-  )(implicit executionContext: ExecutionContext): JSONRPCClient[JsonSerializerInUse] = {
+  def apply[JSONSerializerInUse <: JSONSerializer](
+      jsonSerializer: JSONSerializerInUse,
+      jsonSender: JSONSender
+  )(implicit executionContext: ExecutionContext): JSONRPCClient[JSONSerializerInUse] = {
     new JSONRPCClient(
       jsonSerializer,
       jsonSender,

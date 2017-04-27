@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc
 
 import io.github.shogowada.scala.jsonrpc.client.{JSONRPCClient, JSONRPCClientMacro}
-import io.github.shogowada.scala.jsonrpc.serializers.JsonSerializer
+import io.github.shogowada.scala.jsonrpc.serializers.JSONSerializer
 import io.github.shogowada.scala.jsonrpc.server.{JSONRPCServer, JSONRPCServerMacro}
 import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
 
@@ -9,9 +9,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JSONRPCServerAndClient[JsonSerializerInUse <: JsonSerializer](
-    val server: JSONRPCServer[JsonSerializerInUse],
-    val client: JSONRPCClient[JsonSerializerInUse]
+class JSONRPCServerAndClient[JSONSerializerInUse <: JSONSerializer](
+    val server: JSONRPCServer[JSONSerializerInUse],
+    val client: JSONRPCClient[JSONSerializerInUse]
 ) {
   def send(json: String): Future[Option[String]] = client.send(json)
 
@@ -23,9 +23,9 @@ class JSONRPCServerAndClient[JsonSerializerInUse <: JsonSerializer](
 }
 
 object JSONRPCServerAndClient {
-  def apply[JsonSerializerInUse <: JsonSerializer](
-      server: JSONRPCServer[JsonSerializerInUse],
-      client: JSONRPCClient[JsonSerializerInUse]
+  def apply[JSONSerializerInUse <: JSONSerializer](
+      server: JSONRPCServer[JSONSerializerInUse],
+      client: JSONRPCClient[JSONSerializerInUse]
   ) = new JSONRPCServerAndClient(server, client)
 }
 
@@ -75,15 +75,15 @@ object JSONRPCServerAndClientMacro {
             val wasJSONRPCResponse: Boolean = $client.receive(json)
             if (!wasJSONRPCResponse) {
               $server.receive(json)
-                .flatMap((maybeResponseJsonFromUs: Option[String]) => {
-                  maybeResponseJsonFromUs match {
-                    case Some(responseJsonFromUs) => $client.send(responseJsonFromUs)
+                .flatMap((maybeResponseJSONFromUs: Option[String]) => {
+                  maybeResponseJSONFromUs match {
+                    case Some(responseJSONFromUs) => $client.send(responseJSONFromUs)
                     case None => Future(None)($executionContext)
                   }
                 })($executionContext)
-                .flatMap((maybeResponseJsonFromThem: Option[String]) => {
-                  maybeResponseJsonFromThem match {
-                    case Some(responseJsonFromThem) => receiveAndSend(responseJsonFromThem)
+                .flatMap((maybeResponseJSONFromThem: Option[String]) => {
+                  maybeResponseJSONFromThem match {
+                    case Some(responseJSONFromThem) => receiveAndSend(responseJSONFromThem)
                     case None => Future(None)($executionContext)
                   }
                 })($executionContext)
