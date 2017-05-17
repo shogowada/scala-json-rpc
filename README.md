@@ -1,7 +1,6 @@
 # scala-json-rpc
 
 master: [![Master Build Status](https://travis-ci.org/shogowada/scala-json-rpc.svg?branch=master)](https://travis-ci.org/shogowada/scala-json-rpc)
-develop: [![Develop Build Status](https://travis-ci.org/shogowada/scala-json-rpc.svg?branch=develop)](https://travis-ci.org/shogowada/scala-json-rpc)
 
 Let your servers and clients communicate over function calls!
 
