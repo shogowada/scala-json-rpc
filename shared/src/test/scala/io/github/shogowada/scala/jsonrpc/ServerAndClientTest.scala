@@ -4,18 +4,18 @@ import io.github.shogowada.scala.jsonrpc.Models.{JSONRPCErrorResponse, JSONRPCEr
 import io.github.shogowada.scala.jsonrpc.client.JSONRPCClient
 import io.github.shogowada.scala.jsonrpc.serializers.UpickleJSONSerializer
 import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer
-import org.scalatest.{AsyncFunSpec, Matchers}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class ServerAndClientTest extends AsyncFunSpec
-    with Matchers {
+class ServerAndClientTest extends BaseSpec {
+
+  override def newInstance = new ServerAndClientTest
 
   override implicit def executionContext = ExecutionContext.Implicits.global
 
   val jsonSerializer = UpickleJSONSerializer()
 
-  describe("given I have APIs") {
+  "given I have APIs" - {
 
     trait CalculatorAPI {
       def add(lhs: Int, rhs: Int): Future[Int]
@@ -57,49 +57,49 @@ class ServerAndClientTest extends AsyncFunSpec
       (json: String) => server.receive(json)
     )
 
-    describe("when I am using calculator API") {
+    "when I am using calculator API" - {
       val calculatorAPI = client.createAPI[CalculatorAPI]
 
-      describe("when I add 2 values") {
+      "when I add 2 values" - {
         val futureResult = calculatorAPI.add(1, 2)
 
-        it("then it should add the 2 values") {
+        "then it should add the 2 values" in {
           futureResult.map(result => result should equal(3))
         }
       }
 
-      describe("when I subtract one value from the other") {
+      "when I subtract one value from the other" - {
         val futureResult = calculatorAPI.subtract(1, 2)
 
-        it("then it should subtract the value") {
+        "then it should subtract the value" in {
           futureResult.map(result => result should equal(-1))
         }
       }
     }
 
-    describe("when I am using greeter API") {
+    "when I am using greeter API" - {
       val greeterAPI = client.createAPI[GreeterAPI]
 
-      describe("when I greet") {
+      "when I greet" - {
         val greeting = "Hello, World!"
         greeterAPI.greet(greeting)
 
-        it("then it should greet the server") {
+        "then it should greet the server" in {
           greeterAPIServer.greetings should equal(List(greeting))
         }
       }
     }
 
-    describe("when I am using invalid API") {
+    "when I am using invalid API" - {
       trait InvalidAPI {
         def invalidRequest: Future[String]
       }
 
       val invalidAPI = client.createAPI[InvalidAPI]
 
-      describe("when I send request") {
+      "when I send request" - {
         val response = invalidAPI.invalidRequest
-        it("then it should response error") {
+        "then it should response error" in {
           response.failed
               .map {
                 case exception: JSONRPCException[_] =>
