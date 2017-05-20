@@ -9,8 +9,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JSONRPCServer[JSONSerializerInUse <: JSONSerializer]
-(
+class JSONRPCServer[JSONSerializerInUse <: JSONSerializer](
     val jsonSerializer: JSONSerializerInUse,
     val executionContext: ExecutionContext
 ) {
@@ -40,8 +39,10 @@ object JSONRPCServerMacro {
     val bind = bindAPIImpl[c.type, API](c)(server, None, api)
     c.Expr[Unit](
       q"""
-          $serverDefinition
-          $bind
+          {
+            $serverDefinition
+            $bind
+          }
           """
     )
   }
@@ -139,9 +140,11 @@ object JSONRPCServerMacro {
 
     c.Expr(
       q"""
-          ..${macroUtils.imports}
-          $serverDefinition
-          $futureMaybeJSON
+          {
+            ..${macroUtils.imports}
+            $serverDefinition
+            $futureMaybeJSON
+          }
           """
     )
   }

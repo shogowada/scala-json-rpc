@@ -147,9 +147,9 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
 
     val promisedResponse = TermName("promisedResponse")
 
-    def responseJSONHandler(json: Tree): Tree = {
+    def responseJSONHandler(): Tree = {
       val resultType: Type = returnType.typeArgs.head
-      createResponseJSONHandler(client, maybeServer, resultType, json)
+      createResponseJSONHandler(client, maybeServer, resultType)
     }
 
     c.Expr[returnType.type](
@@ -170,7 +170,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
               })($executionContext)
 
               $promisedResponse.future
-                  .map((json: String) => ${responseJSONHandler(q"json")})($executionContext)
+                  .map(${responseJSONHandler()})($executionContext)
             }
             case None => {
               val jsonRPCErrorResponse = JSONRPCErrorResponse(
@@ -188,8 +188,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
   private def createResponseJSONHandler(
       client: Tree,
       maybeServer: Option[Tree],
-      resultType: Type,
-      json: Tree
+      resultType: Type
   ): Tree = {
     val jsonSerializer = macroUtils.getJSONSerializer(client)
 
@@ -207,10 +206,10 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
     val jsonRPCResultType: Type = macroUtils.getJSONRPCResultType(resultType)
 
     q"""
-        $jsonSerializer.deserialize[JSONRPCResultResponse[$jsonRPCResultType]]($json) match {
+        (json: String) => $jsonSerializer.deserialize[JSONRPCResultResponse[$jsonRPCResultType]](json) match {
           case Some(resultResponse) => ${mapResult(q"resultResponse")}
           case None => {
-            val maybeResponse = $jsonSerializer.deserialize[JSONRPCErrorResponse[String]]($json)
+            val maybeResponse = $jsonSerializer.deserialize[JSONRPCErrorResponse[String]](json)
             throw new JSONRPCException(maybeResponse)
           }
         }
