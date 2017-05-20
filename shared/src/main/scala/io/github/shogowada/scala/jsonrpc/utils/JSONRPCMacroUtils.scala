@@ -93,14 +93,6 @@ class JSONRPCMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     }
   }
 
-  def getJSONRPCResultType(resultType: Type): Type = {
-    if (isDisposableFunctionType(resultType)) {
-      getType[String]
-    } else {
-      resultType
-    }
-  }
-
   def isDisposableFunctionType(theType: Type): Boolean = {
     theType <:< getType[DisposableFunction]
   }

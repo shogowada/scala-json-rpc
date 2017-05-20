@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.Models.JSONRPCRequest
-import io.github.shogowada.scala.jsonrpc.server.{DisposableFunctionServerFactoryMacro, JSONRPCRequestJSONHandlerFactoryMacro}
+import io.github.shogowada.scala.jsonrpc.server.DisposableFunctionServerFactoryMacro
 import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
 
 import scala.reflect.macros.blackbox
@@ -10,10 +10,10 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
 
   import c.universe._
 
-  lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
-  lazy val requestJSONHandlerFactoryMacro = new JSONRPCRequestJSONHandlerFactoryMacro[c.type](c)
-  lazy val disposableFunctionClientFactoryMacro = new DisposableFunctionClientFactoryMacro[c.type](c)
-  lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
+  private lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
+  private lazy val resultFactory = JSONRPCMethodClientResultFactory[c.type](c)
+  private lazy val disposableFunctionClientFactoryMacro = new DisposableFunctionClientFactoryMacro[c.type](c)
+  private lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
 
   def createAsFunction(
       client: Tree,
@@ -190,20 +190,11 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
       maybeServer: Option[Tree],
       resultType: Type
   ): Tree = {
-    val jsonSerializer = macroUtils.getJSONSerializer(client)
+    val jsonSerializer: Tree = macroUtils.getJSONSerializer(client)
 
-    def mapResult(resultResponse: Tree): Tree = {
-      val result = q"$resultResponse.result"
-      if (macroUtils.isDisposableFunctionType(resultType)) {
-        maybeServer
-            .map(server => disposableFunctionClientFactoryMacro.getOrCreate(server, client, resultType, q"$result"))
-            .getOrElse(throw new UnsupportedOperationException("To use an API returning DisposableFunction, you need to create the API with JSONRPCServerAndClient."))
-      } else {
-        result
-      }
-    }
+    def mapResult(resultResponse: Tree): Tree = resultFactory.create(client, maybeServer, resultType, resultResponse)
 
-    val jsonRPCResultType: Type = macroUtils.getJSONRPCResultType(resultType)
+    val jsonRPCResultType: Type = resultFactory.createJSONRPCResultType(resultType)
 
     q"""
         (json: String) => $jsonSerializer.deserialize[JSONRPCResultResponse[$jsonRPCResultType]](json) match {
