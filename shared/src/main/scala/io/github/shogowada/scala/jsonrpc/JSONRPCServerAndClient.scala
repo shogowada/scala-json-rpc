@@ -39,8 +39,10 @@ object JSONRPCServerAndClientMacro {
     val bindAPI = JSONRPCServerMacro.bindAPIImpl[c.type, API](c)(server, Some(client), api)
     c.Expr[Unit](
       q"""
-          $serverAndClientDefinition
-          $bindAPI
+          {
+            $serverAndClientDefinition
+            $bindAPI
+          }
           """
     )
   }
@@ -54,8 +56,10 @@ object JSONRPCServerAndClientMacro {
     val createAPI = JSONRPCClientMacro.createAPIImpl[c.type, API](c)(client, Some(server))
     c.Expr[API](
       q"""
-          $serverAndClientDefinition
-          $createAPI
+          {
+            $serverAndClientDefinition
+            $createAPI
+          }
           """
     )
   }
@@ -69,30 +73,32 @@ object JSONRPCServerAndClientMacro {
     val executionContext: c.Expr[ExecutionContext] = c.Expr(q"$server.executionContext")
     c.Expr[Future[Unit]](
       q"""
-          ..${macroUtils.imports}
-          $serverAndClientDefinition
-          def receiveAndSend(json: String): Future[Unit] = {
-            val wasJSONRPCResponse: Boolean = $client.receive(json)
-            if (!wasJSONRPCResponse) {
-              $server.receive(json)
-                .flatMap((maybeResponseJSONFromUs: Option[String]) => {
-                  maybeResponseJSONFromUs match {
-                    case Some(responseJSONFromUs) => $client.send(responseJSONFromUs)
-                    case None => Future(None)($executionContext)
-                  }
-                })($executionContext)
-                .flatMap((maybeResponseJSONFromThem: Option[String]) => {
-                  maybeResponseJSONFromThem match {
-                    case Some(responseJSONFromThem) => receiveAndSend(responseJSONFromThem)
-                    case None => Future(None)($executionContext)
-                  }
-                })($executionContext)
-                .map(_ => ())
-            } else {
-              Future()($executionContext)
+          {
+            ..${macroUtils.imports}
+            $serverAndClientDefinition
+            def receiveAndSend(json: String): Future[Unit] = {
+              val wasJSONRPCResponse: Boolean = $client.receive(json)
+              if (!wasJSONRPCResponse) {
+                $server.receive(json)
+                  .flatMap((maybeResponseJSONFromUs: Option[String]) => {
+                    maybeResponseJSONFromUs match {
+                      case Some(responseJSONFromUs) => $client.send(responseJSONFromUs)
+                      case None => Future(None)($executionContext)
+                    }
+                  })($executionContext)
+                  .flatMap((maybeResponseJSONFromThem: Option[String]) => {
+                    maybeResponseJSONFromThem match {
+                      case Some(responseJSONFromThem) => receiveAndSend(responseJSONFromThem)
+                      case None => Future(None)($executionContext)
+                    }
+                  })($executionContext)
+                  .map(_ => ())
+              } else {
+                Future()($executionContext)
+              }
             }
+            receiveAndSend($json)
           }
-          receiveAndSend($json)
           """
     )
   }
