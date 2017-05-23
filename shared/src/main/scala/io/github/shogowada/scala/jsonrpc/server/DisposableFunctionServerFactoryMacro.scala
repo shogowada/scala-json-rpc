@@ -8,8 +8,8 @@ class DisposableFunctionServerFactoryMacro[Context <: blackbox.Context](val c: C
 
   import c.universe._
 
-  lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
-  lazy val requestJSONHandlerFactoryMacro = new JSONRPCRequestJSONHandlerFactoryMacro[c.type](c)
+  private lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
+  private lazy val requestJSONHandlerFactoryMacro = new JSONRPCRequestJSONHandlerFactoryMacro[c.type](c)
 
   def getOrCreate(
       client: Tree,

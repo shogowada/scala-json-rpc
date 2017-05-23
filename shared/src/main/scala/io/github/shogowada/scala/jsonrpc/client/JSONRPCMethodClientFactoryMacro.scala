@@ -12,7 +12,6 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
 
   private lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
   private lazy val resultFactory = JSONRPCMethodClientResultFactory[c.type](c)
-  private lazy val disposableFunctionClientFactoryMacro = new DisposableFunctionClientFactoryMacro[c.type](c)
   private lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
 
   def createAsFunction(

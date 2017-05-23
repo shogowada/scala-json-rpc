@@ -11,9 +11,9 @@ class JSONRPCRequestJSONHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
 
   import c.universe._
 
-  lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
-  lazy val disposableFunctionClientFactoryMacro = new DisposableFunctionClientFactoryMacro[c.type](c)
-  lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
+  private lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
+  private lazy val disposableFunctionClientFactoryMacro = new DisposableFunctionClientFactoryMacro[c.type](c)
+  private lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
 
   case class RequestJSONHandlerContext(
       server: c.Tree,
