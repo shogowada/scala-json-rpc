@@ -1,8 +1,5 @@
 package io.github.shogowada.scala.jsonrpc.common
 
-import io.github.shogowada.scala.jsonrpc.client.DisposableFunctionClientFactoryMacro
-import io.github.shogowada.scala.jsonrpc.server.DisposableFunctionServerFactoryMacro
-
 import scala.reflect.macros.blackbox
 
 object JSONRPCParameterFactory {
@@ -14,9 +11,7 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
 
   import c.universe._
 
-  private lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
-  private lazy val disposableFunctionClientFactory = new DisposableFunctionClientFactoryMacro[c.type](c)
-  private lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
+  private lazy val valueFactory = JSONRPCValueFactory[c.type](c)
 
   def jsonRPCToScala(
       server: Tree,
@@ -24,18 +19,12 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
       argument: Tree,
       argumentType: Type
   ): Tree = {
-    if (macroUtils.isDisposableFunctionType(argumentType)) {
-      maybeClient
-          .map(client => disposableFunctionClientFactory.getOrCreate(
-            server = server,
-            client = client,
-            disposableFunctionMethodName = argument,
-            disposableFunctionType = argumentType
-          ))
-          .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to bind the API to JSONRPCServerAndClient."))
-    } else {
-      argument
-    }
+    valueFactory.jsonRPCToScala(
+      maybeClient = maybeClient,
+      maybeServer = Option(server),
+      argument,
+      argumentType
+    )
   }
 
   def jsonRPCType(paramTypes: Seq[c.Type]): Tree = {
@@ -51,11 +40,7 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
   }
 
   private def jsonRPCType(paramType: Type): Type = {
-    if (macroUtils.isDisposableFunctionType(paramType)) {
-      macroUtils.getType[String]
-    } else {
-      paramType
-    }
+    valueFactory.jsonRPCType(paramType)
   }
 
   def scalaToJSONRPC(
@@ -64,18 +49,11 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
       parameter: Tree,
       parameterType: Type
   ): Tree = {
-    if (macroUtils.isDisposableFunctionType(parameterType)) {
-      val disposableFunctionMethodName: c.Expr[String] = maybeServer
-          .map(server => disposableFunctionServerFactoryMacro.getOrCreate(
-            client = client,
-            server = server,
-            disposableFunction = parameter,
-            disposableFunctionType = parameterType
-          ))
-          .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to create an API with JSONRPCServerAndClient."))
-      q"$disposableFunctionMethodName"
-    } else {
-      parameter
-    }
+    valueFactory.scalaToJSONRPC(
+      maybeServer = maybeServer,
+      maybeClient = Option(client),
+      value = parameter,
+      valueType = parameterType
+    )
   }
 }
