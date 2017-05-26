@@ -1,8 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.Models.JSONRPCRequest
-import io.github.shogowada.scala.jsonrpc.server.DisposableFunctionServerFactoryMacro
-import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
+import io.github.shogowada.scala.jsonrpc.common.{JSONRPCMacroUtils, JSONRPCResultFactory}
 
 import scala.reflect.macros.blackbox
 
@@ -12,8 +11,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
 
   private lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
   private lazy val parameterFactory = JSONRPCParameterFactory[c.type](c)
-  private lazy val resultFactory = JSONRPCMethodClientResultFactory[c.type](c)
-  private lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
+  private lazy val resultFactory = JSONRPCResultFactory[c.type](c)
 
   def createAsFunction(
       client: Tree,
@@ -199,9 +197,12 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
   ): Tree = {
     val jsonSerializer: Tree = macroUtils.getJSONSerializer(client)
 
-    def mapResult(resultResponse: Tree): Tree = resultFactory.create(client, maybeServer, resultType, resultResponse)
+    def mapResult(resultResponse: Tree): Tree = {
+      val result = q"$resultResponse.result"
+      resultFactory.jsonRPCToScala(client, maybeServer, result, resultType)
+    }
 
-    val jsonRPCResultType: Type = resultFactory.createJSONRPCResultType(resultType)
+    val jsonRPCResultType: Type = resultFactory.jsonRPCType(resultType)
 
     q"""
         (json: String) => $jsonSerializer.deserialize[JSONRPCResultResponse[$jsonRPCResultType]](json) match {

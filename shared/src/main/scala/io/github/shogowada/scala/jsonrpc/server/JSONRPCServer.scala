@@ -3,7 +3,7 @@ package io.github.shogowada.scala.jsonrpc.server
 import io.github.shogowada.scala.jsonrpc.Models.JSONRPCError
 import io.github.shogowada.scala.jsonrpc.serializers.JSONSerializer
 import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer.RequestJSONHandler
-import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
+import io.github.shogowada.scala.jsonrpc.common.JSONRPCMacroUtils
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.experimental.macros

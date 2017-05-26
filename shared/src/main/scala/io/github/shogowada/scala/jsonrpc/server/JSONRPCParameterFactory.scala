@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.client.DisposableFunctionClientFactoryMacro
-import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
+import io.github.shogowada.scala.jsonrpc.common.JSONRPCMacroUtils
 
 import scala.reflect.macros.blackbox
 

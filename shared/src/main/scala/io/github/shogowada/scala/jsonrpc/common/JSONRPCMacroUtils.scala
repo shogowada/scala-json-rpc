@@ -1,4 +1,4 @@
-package io.github.shogowada.scala.jsonrpc.utils
+package io.github.shogowada.scala.jsonrpc.common
 
 import io.github.shogowada.scala.jsonrpc.DisposableFunction
 import io.github.shogowada.scala.jsonrpc.Models.JSONRPCError

@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.Types.{Id, JSONSender}
 import io.github.shogowada.scala.jsonrpc.serializers.JSONSerializer
-import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
+import io.github.shogowada.scala.jsonrpc.common.JSONRPCMacroUtils
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.experimental.macros
