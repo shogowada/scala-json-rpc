@@ -14,7 +14,7 @@ class DisposableFunctionServerFactoryMacro[Context <: blackbox.Context](val c: C
   def getOrCreate(
       client: Tree,
       server: Tree,
-      disposableFunction: TermName,
+      disposableFunction: Tree,
       disposableFunctionType: Type
   ): c.Expr[String] = {
     val requestJSONHandlerRepository = macroUtils.getRequestJSONHandlerRepository(server)

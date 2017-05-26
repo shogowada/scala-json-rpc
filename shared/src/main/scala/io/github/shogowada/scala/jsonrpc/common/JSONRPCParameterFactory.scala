@@ -41,7 +41,7 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
   def scalaToJSONRPC(
       client: Tree,
       maybeServer: Option[Tree],
-      parameter: TermName,
+      parameter: Tree,
       parameterType: Type
   ): Tree = {
     if (macroUtils.isDisposableFunctionType(parameterType)) {

@@ -1,8 +1,8 @@
 package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.Models.JSONRPCError
-import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer.RequestJSONHandler
 import io.github.shogowada.scala.jsonrpc.common.{JSONRPCMacroUtils, JSONRPCParameterFactory, JSONRPCResultFactory}
+import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer.RequestJSONHandler
 
 import scala.reflect.macros.blackbox
 
@@ -43,7 +43,7 @@ class JSONRPCRequestJSONHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
   def createFromDisposableFunction(
       client: Tree,
       server: Tree,
-      disposableFunction: TermName,
+      disposableFunction: Tree,
       disposableFunctionType: Type
   ): c.Expr[RequestJSONHandler] = {
     val paramTypes: Seq[Type] = disposableFunctionType.typeArgs.init
@@ -52,7 +52,7 @@ class JSONRPCRequestJSONHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
     create(RequestJSONHandlerContext(
       server = server,
       maybeClient = Some(client),
-      methodName = q"$disposableFunction",
+      methodName = disposableFunction,
       parameterTypeLists = Seq(paramTypes),
       returnType = returnType
     ))
@@ -141,12 +141,18 @@ class JSONRPCRequestJSONHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
       q"${handlerContext.methodName}(..${createArguments(handlerContext, params)})"
     }
 
-    resultFactory.scalaToJSONRPC(
-      server = handlerContext.server,
-      maybeClient = handlerContext.maybeClient,
-      returnValue = methodInvocation,
-      returnValueType = handlerContext.returnType
-    )
+    handlerContext.returnType.typeArgs.headOption
+        .map(resultType => {
+          val executionContext = macroUtils.getExecutionContext(handlerContext.server)
+          val resultMapper: Tree = resultFactory.scalaToJSONRPC(
+            server = handlerContext.server,
+            maybeClient = handlerContext.maybeClient,
+            result = q"result",
+            resultType = resultType
+          )
+          q"""$methodInvocation.map(result => $resultMapper)($executionContext)"""
+        })
+        .getOrElse(methodInvocation)
   }
 
   private def createArguments(

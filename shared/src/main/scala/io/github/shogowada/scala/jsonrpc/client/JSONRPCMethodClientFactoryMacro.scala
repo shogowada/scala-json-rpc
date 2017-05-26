@@ -96,8 +96,8 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
     }
   }
 
-  private def getParamName(index: Int): TermName = {
-    TermName(s"param_$index")
+  private def getParamName(index: Int): Tree = {
+    q"${TermName(s"param_$index")}"
   }
 
   private def createNotificationMethodBody(

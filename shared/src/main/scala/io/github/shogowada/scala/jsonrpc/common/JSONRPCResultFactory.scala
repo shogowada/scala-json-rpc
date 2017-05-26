@@ -49,30 +49,22 @@ class JSONRPCResultFactory[Context <: blackbox.Context](val c: Context) {
   def scalaToJSONRPC(
       server: Tree,
       maybeClient: Option[Tree],
-      returnValue: Tree,
-      returnValueType: Type
+      result: Tree,
+      resultType: Type
   ): Tree = {
-    val disposableFunctionType: Option[Type] = returnValueType.typeArgs.headOption
-        .filter(macroUtils.isDisposableFunctionType)
+    if (macroUtils.isDisposableFunctionType(resultType)) {
+      val disposableFunctionServer: c.Expr[String] = maybeClient
+          .map(client => disposableFunctionServerFactory.getOrCreate(
+            server = server,
+            client = client,
+            disposableFunction = result,
+            disposableFunctionType = resultType
+          ))
+          .getOrElse(throw new UnsupportedOperationException("To return DisposableFunction, you need to bind the API to JSONRPCServerAndClient."))
 
-    disposableFunctionType
-        .map(disposableFunctionType => {
-          val disposableFunctionServer: c.Expr[String] = maybeClient
-              .map(client => disposableFunctionServerFactory.getOrCreate(
-                server = server,
-                client = client,
-                disposableFunction = TermName("disposableFunction"),
-                disposableFunctionType = disposableFunctionType
-              ))
-              .getOrElse(throw new UnsupportedOperationException("To return DisposableFunction, you need to bind the API to JSONRPCServerAndClient."))
-
-          val executionContext = macroUtils.getExecutionContext(server)
-
-          q"""
-              $returnValue
-                  .map(disposableFunction => $disposableFunctionServer)($executionContext)
-              """
-        })
-        .getOrElse(returnValue)
+      q"$disposableFunctionServer"
+    } else {
+      result
+    }
   }
 }
