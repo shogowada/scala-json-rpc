@@ -25,7 +25,12 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
   ): Tree = {
     if (macroUtils.isDisposableFunctionType(parameterType)) {
       val disposableFunctionMethodName: c.Expr[String] = maybeServer
-          .map(server => disposableFunctionServerFactoryMacro.getOrCreate(client, server, parameter, parameterType))
+          .map(server => disposableFunctionServerFactoryMacro.getOrCreate(
+            client = client,
+            server = server,
+            disposableFunction = parameter,
+            disposableFunctionType = parameterType
+          ))
           .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to create an API with JSONRPCServerAndClient."))
       q"$disposableFunctionMethodName"
     } else {

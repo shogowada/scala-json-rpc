@@ -28,8 +28,8 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
           .map(client => disposableFunctionClientFactory.getOrCreate(
             server = server,
             client = client,
-            disposableFunctionType = argumentType,
-            disposableFunctionMethodName = argument
+            disposableFunctionMethodName = argument,
+            disposableFunctionType = argumentType
           ))
           .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to bind the API to JSONRPCServerAndClient."))
     } else {

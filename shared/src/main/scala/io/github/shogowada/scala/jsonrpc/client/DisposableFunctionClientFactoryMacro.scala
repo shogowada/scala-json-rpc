@@ -15,8 +15,8 @@ class DisposableFunctionClientFactoryMacro[CONTEXT <: blackbox.Context](val c: C
   def getOrCreate(
       server: c.Tree,
       client: c.Tree,
-      disposableFunctionType: c.Type,
-      disposableFunctionMethodName: c.Tree
+      disposableFunctionMethodName: c.Tree,
+      disposableFunctionType: c.Type
   ): c.Tree = {
     val disposableFunctionRepository = macroUtils.getDisposableFunctionRepository(server)
 
