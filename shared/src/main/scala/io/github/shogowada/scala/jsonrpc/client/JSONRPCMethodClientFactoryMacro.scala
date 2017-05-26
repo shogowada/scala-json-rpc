@@ -11,6 +11,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
   import c.universe._
 
   private lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
+  private lazy val parameterFactory = JSONRPCParameterFactory[c.type](c)
   private lazy val resultFactory = JSONRPCMethodClientResultFactory[c.type](c)
   private lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
 
@@ -43,7 +44,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
           returnType
         )
       } else {
-        throw new UnsupportedOperationException("JSON RPC method must return either Unit or Future")
+        throw new UnsupportedOperationException("JSON RPC method must return either Unit or Future[_]")
       }
     }
 
@@ -68,14 +69,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
   ): Tree = {
     def createJSONRPCParameter(paramType: Type, index: Int): Tree = {
       val paramName = getParamName(index)
-      if (macroUtils.isDisposableFunctionType(paramType)) {
-        val disposableFunctionMethodName: c.Expr[String] = maybeServer
-            .map(server => disposableFunctionServerFactoryMacro.getOrCreate(client, server, paramName, paramType))
-            .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to create an API with JSONRPCServerAndClient."))
-        q"$disposableFunctionMethodName"
-      } else {
-        q"$paramName"
-      }
+      parameterFactory.create(client, maybeServer, paramName, paramType)
     }
 
     val jsonRPCParameters: Seq[Tree] = paramTypes
