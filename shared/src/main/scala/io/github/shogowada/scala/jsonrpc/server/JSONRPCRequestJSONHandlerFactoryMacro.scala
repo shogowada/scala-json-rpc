@@ -2,7 +2,7 @@ package io.github.shogowada.scala.jsonrpc.server
 
 import io.github.shogowada.scala.jsonrpc.Models.JSONRPCError
 import io.github.shogowada.scala.jsonrpc.server.JSONRPCServer.RequestJSONHandler
-import io.github.shogowada.scala.jsonrpc.common.{JSONRPCMacroUtils, JSONRPCResultFactory}
+import io.github.shogowada.scala.jsonrpc.common.{JSONRPCMacroUtils, JSONRPCParameterFactory, JSONRPCResultFactory}
 
 import scala.reflect.macros.blackbox
 
@@ -158,7 +158,7 @@ class JSONRPCRequestJSONHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
     def createParameter(parameterType: Type, index: Int): Tree = {
       val fieldName = TermName(s"_${index + 1}")
       val argument = q"$params.$fieldName"
-      parameterFactory.create(
+      parameterFactory.jsonRPCToScala(
         server = handlerContext.server,
         maybeClient = handlerContext.maybeClient,
         argument = argument,

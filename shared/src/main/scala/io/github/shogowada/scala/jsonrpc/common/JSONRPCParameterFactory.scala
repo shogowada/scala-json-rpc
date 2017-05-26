@@ -1,7 +1,7 @@
-package io.github.shogowada.scala.jsonrpc.server
+package io.github.shogowada.scala.jsonrpc.common
 
 import io.github.shogowada.scala.jsonrpc.client.DisposableFunctionClientFactoryMacro
-import io.github.shogowada.scala.jsonrpc.common.JSONRPCMacroUtils
+import io.github.shogowada.scala.jsonrpc.server.DisposableFunctionServerFactoryMacro
 
 import scala.reflect.macros.blackbox
 
@@ -16,8 +16,9 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
 
   private lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
   private lazy val disposableFunctionClientFactory = new DisposableFunctionClientFactoryMacro[c.type](c)
+  private lazy val disposableFunctionServerFactoryMacro = new DisposableFunctionServerFactoryMacro[c.type](c)
 
-  def create(
+  def jsonRPCToScala(
       server: Tree,
       maybeClient: Option[Tree],
       argument: Tree,
@@ -34,6 +35,27 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
           .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to bind the API to JSONRPCServerAndClient."))
     } else {
       argument
+    }
+  }
+
+  def scalaToJSONRPC(
+      client: Tree,
+      maybeServer: Option[Tree],
+      parameter: TermName,
+      parameterType: Type
+  ): Tree = {
+    if (macroUtils.isDisposableFunctionType(parameterType)) {
+      val disposableFunctionMethodName: c.Expr[String] = maybeServer
+          .map(server => disposableFunctionServerFactoryMacro.getOrCreate(
+            client = client,
+            server = server,
+            disposableFunction = parameter,
+            disposableFunctionType = parameterType
+          ))
+          .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to create an API with JSONRPCServerAndClient."))
+      q"$disposableFunctionMethodName"
+    } else {
+      q"$parameter"
     }
   }
 }

@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.Models.JSONRPCRequest
-import io.github.shogowada.scala.jsonrpc.common.{JSONRPCMacroUtils, JSONRPCResultFactory}
+import io.github.shogowada.scala.jsonrpc.common.{JSONRPCMacroUtils, JSONRPCParameterFactory, JSONRPCResultFactory}
 
 import scala.reflect.macros.blackbox
 
@@ -81,7 +81,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
   ): Tree = {
     def createJSONRPCParameter(paramType: Type, index: Int): Tree = {
       val paramName = getParamName(index)
-      parameterFactory.create(client, maybeServer, paramName, paramType)
+      parameterFactory.scalaToJSONRPC(client, maybeServer, paramName, paramType)
     }
 
     val jsonRPCParameters: Seq[Tree] = paramTypes
