@@ -22,44 +22,58 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
       paramTypes: Seq[Type],
       returnType: Type
   ): Tree = {
-    val jsonRPCParameterType: Tree = macroUtils.getJSONRPCParameterType(paramTypes)
-    val jsonRPCParameter = getJSONRPCParameter(client, maybeServer, paramTypes)
-
-    def createMethodBody: c.Expr[returnType.type] = {
-      if (macroUtils.isJSONRPCNotificationMethod(returnType)) {
-        createNotificationMethodBody(
-          client,
-          jsonRPCParameterType,
-          jsonRPCMethodName,
-          jsonRPCParameter,
-          returnType
-        )
-      } else if (macroUtils.isJSONRPCRequestMethod(returnType)) {
-        createRequestMethodBody(
-          client,
-          maybeServer,
-          jsonRPCParameterType,
-          jsonRPCMethodName,
-          jsonRPCParameter,
-          returnType
-        )
-      } else {
-        throw new UnsupportedOperationException("JSON RPC method must return either Unit or Future[_]")
-      }
-    }
-
     val parameterList: Seq[Tree] = paramTypes
         .zipWithIndex
         .map { case (paramType, index) =>
           q"${getParamName(index)}: $paramType"
         }
 
+    val methodBody: c.Expr[returnType.type] = createMethodBody(
+      client,
+      maybeServer,
+      jsonRPCMethodName,
+      paramTypes,
+      returnType
+    )
+
     q"""
         (..$parameterList) => {
           ..${macroUtils.imports}
-          $createMethodBody
+          $methodBody
         }
         """
+  }
+
+  private def createMethodBody(
+      client: Tree,
+      maybeServer: Option[Tree],
+      jsonRPCMethodName: Tree,
+      paramTypes: Seq[Type],
+      returnType: Type
+  ): c.Expr[returnType.type] = {
+    val jsonRPCParameterType: Tree = macroUtils.getJSONRPCParameterType(paramTypes)
+    val jsonRPCParameter = getJSONRPCParameter(client, maybeServer, paramTypes)
+
+    if (macroUtils.isJSONRPCNotificationMethod(returnType)) {
+      createNotificationMethodBody(
+        client,
+        jsonRPCParameterType,
+        jsonRPCMethodName,
+        jsonRPCParameter,
+        returnType
+      )
+    } else if (macroUtils.isJSONRPCRequestMethod(returnType)) {
+      createRequestMethodBody(
+        client,
+        maybeServer,
+        jsonRPCParameterType,
+        jsonRPCMethodName,
+        jsonRPCParameter,
+        returnType
+      )
+    } else {
+      throw new UnsupportedOperationException("JSON RPC method must return either Unit or Future[_]")
+    }
   }
 
   private def getJSONRPCParameter(
