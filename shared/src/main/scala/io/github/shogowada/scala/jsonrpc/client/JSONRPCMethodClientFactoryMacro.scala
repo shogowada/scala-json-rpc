@@ -49,7 +49,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
       paramTypes: Seq[Type],
       returnType: Type
   ): c.Expr[returnType.type] = {
-    val jsonRPCParameterType: Tree = macroUtils.getJSONRPCParameterType(paramTypes)
+    val jsonRPCParameterType: Tree = parameterFactory.jsonRPCType(paramTypes)
     val jsonRPCParameter = getJSONRPCParameter(client, maybeServer, paramTypes)
 
     if (macroUtils.isJSONRPCNotificationMethod(returnType)) {

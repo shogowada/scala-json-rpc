@@ -38,6 +38,26 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
     }
   }
 
+  def jsonRPCType(paramTypes: Seq[c.Type]): Tree = {
+    val parameterTypes: Iterable[Type] = paramTypes
+        .map(jsonRPCType)
+
+    if (parameterTypes.size == 1) {
+      val parameterType = parameterTypes.head
+      tq"Tuple1[$parameterType]"
+    } else {
+      tq"(..$parameterTypes)"
+    }
+  }
+
+  private def jsonRPCType(paramType: Type): Type = {
+    if (macroUtils.isDisposableFunctionType(paramType)) {
+      macroUtils.getType[String]
+    } else {
+      paramType
+    }
+  }
+
   def scalaToJSONRPC(
       client: Tree,
       maybeServer: Option[Tree],
@@ -55,7 +75,7 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
           .getOrElse(throw new UnsupportedOperationException("To use DisposableFunction, you need to create an API with JSONRPCServerAndClient."))
       q"$disposableFunctionMethodName"
     } else {
-      q"$parameter"
+      parameter
     }
   }
 }

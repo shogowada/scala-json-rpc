@@ -73,26 +73,6 @@ class JSONRPCMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
     maybeCustomMethodName.getOrElse(method.fullName)
   }
 
-  def getJSONRPCParameterType(paramTypes: Seq[c.Type]): Tree = {
-    val parameterTypes: Iterable[Type] = paramTypes
-        .map(mapSingleJSONRPCParameterType)
-
-    if (parameterTypes.size == 1) {
-      val parameterType = parameterTypes.head
-      tq"Tuple1[$parameterType]"
-    } else {
-      tq"(..$parameterTypes)"
-    }
-  }
-
-  private def mapSingleJSONRPCParameterType(paramType: Type): Type = {
-    if (isDisposableFunctionType(paramType)) {
-      getType[String]
-    } else {
-      paramType
-    }
-  }
-
   def isDisposableFunctionType(theType: Type): Boolean = {
     theType <:< getType[DisposableFunction]
   }

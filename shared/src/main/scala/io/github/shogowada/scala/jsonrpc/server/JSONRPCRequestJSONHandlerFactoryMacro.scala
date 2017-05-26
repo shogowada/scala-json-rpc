@@ -72,7 +72,7 @@ class JSONRPCRequestJSONHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
 
     val params = TermName("params")
 
-    val jsonRPCParameterType: Tree = macroUtils.getJSONRPCParameterType(handlerContext.parameterTypeLists.flatten)
+    val jsonRPCParameterType: Tree = parameterFactory.jsonRPCType(handlerContext.parameterTypeLists.flatten)
 
     def methodInvocation(params: TermName) = createMethodInvocation(handlerContext, params)
 
@@ -106,7 +106,7 @@ class JSONRPCRequestJSONHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
         c.Expr[JSONRPCError[String]](q"JSONRPCErrors.invalidParams")
       )
 
-    val jsonRPCParameterType: Tree = macroUtils.getJSONRPCParameterType(handlerContext.parameterTypeLists.flatten)
+    val jsonRPCParameterType: Tree = parameterFactory.jsonRPCType(handlerContext.parameterTypeLists.flatten)
 
     def methodInvocation(params: TermName): Tree = createMethodInvocation(handlerContext, params)
 

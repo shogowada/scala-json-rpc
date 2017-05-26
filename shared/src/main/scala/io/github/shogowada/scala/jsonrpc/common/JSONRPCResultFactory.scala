@@ -29,7 +29,7 @@ class JSONRPCResultFactory[Context <: blackbox.Context](val c: Context) {
           .map(server => disposableFunctionClientFactoryMacro.getOrCreate(
             server = server,
             client = client,
-            disposableFunctionMethodName = q"$result",
+            disposableFunctionMethodName = result,
             disposableFunctionType = resultType
           ))
           .getOrElse(throw new UnsupportedOperationException("To create an API using DisposableFunction, you need to create the API with JSONRPCServerAndClient."))
