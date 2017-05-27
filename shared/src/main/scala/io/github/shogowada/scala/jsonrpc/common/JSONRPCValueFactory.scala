@@ -25,24 +25,59 @@ class JSONRPCValueFactory[Context <: blackbox.Context](val c: Context) {
       value: Tree,
       valueType: Type
   ): Tree = {
+    fromValue(
+      maybeClient, maybeServer, value, valueType,
+      disposableFunctionClientFactory.getOrCreate
+    )
+  }
+
+  def scalaToJSONRPC(
+      maybeClient: Option[Tree],
+      maybeServer: Option[Tree],
+      value: Tree,
+      valueType: Type
+  ): Tree = {
+    fromValue(
+      maybeClient, maybeServer, value, valueType,
+      disposableFunctionServerFactory.getOrCreate
+    )
+  }
+
+  private def fromValue(
+      maybeClient: Option[Tree],
+      maybeServer: Option[Tree],
+      value: Tree,
+      valueType: Type,
+      fromDisposableFunction: (Tree, Tree, Tree, Type) => Tree
+  ): Tree = {
     if (isEitherType(valueType)) {
-      val toScala = jsonRPCToScala(maybeClient, maybeServer, _: Tree, _: Type)
-      fromEither(value, valueType, toScala)
+      val curriedFromValue = fromValue(maybeClient, maybeServer, _: Tree, _: Type, fromDisposableFunction)
+      fromEither(value, valueType, curriedFromValue)
     } else if (isDisposableFunctionType(valueType)) {
-      val maybeValue = for {
+      val maybeValue: Option[Tree] = for {
         client <- maybeClient
         server <- maybeServer
-      } yield disposableFunctionClientFactory.getOrCreate(
-        server = server,
-        client = client,
-        disposableFunctionMethodName = value,
-        disposableFunctionType = valueType
-      )
+      } yield fromDisposableFunction(client, server, value, valueType)
 
       maybeValue.getOrElse(throw DisposableFunctionException)
     } else {
       value
     }
+  }
+
+  private def fromEither(
+      value: Tree,
+      valueType: Type,
+      fromValue: (Tree, Type) => Tree
+  ): Tree = {
+    val leftType = valueType.typeArgs(0)
+    val rightType = valueType.typeArgs(1)
+    q"""
+        $value match {
+          case Left(value) => Left(${fromValue(q"value", leftType)})
+          case Right(value) => Right(${fromValue(q"value", rightType)})
+        }
+        """
   }
 
   def jsonRPCType(valueType: Type): Tree = {
@@ -57,55 +92,12 @@ class JSONRPCValueFactory[Context <: blackbox.Context](val c: Context) {
     }
   }
 
-  def scalaToJSONRPC(
-      maybeClient: Option[Tree],
-      maybeServer: Option[Tree],
-      value: Tree,
-      valueType: Type
-  ): Tree = {
-    if (isEitherType(valueType)) {
-      val toJSONRPC = scalaToJSONRPC(maybeClient, maybeServer, _: Tree, _: Type)
-      fromEither(value, valueType, toJSONRPC)
-    } else if (isDisposableFunctionType(valueType)) {
-      val maybeValue: Option[c.Expr[String]] = for {
-        server <- maybeServer
-        client <- maybeClient
-      } yield disposableFunctionServerFactory.getOrCreate(
-        server = server,
-        client = client,
-        disposableFunction = value,
-        disposableFunctionType = valueType
-      )
-
-      maybeValue
-          .map(value => q"$value")
-          .getOrElse(throw DisposableFunctionException)
-    } else {
-      value
-    }
-  }
-
   private def isEitherType(valueType: Type): Boolean = {
     valueType <:< macroUtils.getType[Either[_, _]]
   }
 
   private def isDisposableFunctionType(valueType: Type): Boolean = {
     valueType <:< macroUtils.getType[DisposableFunction]
-  }
-
-  private def fromEither(
-      value: Tree,
-      valueType: Type,
-      convert: (Tree, Type) => Tree
-  ): Tree = {
-    val leftType = valueType.typeArgs(0)
-    val rightType = valueType.typeArgs(1)
-    q"""
-        $value match {
-          case Left(value) => Left(${convert(q"value", leftType)})
-          case Right(value) => Right(${convert(q"value", rightType)})
-        }
-        """
   }
 
   private def DisposableFunctionException: Throwable =

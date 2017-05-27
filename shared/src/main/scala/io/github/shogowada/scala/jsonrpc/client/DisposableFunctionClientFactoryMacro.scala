@@ -13,14 +13,14 @@ class DisposableFunctionClientFactoryMacro[CONTEXT <: blackbox.Context](val c: C
   private lazy val methodClientFactoryMacro = new JSONRPCMethodClientFactoryMacro[c.type](c)
 
   def getOrCreate(
-      server: c.Tree,
       client: c.Tree,
+      server: c.Tree,
       disposableFunctionMethodName: c.Tree,
       disposableFunctionType: c.Type
   ): c.Tree = {
     val disposableFunctionRepository = macroUtils.getDisposableFunctionRepository(server)
 
-    val newDisposableFunction = create(server, client, disposableFunctionType, disposableFunctionMethodName)
+    val newDisposableFunction = create(client, server, disposableFunctionType, disposableFunctionMethodName)
 
     q"""
         $disposableFunctionRepository
@@ -30,8 +30,8 @@ class DisposableFunctionClientFactoryMacro[CONTEXT <: blackbox.Context](val c: C
   }
 
   private def create(
-      server: c.Tree,
       client: c.Tree,
+      server: c.Tree,
       disposableFunctionType: c.Type,
       disposableFunctionMethodName: c.Tree
   ): c.Tree = {
