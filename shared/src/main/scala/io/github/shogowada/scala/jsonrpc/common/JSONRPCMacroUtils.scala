@@ -1,6 +1,5 @@
 package io.github.shogowada.scala.jsonrpc.common
 
-import io.github.shogowada.scala.jsonrpc.DisposableFunction
 import io.github.shogowada.scala.jsonrpc.Models.JSONRPCError
 import io.github.shogowada.scala.jsonrpc.api.JSONRPCMethod
 
@@ -71,10 +70,6 @@ class JSONRPCMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
           case Literal(Constant(name: String)) => name
         })
     maybeCustomMethodName.getOrElse(method.fullName)
-  }
-
-  def isDisposableFunctionType(theType: Type): Boolean = {
-    theType <:< getType[DisposableFunction]
   }
 
   def isJSONRPCNotificationMethod(returnType: Type): Boolean = {

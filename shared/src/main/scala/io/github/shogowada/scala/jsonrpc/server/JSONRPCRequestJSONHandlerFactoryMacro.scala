@@ -107,6 +107,7 @@ class JSONRPCRequestJSONHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
       )
 
     val jsonRPCParameterType: Tree = parameterFactory.jsonRPCType(handlerContext.parameterTypeLists.flatten)
+    val jsonRPCResultType: Tree = resultFactory.jsonRPCType(handlerContext.returnType.typeArgs.head)
 
     def methodInvocation(params: TermName): Tree = createMethodInvocation(handlerContext, params)
 
@@ -118,7 +119,7 @@ class JSONRPCRequestJSONHandlerFactoryMacro[CONTEXT <: blackbox.Context](val c: 
               .map(($request: JSONRPCRequest[$jsonRPCParameterType]) => {
                 val $params = $request.params
                 ${methodInvocation(params)}
-                  .map((result) => JSONRPCResultResponse(
+                  .map((result) => JSONRPCResultResponse[$jsonRPCResultType](
                     jsonrpc = Constants.JSONRPC,
                     id = $request.id,
                     result = result

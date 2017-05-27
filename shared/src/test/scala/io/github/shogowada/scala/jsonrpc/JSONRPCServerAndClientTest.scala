@@ -186,36 +186,36 @@ class JSONRPCServerAndClientTest extends BaseSpec {
       }
     }
 
-//   "given I have an API that returns either integer or function" - {
-//      trait API {
-//        def foo(): Future[Either[Int, DisposableFunction0[Unit]]]
-//      }
-//
-//      val called: Promise[Unit] = Promise()
-//
-//      val apiServer = new API {
-//        override def foo(): Future[Either[Int, DisposableFunction0[Unit]]] = Future {
-//          Right(DisposableFunction(() =>
-//            called.success(())
-//          ))
-//        }
-//      }
-//
-//      serverAndClient1.bindAPI[API](apiServer)
-//      val api = serverAndClient2.createAPI[API]
-//
-//      "calling the returned function" - {
-//        val futureFunction = api.foo().map {
-//          case Right(function) => function
-//          case _ => fail("Expected the result to be right")
-//        }
-//        futureFunction.foreach(_.apply())
-//
-//        "should actually call the function" in {
-//          called.future.map(_ => succeed)
-//        }
-//      }
-//    }
+    "given I have an API that returns either integer or function" - {
+      trait API {
+        def foo(): Future[Either[Int, DisposableFunction0[Unit]]]
+      }
+
+      val called: Promise[Unit] = Promise()
+
+      val apiServer = new API {
+        override def foo(): Future[Either[Int, DisposableFunction0[Unit]]] = Future {
+          Right(DisposableFunction(() =>
+            called.success(())
+          ))
+        }
+      }
+
+      serverAndClient1.bindAPI[API](apiServer)
+      val api = serverAndClient2.createAPI[API]
+
+      "calling the returned function" - {
+        val futureFunction = api.foo().map {
+          case Right(function) => function
+          case _ => fail("Expected the result to be right")
+        }
+        futureFunction.foreach(_.apply())
+
+        "should actually call the function" in {
+          called.future.map(_ => succeed)
+        }
+      }
+    }
 
     "given I have an API that takes the same function type in 2 places" - {
       val promisedFoo1Function: Promise[DisposableFunction0[Unit]] = Promise()

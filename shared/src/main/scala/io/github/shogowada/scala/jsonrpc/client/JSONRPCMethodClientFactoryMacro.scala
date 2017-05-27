@@ -202,7 +202,7 @@ class JSONRPCMethodClientFactoryMacro[Context <: blackbox.Context](val c: Contex
       resultFactory.jsonRPCToScala(client, maybeServer, result, resultType)
     }
 
-    val jsonRPCResultType: Type = resultFactory.jsonRPCType(resultType)
+    val jsonRPCResultType: Tree = resultFactory.jsonRPCType(resultType)
 
     q"""
         (json: String) => $jsonSerializer.deserialize[JSONRPCResultResponse[$jsonRPCResultType]](json) match {

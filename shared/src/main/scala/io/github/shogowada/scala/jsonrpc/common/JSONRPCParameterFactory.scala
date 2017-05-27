@@ -28,7 +28,7 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
   }
 
   def jsonRPCType(paramTypes: Seq[c.Type]): Tree = {
-    val parameterTypes: Iterable[Type] = paramTypes
+    val parameterTypes: Iterable[Tree] = paramTypes
         .map(jsonRPCType)
 
     if (parameterTypes.size == 1) {
@@ -39,7 +39,7 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
     }
   }
 
-  private def jsonRPCType(paramType: Type): Type = {
+  private def jsonRPCType(paramType: Type): Tree = {
     valueFactory.jsonRPCType(paramType)
   }
 
@@ -50,8 +50,8 @@ class JSONRPCParameterFactory[Context <: blackbox.Context](val c: Context) {
       parameterType: Type
   ): Tree = {
     valueFactory.scalaToJSONRPC(
-      maybeServer = maybeServer,
       maybeClient = Option(client),
+      maybeServer = maybeServer,
       value = parameter,
       valueType = parameterType
     )

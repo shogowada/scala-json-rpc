@@ -27,7 +27,7 @@ class JSONRPCResultFactory[Context <: blackbox.Context](val c: Context) {
     )
   }
 
-  def jsonRPCType(resultType: Type): Type = {
+  def jsonRPCType(resultType: Type): Tree = {
     valueFactory.jsonRPCType(resultType)
   }
 
