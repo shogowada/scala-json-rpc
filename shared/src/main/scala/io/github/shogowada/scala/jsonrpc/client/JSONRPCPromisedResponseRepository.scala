@@ -6,21 +6,17 @@ import scala.concurrent.Promise
 
 class JSONRPCPromisedResponseRepository {
 
-  private var idToPromisedResponseMap: Map[Id, Promise[String]] = Map()
+  private var idToPromisedResponseMap: Map[Id, Promise[String]] = Map.empty
 
-  def addAndGet(id: Id): Promise[String] = {
-    this.synchronized {
-      val promisedResponse: Promise[String] = Promise()
-      idToPromisedResponseMap = idToPromisedResponseMap + (id -> promisedResponse)
-      promisedResponse
-    }
+  def addAndGet(id: Id): Promise[String] = this.synchronized {
+    val promisedResponse: Promise[String] = Promise()
+    idToPromisedResponseMap = idToPromisedResponseMap + (id -> promisedResponse)
+    promisedResponse
   }
 
-  def getAndRemove(id: Id): Option[Promise[String]] = {
-    this.synchronized {
-      val maybePromisedResponse = idToPromisedResponseMap.get(id)
-      idToPromisedResponseMap = idToPromisedResponseMap - id
-      maybePromisedResponse
-    }
+  def getAndRemove(id: Id): Option[Promise[String]] = this.synchronized {
+    val maybePromisedResponse = idToPromisedResponseMap.get(id)
+    idToPromisedResponseMap = idToPromisedResponseMap - id
+    maybePromisedResponse
   }
 }

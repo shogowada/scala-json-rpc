@@ -3,7 +3,7 @@ package io.github.shogowada.scala.jsonrpc.server
 import io.github.shogowada.scala.jsonrpc.DisposableFunction
 
 class DisposableFunctionRepository {
-  var methodNameToDisposableFunctionMap: Map[String, DisposableFunction] = Map()
+  private var methodNameToDisposableFunctionMap: Map[String, DisposableFunction] = Map.empty
 
   def getOrAdd(methodName: String, disposableFunctionFactory: () => DisposableFunction): DisposableFunction = this.synchronized {
     if (!methodNameToDisposableFunctionMap.contains(methodName)) {

@@ -2,14 +2,13 @@ package io.github.shogowada.scala.jsonrpc.client
 
 import io.github.shogowada.scala.jsonrpc.Types.{Id, JSONSender}
 import io.github.shogowada.scala.jsonrpc.serializers.JSONSerializer
-import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
+import io.github.shogowada.scala.jsonrpc.common.JSONRPCMacroUtils
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-class JSONRPCClient[JSONSerializerInUse <: JSONSerializer]
-(
+class JSONRPCClient[JSONSerializerInUse <: JSONSerializer](
     val jsonSerializer: JSONSerializerInUse,
     val jsonSender: JSONSender,
     val executionContext: ExecutionContext
@@ -45,8 +44,10 @@ object JSONRPCClientMacro {
     val api = createAPIImpl[c.type, API](c)(client, None)
     c.Expr[API](
       q"""
-          $clientDefinition
-          $api
+          {
+            $clientDefinition
+            $api
+          }
           """
     )
   }
@@ -142,14 +143,16 @@ object JSONRPCClientMacro {
 
     c.Expr[Boolean](
       q"""
-          ..${macroUtils.imports}
-          $clientDefinition
-          $maybePromisedResponse
-              .map(promisedResponse => {
-                promisedResponse.success($json)
-                true
-              })
-              .getOrElse(false)
+          {
+            ..${macroUtils.imports}
+            $clientDefinition
+            $maybePromisedResponse
+                .map(promisedResponse => {
+                  promisedResponse.success($json)
+                  true
+                })
+                .getOrElse(false)
+          }
           """
     )
   }

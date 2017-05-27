@@ -6,8 +6,8 @@ import io.github.shogowada.scala.jsonrpc.{Constants, DisposableFunction}
 
 class DisposableFunctionMethodNameRepository {
 
-  var identifierToMethodNameMap: Map[Any, String] = Map()
-  var methodNameToIdentifierMap: Map[String, Any] = Map()
+  private var identifierToMethodNameMap: Map[Any, String] = Map.empty
+  private var methodNameToIdentifierMap: Map[String, Any] = Map.empty
 
   def getOrAddAndNotify(disposableFunction: DisposableFunction, notify: (String) => Unit): String = this.synchronized {
     val identifier = disposableFunction.identifier

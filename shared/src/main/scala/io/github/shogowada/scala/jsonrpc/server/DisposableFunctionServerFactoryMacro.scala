@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.server
 
-import io.github.shogowada.scala.jsonrpc.utils.JSONRPCMacroUtils
+import io.github.shogowada.scala.jsonrpc.common.JSONRPCMacroUtils
 
 import scala.reflect.macros.blackbox
 
@@ -8,15 +8,15 @@ class DisposableFunctionServerFactoryMacro[Context <: blackbox.Context](val c: C
 
   import c.universe._
 
-  lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
-  lazy val requestJSONHandlerFactoryMacro = new JSONRPCRequestJSONHandlerFactoryMacro[c.type](c)
+  private lazy val macroUtils = JSONRPCMacroUtils[c.type](c)
+  private lazy val requestJSONHandlerFactoryMacro = new JSONRPCRequestJSONHandlerFactoryMacro[c.type](c)
 
   def getOrCreate(
       client: Tree,
       server: Tree,
-      disposableFunction: TermName,
+      disposableFunction: Tree,
       disposableFunctionType: Type
-  ): c.Expr[String] = {
+  ): Tree = {
     val requestJSONHandlerRepository = macroUtils.getRequestJSONHandlerRepository(server)
     val disposableFunctionMethodNameRepository = macroUtils.getDisposableFunctionMethodNameRepository(client)
 
@@ -24,16 +24,14 @@ class DisposableFunctionServerFactoryMacro[Context <: blackbox.Context](val c: C
 
     val handler = requestJSONHandlerFactoryMacro.createFromDisposableFunction(client, server, disposableFunction, disposableFunctionType)
 
-    c.Expr[String](
-      q"""
-          $requestJSONHandlerRepository.addIfAbsent(Constants.DisposeMethodName, () => ($disposeFunctionMethodHandler))
+    q"""
+        $requestJSONHandlerRepository.addIfAbsent(Constants.DisposeMethodName, () => ($disposeFunctionMethodHandler))
 
-          val methodName: String = $disposableFunctionMethodNameRepository.getOrAddAndNotify(
-            $disposableFunction,
-            (newMethodName) => { $requestJSONHandlerRepository.add(newMethodName, $handler) }
-          )
-          methodName
-          """
-    )
+        val methodName: String = $disposableFunctionMethodNameRepository.getOrAddAndNotify(
+          $disposableFunction,
+          (newMethodName) => { $requestJSONHandlerRepository.add(newMethodName, $handler) }
+        )
+        methodName
+        """
   }
 }

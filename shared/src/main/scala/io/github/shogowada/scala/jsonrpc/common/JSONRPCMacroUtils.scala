@@ -1,6 +1,5 @@
-package io.github.shogowada.scala.jsonrpc.utils
+package io.github.shogowada.scala.jsonrpc.common
 
-import io.github.shogowada.scala.jsonrpc.DisposableFunction
 import io.github.shogowada.scala.jsonrpc.Models.JSONRPCError
 import io.github.shogowada.scala.jsonrpc.api.JSONRPCMethod
 
@@ -71,38 +70,6 @@ class JSONRPCMacroUtils[CONTEXT <: blackbox.Context](val c: CONTEXT) {
           case Literal(Constant(name: String)) => name
         })
     maybeCustomMethodName.getOrElse(method.fullName)
-  }
-
-  def getJSONRPCParameterType(paramTypes: Seq[c.Type]): Tree = {
-    val parameterTypes: Iterable[Type] = paramTypes
-        .map(mapSingleJSONRPCParameterType)
-
-    if (parameterTypes.size == 1) {
-      val parameterType = parameterTypes.head
-      tq"Tuple1[$parameterType]"
-    } else {
-      tq"(..$parameterTypes)"
-    }
-  }
-
-  private def mapSingleJSONRPCParameterType(paramType: Type): Type = {
-    if (isDisposableFunctionType(paramType)) {
-      getType[String]
-    } else {
-      paramType
-    }
-  }
-
-  def getJSONRPCResultType(resultType: Type): Type = {
-    if (isDisposableFunctionType(resultType)) {
-      getType[String]
-    } else {
-      resultType
-    }
-  }
-
-  def isDisposableFunctionType(theType: Type): Boolean = {
-    theType <:< getType[DisposableFunction]
   }
 
   def isJSONRPCNotificationMethod(returnType: Type): Boolean = {
