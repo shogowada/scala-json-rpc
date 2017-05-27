@@ -26,15 +26,8 @@ class JSONRPCValueFactory[Context <: blackbox.Context](val c: Context) {
       valueType: Type
   ): Tree = {
     if (isEitherType(valueType)) {
-      val leftType: Type = valueType.typeArgs(0)
-      val rightType: Type = valueType.typeArgs(1)
       val toScala = jsonRPCToScala(maybeClient, maybeServer, _: Tree, _: Type)
-      q"""
-          $value match {
-            case Left(value) => Left(${toScala(q"value", leftType)})
-            case Right(value) => Right(${toScala(q"value", rightType)})
-          }
-          """
+      fromEither(value, valueType, toScala)
     } else if (isDisposableFunctionType(valueType)) {
       val maybeValue = for {
         client <- maybeClient
@@ -71,15 +64,8 @@ class JSONRPCValueFactory[Context <: blackbox.Context](val c: Context) {
       valueType: Type
   ): Tree = {
     if (isEitherType(valueType)) {
-      val leftType = valueType.typeArgs(0)
-      val rightType = valueType.typeArgs(1)
       val toJSONRPC = scalaToJSONRPC(maybeClient, maybeServer, _: Tree, _: Type)
-      q"""
-          $value match {
-            case Left(value) => Left(${toJSONRPC(q"value", leftType)})
-            case Right(value) => Right(${toJSONRPC(q"value", rightType)})
-          }
-          """
+      fromEither(value, valueType, toJSONRPC)
     } else if (isDisposableFunctionType(valueType)) {
       val maybeValue: Option[c.Expr[String]] = for {
         server <- maybeServer
@@ -105,6 +91,21 @@ class JSONRPCValueFactory[Context <: blackbox.Context](val c: Context) {
 
   private def isDisposableFunctionType(valueType: Type): Boolean = {
     valueType <:< macroUtils.getType[DisposableFunction]
+  }
+
+  private def fromEither(
+      value: Tree,
+      valueType: Type,
+      convert: (Tree, Type) => Tree
+  ): Tree = {
+    val leftType = valueType.typeArgs(0)
+    val rightType = valueType.typeArgs(1)
+    q"""
+        $value match {
+          case Left(value) => Left(${convert(q"value", leftType)})
+          case Right(value) => Right(${convert(q"value", rightType)})
+        }
+        """
   }
 
   private def DisposableFunctionException: Throwable =
