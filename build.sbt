@@ -56,6 +56,21 @@ lazy val core = (crossProject in file("."))
 lazy val jvm = core.jvm
 lazy val js = core.js
 
+lazy val roshttpJSONRPCClient = (crossProject in file("roshttp-json-rpc-client"))
+    .disablePlugins(AssemblyPlugin)
+    .settings(commonSettings: _*)
+    .settings(
+      name += "-roshttp-json-rpc-client",
+      libraryDependencies ++= Seq(
+        "fr.hmil" %%% "roshttp" % "2.0.2"
+      ),
+      publishArtifact := true
+    )
+    .dependsOn(core)
+
+lazy val roshttpJSONRPCClientJvm = roshttpJSONRPCClient.jvm
+lazy val roshttpJSONRPCClientJs = roshttpJSONRPCClient.js
+
 lazy val jsonSerializer = (crossProject in file("json-serializer"))
     .disablePlugins(AssemblyPlugin)
     .settings(commonSettings: _*)
