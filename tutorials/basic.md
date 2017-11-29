@@ -122,6 +122,8 @@ The function is supposed to:
 
 For example, if your server is exposing JSON-RPC endpoint via HTTP at POST /jsonrpc, your `JSONSender` might look like this:
 
+#### ScalaJS
+
 ```scala
 val jsonSender: (String) => Future[Option[String]] = (json: String) => {
   val NoContentStatus = 204
@@ -134,6 +136,35 @@ val jsonSender: (String) => Future[Option[String]] = (json: String) => {
           Option(response.responseText)
         }
       })
+}
+```
+
+#### Cross Compiling
+
+##### [RösHTTP](https://github.com/hmil/RosHTTP)
+
+```scala
+import monix.execution.Scheduler.Implicits.global
+import fr.hmil.roshttp.HttpRequest
+import fr.hmil.roshttp.body.ByteBufferBody
+import io.github.shogowada.scala.jsonrpc.Types.JSONSender
+
+
+val jsonSender: JSONSender = { json ⇒
+  val jsonBytes = json.getBytes
+  HttpRequest("https://httpbin.org/post")
+    .withHeaders(
+      "Content-Length" → jsonBytes.length.toString,
+      "Optional" → "additional",
+      "Http" → "headers"
+    )
+    .post(
+      ByteBufferBody(
+        data = java.nio.ByteBuffer.wrap(jsonBytes),
+        contentType = "application/json; charset=utf-8"
+      )
+    )
+    .map(response ⇒ Option(response.body))
 }
 ```
 
