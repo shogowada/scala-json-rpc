@@ -144,6 +144,9 @@ lazy val exampleE2eJs = exampleE2e.js
     .enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin)
     .disablePlugins(AssemblyPlugin)
     .settings(exampleJsCommonSettings: _*)
+    .settings(
+      scalaJSUseMainModuleInitializer := true
+    )
 
 // WebSocket example
 
@@ -180,6 +183,9 @@ lazy val exampleE2eWebSocketJs = exampleE2eWebSocket.js
     .enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin)
     .disablePlugins(AssemblyPlugin)
     .settings(exampleJsCommonSettings: _*)
+    .settings(
+      scalaJSUseMainModuleInitializer := true
+    )
 
 // Test Utils
 
