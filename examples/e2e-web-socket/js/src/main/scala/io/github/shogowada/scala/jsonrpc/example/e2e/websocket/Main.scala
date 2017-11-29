@@ -37,8 +37,8 @@ object Main extends JSApp {
       promisedWebSocket.success(webSocket)
     }
 
-    webSocket.onerror = (event: dom.ErrorEvent) => {
-      promisedWebSocket.failure(new IOException(event.message))
+    webSocket.onerror = (event: dom.Event) => {
+      promisedWebSocket.failure(new IOException(event.toString))
     }
 
     promisedWebSocket.future
