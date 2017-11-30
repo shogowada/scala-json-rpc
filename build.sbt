@@ -39,6 +39,10 @@ val commonSettings = Seq(
       </developers>
 )
 
+val Version = new {
+  val circe = "0.8.0"
+}
+
 lazy val core = (crossProject in file("."))
     .disablePlugins(AssemblyPlugin)
     .settings(commonSettings: _*)
@@ -83,6 +87,24 @@ lazy val upickleJSONSerializer = (crossProject in file("upickle-json-serializer"
 
 lazy val upickleJSONSerializerJvm = upickleJSONSerializer.jvm
 lazy val upickleJSONSerializerJs = upickleJSONSerializer.js
+
+lazy val circeJSONSerializer = (crossProject in file("circe-json-serializer"))
+    .disablePlugins(AssemblyPlugin)
+    .settings(commonSettings: _*)
+    .settings(
+      name += "-circe-json-serializer",
+      libraryDependencies ++= Seq(
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+        "io.circe" %%% "circe-parser" % Version.circe,
+        "io.circe" %%% "circe-generic-extras" % Version.circe % "test",
+        "org.scalatest" %%% "scalatest" % "3.+" % "test"
+      ),
+      publishArtifact := true
+    )
+    .dependsOn(jsonSerializer)
+
+lazy val circeJSONSerializerJvm = circeJSONSerializer.jvm
+lazy val circeJSONSerializerJs = circeJSONSerializer.js
 
 // Examples
 
