@@ -94,7 +94,7 @@ object JSONRPCServerAndClientMacro {
                   })($executionContext)
                   .map(_ => ())
               } else {
-                Future()($executionContext)
+                Future(())($executionContext)
               }
             }
             receiveAndSend($json)
