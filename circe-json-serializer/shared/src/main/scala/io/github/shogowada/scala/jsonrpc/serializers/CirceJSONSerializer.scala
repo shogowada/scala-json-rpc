@@ -1,6 +1,6 @@
 package io.github.shogowada.scala.jsonrpc.serializers
 
-import io.circe.{Encoder, Decoder, Error, Json}
+import io.circe.{Decoder, Encoder, Error, Json}
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
@@ -10,8 +10,7 @@ object CirceJSONCoder {
     encoder(value)
   }
 
-  def decode[T](json: String)(implicit decoder: Decoder[T]): Either[Error, T] =
-  {
+  def decode[T](json: String)(implicit decoder: Decoder[T]): Either[Error, T] = {
     io.circe.parser.decode[T](json)
   }
 }
@@ -23,7 +22,7 @@ class CirceJSONSerializer extends JSONSerializer {
 }
 
 object CirceJSONSerializer {
-  def apply() = {
+  def apply(): CirceJSONSerializer = {
     new CirceJSONSerializer
   }
 }
@@ -34,7 +33,10 @@ object CirceJSONSerializerMacro {
 
     c.Expr[Option[String]](
       q"""
-          scala.util.Try(io.circe.Printer.noSpaces.pretty(io.github.shogowada.scala.jsonrpc.serializers.CirceJSONCoder.encode($value))).toOption
+          {
+            import io.circe.generic.auto._
+            scala.util.Try(io.circe.Printer.noSpaces.pretty(io.github.shogowada.scala.jsonrpc.serializers.CirceJSONCoder.encode($value))).toOption
+          }
           """
     )
   }
@@ -46,7 +48,10 @@ object CirceJSONSerializerMacro {
 
     c.Expr[Option[T]](
       q"""
-          io.github.shogowada.scala.jsonrpc.serializers.CirceJSONCoder.decode[$deserializeType]($json).toOption
+          {
+            import io.circe.generic.auto._
+            io.github.shogowada.scala.jsonrpc.serializers.CirceJSONCoder.decode[$deserializeType]($json).toOption
+          }
           """
     )
   }

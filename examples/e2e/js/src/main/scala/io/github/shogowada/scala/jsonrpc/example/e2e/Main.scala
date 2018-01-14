@@ -1,7 +1,7 @@
 package io.github.shogowada.scala.jsonrpc.example.e2e
 
 import io.github.shogowada.scala.jsonrpc.client.JSONRPCClient
-import io.github.shogowada.scala.jsonrpc.serializers.UpickleJSONSerializer
+import io.github.shogowada.scala.jsonrpc.serializers.CirceJSONSerializer
 import io.github.shogowada.scalajs.reactjs.ReactDOM
 import io.github.shogowada.scalajs.reactjs.VirtualDOM._
 import io.github.shogowada.scalajs.reactjs.elements.ReactElement
@@ -40,7 +40,7 @@ object Main extends JSApp {
             })
       }
 
-    val client = JSONRPCClient(UpickleJSONSerializer(), jsonSender)
+    val client = JSONRPCClient(CirceJSONSerializer(), jsonSender)
 
     val calculatorAPI = client.createAPI[CalculatorAPI]
     val echoAPI = client.createAPI[EchoAPI]

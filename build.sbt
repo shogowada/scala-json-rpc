@@ -96,7 +96,7 @@ lazy val circeJSONSerializer = (crossProject in file("circe-json-serializer"))
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
         "io.circe" %%% "circe-parser" % Version.circe,
-        "io.circe" %%% "circe-generic-extras" % Version.circe % "test",
+        "io.circe" %%% "circe-generic" % Version.circe,
         "org.scalatest" %%% "scalatest" % "3.+" % "test"
       ),
       publishArtifact := true
@@ -143,7 +143,7 @@ lazy val exampleE2e = (crossProject in file("examples/e2e"))
     .settings(
       name += "-e2e"
     )
-    .dependsOn(core, upickleJSONSerializer)
+    .dependsOn(core, circeJSONSerializer)
 
 lazy val exampleE2eJvm = exampleE2e.jvm
     .enablePlugins(SbtWeb, WebScalaJSBundlerPlugin)
