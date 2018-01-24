@@ -40,7 +40,7 @@ val commonSettings = Seq(
 )
 
 val Version = new {
-  val circe = "0.8.0"
+  val circe = "0.9.1"
 }
 
 lazy val core = (crossProject in file("."))
@@ -96,12 +96,12 @@ lazy val circeJSONSerializer = (crossProject in file("circe-json-serializer"))
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
         "io.circe" %%% "circe-parser" % Version.circe,
-        "io.circe" %%% "circe-generic" % Version.circe,
+        "io.circe" %%% "circe-core" % Version.circe,
         "org.scalatest" %%% "scalatest" % "3.+" % "test"
       ),
       publishArtifact := true
     )
-    .dependsOn(jsonSerializer)
+    .dependsOn(core, jsonSerializer)
 
 lazy val circeJSONSerializerJvm = circeJSONSerializer.jvm
 lazy val circeJSONSerializerJs = circeJSONSerializer.js
