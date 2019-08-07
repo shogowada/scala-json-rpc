@@ -34,7 +34,7 @@ object CirceJSONSerializerMacro {
     c.Expr[Option[String]](
       q"""
           {
-            import io.github.shogowada.scala.jsonrpc.serializer.CirceJSONCodecs._
+            import io.github.shogowada.scala.jsonrpc.serializers.CirceJSONCodecs._
             scala.util.Try(io.circe.Printer.noSpaces.pretty(io.github.shogowada.scala.jsonrpc.serializers.CirceJSONCoder.encode($value))).toOption
           }
           """
@@ -49,7 +49,7 @@ object CirceJSONSerializerMacro {
     c.Expr[Option[T]](
       q"""
           {
-            import io.github.shogowada.scala.jsonrpc.serializer.CirceJSONCodecs._
+            import io.github.shogowada.scala.jsonrpc.serializers.CirceJSONCodecs._
             io.github.shogowada.scala.jsonrpc.serializers.CirceJSONCoder.decode[$deserializeType]($json).toOption
           }
           """

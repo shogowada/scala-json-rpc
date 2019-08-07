@@ -1,4 +1,4 @@
-crossScalaVersions := Seq("2.12.2")
+crossScalaVersions := Seq("2.12.9")
 
 publishTo := {
   val nexus = "https://oss.sonatype.org/"
@@ -12,8 +12,8 @@ publishArtifact := false
 val commonSettings = Seq(
   organization := "io.github.shogowada",
   name := "scala-json-rpc",
-  version := "0.9.3",
-  scalaVersion := "2.12.2",
+  version := "1.0.0",
+  scalaVersion := "2.12.9",
   logBuffered in Test := false,
   licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
   homepage := Some(url("https://github.com/shogowada/scala-json-rpc")),
@@ -40,7 +40,7 @@ val commonSettings = Seq(
 )
 
 val Version = new {
-  val circe = "0.9.1"
+  val circe = "0.11.0"
 }
 
 lazy val core = (crossProject in file("."))
@@ -50,7 +50,8 @@ lazy val core = (crossProject in file("."))
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 
-        "org.scalatest" %%% "scalatest" % "3.+" % Test
+        "org.scalatest" %%% "scalatest" % "3.+" % Test,
+        "org.scalacheck" %% "scalacheck" % "1.14+" % Test
       ),
       publishArtifact := true
     )
@@ -97,7 +98,9 @@ lazy val circeJSONSerializer = (crossProject in file("circe-json-serializer"))
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
         "io.circe" %%% "circe-parser" % Version.circe,
         "io.circe" %%% "circe-core" % Version.circe,
-        "org.scalatest" %%% "scalatest" % "3.+" % "test"
+        "io.circe" %%% "circe-generic" % Version.circe % "test",
+        "org.scalatest" %%% "scalatest" % "3.+" % "test",
+        "org.scalacheck" %% "scalacheck" % "1.14+" % "test"
       ),
       publishArtifact := true
     )
@@ -124,7 +127,8 @@ lazy val exampleJvmCommonSettings = Seq(
     "org.scalatra" %% "scalatra" % "2.5.+",
 
     "org.seleniumhq.selenium" % "selenium-java" % "[3.4.0,4.0.0[" % "it",
-    "org.scalatest" %% "scalatest" % "3.+" % "it"
+    "org.scalatest" %% "scalatest" % "3.+" % "it",
+    "org.scalacheck" %% "scalacheck" % "1.14+" % "it"
   )
 )
 
